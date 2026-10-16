@@ -1,6 +1,6 @@
 # Plano Macro: Sistema Integrado da Pizzaria
 
-Versão 0.1, 16/10/2026. Rascunho para discussão; nada aqui está aprovado.
+Versão 0.2, 16/10/2026. Inclui as decisões de Marlon às perguntas da versão 0.1 (seção 8); o restante segue em discussão.
 
 **Critério de sucesso deste documento:** dar a cada um dos 9 módulos um objetivo, uma lista de submódulos candidatos e as integrações com os outros, definir os princípios de dados (local agora, nuvem depois) e listar o que só o Marlon pode decidir. Detalhamento de telas, tabelas e regras fica para os documentos de cada módulo.
 
@@ -43,7 +43,7 @@ Estes cadastros são usados por vários módulos; se cada módulo tiver o seu, e
 - **Pessoas e empresas**: fornecedores, clientes, funcionários, entregadores (um cadastro com papéis, ou cadastros separados; a decidir no detalhamento).
 - **Plano de contas gerencial e centros de custo**: categorias de receita e despesa que alimentam o fluxo de caixa e a DRE.
 - **Formas de pagamento**: dinheiro, Pix, crédito, débito, voucher, pagamento online do Anota Ai. O manual de integração Teknisa x Anota Aí mostra que o Anota Aí identifica a forma de pagamento por código externo com prefixo ONLINE_ ou OFFLINE_ [Fonte 1]; nosso cadastro precisa de um campo equivalente.
-- **Unidades/lojas**: mesmo com uma loja, ter o campo desde o início evita retrabalho se abrir a segunda [Prática] [Suposição: pergunta P1].
+- **Unidades/lojas**: o projeto é para uma loja. O identificador da loja existe desde o início porque um futuro aplicativo central lerá o banco de cada loja (decisão de Marlon, 16/10/2026). O regime tributário é parâmetro da loja.
 
 ### 2.3 Integração entre módulos
 
@@ -68,7 +68,7 @@ No beta tudo roda num único banco e numa única aplicação, separados por esqu
 | Nuvem | Fly.io região `gru`, um app e um Postgres. O kit alerta que o Fly Postgres não gerenciado está sem suporte e que o Managed Postgres custa US$ 38/mês no plano Basic (dado de 16/10/2026, confirmar no momento da migração) | [Kit] LEIA-ME 11 |
 | Identificadores | Avaliar UUID em vez de `SERIAL` nas tabelas que podem receber dados de mais de uma origem (duas lojas, modo offline). O kit usa `SERIAL`; esta é uma proposta para discutir | [Prática] [Suposição] |
 
-Ponto de atenção: "dados locais" com o sistema rodando num único computador da loja significa que, se esse computador parar, a operação para. No detalhamento do núcleo precisamos definir onde o beta roda e como é o backup fora da máquina [Prática] [pergunta P7].
+Decisão de Marlon (16/10/2026): o beta roda local, com espelho na nuvem (Fly.io) previsto para depois e, no início, sem espelho. Com um computador da loja servindo os demais aparelhos, se ele parar a operação para; o backup fora da máquina e o procedimento de contingência ficam para o detalhamento do núcleo [Prática]. O futuro aplicativo central lerá o banco de cada loja: o esquema precisa ser estável, documentado e consultável em modo leitura, e cada registro carrega o identificador da loja [Prática].
 
 ---
 
@@ -147,19 +147,19 @@ Para cada módulo: objetivo, submódulos candidatos, o que recebe e o que entreg
 
 **Submódulos candidatos.** Cardápio e preços por canal; recebimento de pedidos do Anota Ai; pedidos de outros canais (balcão, telefone, salão, outros aplicativos) [pergunta P2]; cadastro de clientes e endereços; cancelamentos e estornos com motivo; promoções e cupons; entregas (entregador, taxa, tempo).
 
-**O que já se sabe sobre o Anota Ai [Fonte 1].** No manual da integração Teknisa x Anota Aí: a autenticação é por token fornecido pelo Anota Aí mais o ID da loja; cada produto é ligado pelo "ID Externo" cadastrado no Anota Aí; formas de pagamento por código externo (ONLINE_ ou OFFLINE_); observações de item em três tipos (acréscimo, retirada, observação); pedido com produto inexistente ou preço zerado é recusado. O manual não descreve atualização de status nem webhook. **Não encontrei documentação pública da API do Anota Ai**; o acesso provavelmente é por parceria. O material "já visto" que você mencionou não está nesta pasta do projeto [pergunta P3].
+**O que já se sabe sobre o Anota Ai [Fonte 1].** No manual da integração Teknisa x Anota Aí: a autenticação é por token fornecido pelo Anota Aí mais o ID da loja; cada produto é ligado pelo "ID Externo" cadastrado no Anota Aí; formas de pagamento por código externo (ONLINE_ ou OFFLINE_); observações de item em três tipos (acréscimo, retirada, observação); pedido com produto inexistente ou preço zerado é recusado. O manual não descreve atualização de status nem webhook. **Não encontrei documentação pública da API do Anota Ai**; o acesso provavelmente é por parceria. Em 16/10/2026 Marlon informou que ainda não há token nem contato com o Anota Ai; o material "já visto" não está nesta pasta do projeto.
 
 **Recebe.** Do núcleo: itens e preços.
 **Entrega.** A Produção: pedido vira ordem de produção. A Estoques: consumo pela ficha técnica. A Fechamento de Caixa: valor esperado por forma de pagamento. A Contas a Receber: recebíveis online e de cartão. Ao BI: receita.
 
-**Ponto de atenção fiscal.** Precisamos saber quem emite o documento fiscal de venda (NFC-e ou equivalente) hoje. Se for outro sistema, o nosso módulo de Vendas lê e concilia; se for o nosso, entra um submódulo fiscal, que é um projeto grande por si só [pergunta P2].
+**Fiscal (decisão de Marlon, 16/10/2026).** Os canais são balcão (neste sistema) e Anota Ai. O cupom fiscal (CF) é emitido por software de terceiro; a evolução disso fica para o futuro. Falta saber como a venda chega a esse software hoje, para evitar digitação dupla (pergunta A1).
 
 ### 4.7 Módulo 7: Produção (Ordens de Produção)
 
 **Objetivo.** Acompanhar cada pedido da entrada até a entrega, e os preparos feitos em lote.
 
 **Submódulos candidatos.**
-- OP de pedido: gerada automaticamente pela venda; fases propostas: recebido, em preparo (montagem), no forno, finalização/embalagem, pronto, em entrega, entregue; tempo em cada fase; tela de cozinha (KDS) em tablet ou monitor [Prática] [pergunta P6].
+- OP de pedido: gerada automaticamente pela venda e acompanhada por estação, conforme os equipamentos informados por Marlon: 1 tablet na massa, 2 tablets no pizzaiolo e 1 tablet no acabamento, este com impressora para identificar as pizzas. Fases candidatas: recebido, massa, pizzaiolo, acabamento, pronto, em entrega, entregue [Suposição: a ordem das estações e o que vem depois do acabamento estão na pergunta A5]; tempo em cada fase.
 - OP de pré-preparo: massa, molho, cortes de recheio feitos em lote, que consomem insumos e geram estoque de preparo intermediário com validade.
 - Expedição e entrega: atribuição de entregador, saída, retorno.
 - Indicadores: tempo médio por fase, atrasos, refação (pizza refeita por erro).
@@ -167,7 +167,7 @@ Para cada módulo: objetivo, submódulos candidatos, o que recebe e o que entreg
 **Recebe.** De Vendas: pedidos. Do núcleo: fichas técnicas.
 **Entrega.** A Estoques: consumo e produção de intermediários. A Vendas: status do pedido (e ao Anota Ai, se a integração permitir retorno de status, o que não está confirmado). Ao BI: tempos e perdas.
 
-**Questão de escopo.** "OP" na indústria é ordem por lote; numa pizzaria a maior parte da produção é por pedido. Preciso saber se você quer os dois tipos [pergunta P4].
+**Escopo (decisão de Marlon, 16/10/2026).** OP por pedido e também por lote de pré-preparo, pedido primeiro.
 
 ### 4.8 Módulo 8: Fechamento de Caixa
 
@@ -226,13 +226,13 @@ Cada linha desta tabela terá, no detalhamento, a forma automática e a forma ma
 | 6 | 2 Imobilizado e 1 RH | Alimentam custo fixo; até lá entram como lançamento manual no financeiro |
 | 7 | 9 BI | Consolida tudo |
 
-Alternativa razoável: começar por Estoques e Fichas técnicas se o CMV for hoje a maior dor. Minha recomendação é a ordem acima, porque sem vendas registradas a baixa de estoque continua manual. Esta ordem depende das suas respostas, em especial P2 e P9.
+Alternativa razoável: começar por Estoques e Fichas técnicas se o CMV for hoje a maior dor. Minha recomendação é a ordem acima, porque sem vendas registradas a baixa de estoque continua manual. Mantida por decisão de Marlon (seguir a recomendação); a confirmação da maior dor está na pergunta A7.
 
 ---
 
 ## 7. Fora do escopo do beta (proposta)
 
-- Emissão fiscal própria (NFC-e), salvo resposta diferente em P2.
+- Emissão fiscal própria (cupom fiscal): é feita por software de terceiro; a evolução fica para o futuro (decisão de Marlon, 16/10/2026).
 - Folha de pagamento legal e eSocial (fica com o contador).
 - Ser o registrador oficial de ponto (REP).
 - Contabilidade societária completa (o BI faz DRE gerencial, não balanço oficial).
@@ -240,21 +240,41 @@ Alternativa razoável: começar por Estoques e Fichas técnicas se o CMV for hoj
 
 ---
 
-## 8. Perguntas para o Marlon
+## 8. Decisões de Marlon e perguntas em aberto
 
-Em ordem do quanto cada resposta muda o plano.
+As referências P1 a P11 no texto vêm da versão 0.1; todas foram respondidas em 16/10/2026, abaixo.
 
-- **P1. Unidades.** É uma loja só? Há plano de abrir outras?
-- **P2. Canais e fiscal.** Além do Anota Ai, por onde vocês vendem (balcão, telefone, salão, iFood direto, outros)? Quem emite a nota/cupom fiscal hoje, e por qual sistema?
-- **P3. Material do Anota Ai.** Onde está o material "já visto"? Não há nada sobre ele nesta pasta do projeto. Vocês já têm token ou contato de parceria com o Anota Ai?
-- **P4. OP.** Ordem de produção é só por pedido, ou também para preparos em lote (massa, molho)?
-- **P5. RH.** Quantos funcionários? A folha é feita por contador? Como o ponto é registrado hoje?
-- **P6. Equipamentos.** O que existe na loja: computador, tablet na cozinha, impressora de comanda?
-- **P7. Onde roda o beta.** Num computador da loja, ou já num servidor (mesmo que só a equipe use)?
-- **P8. Regime tributário.** Simples Nacional, Lucro Presumido ou outro? (muda a DRE)
-- **P9. Maior dor hoje.** O que mais faz falta: saber o CMV, controlar o caixa, controlar estoque, acompanhar pedidos?
-- **P10. Sistemas e planilhas atuais.** O que é usado hoje e precisa ser migrado ou integrado?
-- **P11. Stack.** Seguimos o padrão do kit (FastAPI + PostgreSQL + HTML, Fly.io na nuvem)? Minha recomendação é sim.
+### 8.1 Decisões
+
+| # | Tema | Decisão de Marlon | Efeito no plano |
+|---|---|---|---|
+| 1 | Canais e fiscal | Vendas pelo balcão (neste sistema) e pelo Anota Ai. O cupom fiscal é emitido por software de terceiro; a evolução fica para o futuro | Fiscal fora do beta; Vendas registra e concilia |
+| 2 | Unidades | Uma loja. No futuro, um aplicativo lerá todos os bancos e centralizará as informações | Um banco por loja, esquema estável e legível em modo leitura, identificador de loja nos dados |
+| 3 | Maior dor | Seguir a recomendação | Ordem da seção 6 mantida, com Vendas e Fechamento de Caixa primeiro |
+| 4 | Regime tributário | Parametrizado por loja | Regime vira parâmetro da loja e muda as deduções da DRE |
+| 5 | RH | Seguir a recomendação | Módulo gerencial, folha legal com o contador |
+| 6 | Anota Ai | Ainda sem token nem contato | Submódulo só desenhado até haver acesso |
+| 7 | OP | Seguir a recomendação | Por pedido e por lote, pedido primeiro |
+| 8 | Onde roda | Local no início, com espelho na nuvem (Fly.io) previsto e, de início, sem espelho | PostgreSQL local; espelho só depois |
+| 9 | Equipamentos | 2 PCs na recepção, ambos ligados ao Anota Ai, com opção de pedido local só pelo app; 1 tablet na massa, 2 no pizzaiolo e 1 no acabamento, com impressora para identificar as pizzas | Vários aparelhos no mesmo banco pela rede da loja; Produção por estações; identificação impressa no acabamento |
+| 10 | Sistemas atuais | Nenhum além do Anota Ai | Nada a migrar |
+| 11 | Stack | Seguir a recomendação | FastAPI, PostgreSQL e HTML, padrão do kit |
+
+### 8.2 Consequências técnicas a decidir [Prática]
+
+- Dois PCs e quatro tablets no mesmo banco: um computador faz o papel de servidor local e os demais acessam pela rede da loja, pelo navegador. Qual PC será o servidor, e ele fica ligado durante toda a operação?
+- Anota Ai nos dois PCs: o recebimento de pedidos deve acontecer num ponto só (o servidor), para não duplicar pedidos; os dois PCs veem a mesma fila.
+- O modelo da impressora do acabamento define o formato da identificação (etiqueta ou comanda).
+
+### 8.3 Perguntas em aberto
+
+- **A1.** Como a venda chega hoje ao software do cupom fiscal: digitação dupla, integração do Anota Ai com ele, ou outro caminho?
+- **A2.** Quem pode pedir ao Anota Ai o acesso de integração (token)? Sem isso o submódulo fica só desenhado.
+- **A3.** "Pedido local só pelo app" quer dizer que os pedidos de balcão são digitados neste sistema, e em nenhum outro lugar?
+- **A4.** RH: quantos funcionários e como o ponto é registrado hoje? (Não respondida.)
+- **A5.** Produção: a ordem é massa, pizzaiolo, acabamento? O que vem depois (entrega, expedição) e em qual estação? O que cada um dos 2 tablets do pizzaiolo mostra?
+- **A6.** Impressora do acabamento: qual modelo ou tipo, e o que deve sair impresso (sabor, número do pedido, cliente, observações)?
+- **A7.** Confirmar a maior dor: caixa e controle de vendas primeiro, ou CMV e estoque primeiro? (A resposta "seguir a recomendação" não dizia qual é.)
 
 ---
 
