@@ -1,6 +1,6 @@
 # Plano Macro: Sistema Integrado da Pizzaria
 
-Versão 0.2, 16/10/2026. Inclui as decisões de Marlon às perguntas da versão 0.1 (seção 8); o restante segue em discussão.
+Versão 0.3, 16/10/2026. Inclui as decisões de Marlon às perguntas das versões anteriores (seção 8); o restante segue em discussão.
 
 **Critério de sucesso deste documento:** dar a cada um dos 9 módulos um objetivo, uma lista de submódulos candidatos e as integrações com os outros, definir os princípios de dados (local agora, nuvem depois) e listar o que só o Marlon pode decidir. Detalhamento de telas, tabelas e regras fica para os documentos de cada módulo.
 
@@ -38,7 +38,7 @@ As "5 Leis" do gabarito do projeto (Integração, Hierarquia, Automação, Evolu
 
 Estes cadastros são usados por vários módulos; se cada módulo tiver o seu, eles divergem [Prática].
 
-- **Itens**: insumo (farinha, muçarela, caixa de pizza), preparo intermediário (massa, molho) e produto de venda (pizza grande calabresa, refrigerante). Com unidade de medida e conversões (saco 25 kg para g).
+- **Itens**: insumo (farinha, muçarela, caixa de pizza), material de uso e consumo [Suposição: classe de item, citada por Marlon em 16/10/2026], preparo intermediário (massa, molho) e produto de venda (pizza grande calabresa, refrigerante). Com unidade de medida e conversões (saco 25 kg para g).
 - **Ficha técnica (receita)**: quanto de cada insumo vai em cada produto ou preparo. É a peça que liga Vendas, Produção, Estoques e Custos. Proposta: cadastro no núcleo, mantido pelo módulo de Custos/Produção.
 - **Pessoas e empresas**: fornecedores, clientes, funcionários, entregadores (um cadastro com papéis, ou cadastros separados; a decidir no detalhamento).
 - **Plano de contas gerencial e centros de custo**: categorias de receita e despesa que alimentam o fluxo de caixa e a DRE.
@@ -80,7 +80,7 @@ Para cada módulo: objetivo, submódulos candidatos, o que recebe e o que entreg
 
 **Objetivo.** Gerir o quadro de pessoas e o custo de pessoal da pizzaria.
 
-**Submódulos candidatos.** Cadastro de funcionários e contratos (CLT, intermitente, freelancer, motoboy terceiro); escalas e turnos; registro ou importação de ponto; banco de horas e horas extras; férias e afastamentos; prévia de folha e encargos para custo gerencial; comissões e gorjetas (se houver); treinamentos (ex.: boas práticas de manipulação de alimentos).
+**Submódulos candidatos.** Cadastro de funcionários e contratos (CLT, intermitente, freelancer, motoboy terceiro); escalas e turnos; registro de ponto (informado no início; importação de ponto eletrônico biométrico no futuro, decisão de Marlon); banco de horas e horas extras; férias e afastamentos; prévia de folha e encargos para custo gerencial; comissões e gorjetas (se houver); treinamentos (ex.: boas práticas de manipulação de alimentos).
 
 **Recebe.** Do núcleo: cadastro de pessoas. De Vendas: base para comissão ou taxa de entrega, se aplicável.
 **Entrega.** A Contas a Pagar: salários, encargos, vale-transporte. A Custos: custo de mão de obra (fixo ou por produção). Ao BI: custo de pessoal na DRE.
@@ -159,7 +159,11 @@ Para cada módulo: objetivo, submódulos candidatos, o que recebe e o que entreg
 **Objetivo.** Acompanhar cada pedido da entrada até a entrega, e os preparos feitos em lote.
 
 **Submódulos candidatos.**
-- OP de pedido: gerada automaticamente pela venda e acompanhada por estação, conforme os equipamentos informados por Marlon: 1 tablet na massa, 2 tablets no pizzaiolo e 1 tablet no acabamento, este com impressora para identificar as pizzas. Fases candidatas: recebido, massa, pizzaiolo, acabamento, pronto, em entrega, entregue [Suposição: a ordem das estações e o que vem depois do acabamento estão na pergunta A5]; tempo em cada fase.
+- OP de pedido: gerada automaticamente pela venda. O aplicativo móvel se comporta de forma diferente em cada função, e cada colaborador tem login próprio (decisão de Marlon, 16/10/2026):
+  - **Massa:** vê as bordas por pedido e a quantidade de massas abertas normais necessárias. A massa é maleável (pode ser produzida antes) e pode ser perdida por vários motivos, que o sistema precisa registrar.
+  - **Pizzaiolo:** vê só a pizza que precisa produzir, não o pedido. Os pedidos entram numa fila e as pizzas são solicitadas em sequência, não importa quantos pizzaiolos haja. Ao confirmar a manufatura, a pizza vai para o forno.
+  - **Acabamento:** vê os pedidos e as pizzas que estão no forno (depois da confirmação do pizzaiolo) e imprime a identificação em etiqueta autoadesiva, numa impressora térmica portátil; o modelo da impressora varia.
+  - Marlon avisou que Produção é um módulo separado e especial e que voltará a explicar. O desenho acima é só o que foi dito até agora.
 - OP de pré-preparo: massa, molho, cortes de recheio feitos em lote, que consomem insumos e geram estoque de preparo intermediário com validade.
 - Expedição e entrega: atribuição de entregador, saída, retorno.
 - Indicadores: tempo médio por fase, atrasos, refação (pizza refeita por erro).
@@ -218,15 +222,14 @@ Cada linha desta tabela terá, no detalhamento, a forma automática e a forma ma
 | Etapa | Módulos | Por quê |
 |---|---|---|
 | 0 | Núcleo (usuários, perfis, auditoria, cadastros mestres, ficha técnica) | Todos dependem dele |
-| 1 | 6 Vendas + 8 Fechamento de Caixa | Fato mais frequente; dá controle diário rápido; Anota Ai entra aqui |
+| 1 | 6 Vendas + 7 Produção + 8 Fechamento de Caixa | Prioridade de Marlon: o pedido nasce em Vendas, é produzido por função e fecha no caixa; Anota Ai entra por último, como adaptador |
 | 2 | 3 Estoques e Compras | Com vendas e fichas técnicas, a baixa de estoque já é automática |
-| 3 | 7 Produção | Usa pedidos e fichas já existentes |
-| 4 | 4 Contas a Pagar/Receber e Fluxo de Caixa | Recebe compras e caixa já estruturados |
-| 5 | 5 Custos | Precisa de estoque, vendas e despesas |
-| 6 | 2 Imobilizado e 1 RH | Alimentam custo fixo; até lá entram como lançamento manual no financeiro |
-| 7 | 9 BI | Consolida tudo |
+| 3 | 4 Contas a Pagar/Receber e Fluxo de Caixa | Recebe compras e caixa já estruturados |
+| 4 | 5 Custos | Precisa de estoque, vendas e despesas |
+| 5 | 2 Imobilizado e 1 RH | Alimentam custo fixo; até lá entram como lançamento manual no financeiro |
+| 6 | 9 BI | Consolida tudo |
 
-Alternativa razoável: começar por Estoques e Fichas técnicas se o CMV for hoje a maior dor. Minha recomendação é a ordem acima, porque sem vendas registradas a baixa de estoque continua manual. Mantida por decisão de Marlon (seguir a recomendação); a confirmação da maior dor está na pergunta A7.
+Alternativa razoável: começar por Estoques e Fichas técnicas se o CMV for hoje a maior dor. Minha recomendação é a ordem acima, porque sem vendas registradas a baixa de estoque continua manual. Prioridade de Marlon (16/10/2026): vendas, produção e caixa, sem perder de vista estoques, insumos, custos fixos e variáveis, imobilizado e material de uso e consumo.
 
 ---
 
@@ -271,10 +274,12 @@ As referências P1 a P11 no texto vêm da versão 0.1; todas foram respondidas e
 - **A1.** (Respondida em 16/10/2026: digitação dupla hoje; no futuro este sistema emitirá o cupom fiscal.)
 - **A2.** Quem pode pedir ao Anota Ai o acesso de integração (token)? Sem isso o submódulo fica só desenhado.
 - **A3.** (Respondida em 16/10/2026: sim, o pedido local é digitado só neste sistema.)
-- **A4.** RH: quantos funcionários e como o ponto é registrado hoje? (Não respondida.)
-- **A5.** Produção: a ordem é massa, pizzaiolo, acabamento? O que vem depois (entrega, expedição) e em qual estação? O que cada um dos 2 tablets do pizzaiolo mostra?
-- **A6.** Impressora do acabamento: qual modelo ou tipo, e o que deve sair impresso (sabor, número do pedido, cliente, observações)?
-- **A7.** Confirmar a maior dor: caixa e controle de vendas primeiro, ou CMV e estoque primeiro? (A resposta "seguir a recomendação" não dizia qual é.)
+- **A4.** (Respondida em 16/10/2026: a quantidade de colaboradores é variável e vinculada ao cadastro; o ponto é informado no início e, no futuro, pode ser importado de ponto eletrônico biométrico.)
+- **A5.** (Respondida em 16/10/2026: ver o comportamento por função em Produção, seção 4.7. Detalhes ficam para o módulo Produção, que Marlon descreveu como separado e especial.)
+- **A6.** (Respondida em parte em 16/10/2026: impressora térmica portátil com etiqueta autoadesiva, modelo variável. Falta saber o que sai impresso na etiqueta.)
+- **A7.** (Respondida em 16/10/2026: prioridade é vendas, produção e caixa, mantendo no horizonte estoques, insumos, custos fixos e variáveis, imobilizado e material de uso e consumo.)
+- **E1.** Material de uso e consumo (por exemplo, limpeza) entra como classe de item no módulo de Estoques e Compras? Recomendo que sim.
+- **E2.** O que deve sair impresso na etiqueta do acabamento (sabor, número do pedido, cliente, observações)?
 
 ---
 
