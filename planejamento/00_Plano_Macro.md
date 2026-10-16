@@ -152,7 +152,7 @@ Para cada módulo: objetivo, submódulos candidatos, o que recebe e o que entreg
 **Recebe.** Do núcleo: itens e preços.
 **Entrega.** A Produção: pedido vira ordem de produção. A Estoques: consumo pela ficha técnica. A Fechamento de Caixa: valor esperado por forma de pagamento. A Contas a Receber: recebíveis online e de cartão. Ao BI: receita.
 
-**Fiscal (decisão de Marlon, 16/10/2026).** Os canais são balcão (neste sistema) e Anota Ai. O cupom fiscal (CF) é emitido por software de terceiro; a evolução disso fica para o futuro. Falta saber como a venda chega a esse software hoje, para evitar digitação dupla (pergunta A1).
+**Fiscal (decisão de Marlon, 16/10/2026).** Os canais são balcão (neste sistema) e Anota Ai. O cupom fiscal (CF) é emitido por software de terceiro; a evolução disso fica para o futuro. Hoje a venda é digitada duas vezes: neste sistema e no software do cupom fiscal; no futuro este sistema emitirá o cupom (resposta de Marlon à pergunta A1, 16/10/2026). Pedidos de balcão são digitados só neste sistema (resposta à A3).
 
 ### 4.7 Módulo 7: Produção (Ordens de Produção)
 
@@ -232,7 +232,7 @@ Alternativa razoável: começar por Estoques e Fichas técnicas se o CMV for hoj
 
 ## 7. Fora do escopo do beta (proposta)
 
-- Emissão fiscal própria (cupom fiscal): é feita por software de terceiro; a evolução fica para o futuro (decisão de Marlon, 16/10/2026).
+- Emissão fiscal própria (cupom fiscal): hoje é feita por software de terceiro, com digitação dupla; a emissão pelo nosso sistema está prevista para o futuro (Marlon, 16/10/2026).
 - Folha de pagamento legal e eSocial (fica com o contador).
 - Ser o registrador oficial de ponto (REP).
 - Contabilidade societária completa (o BI faz DRE gerencial, não balanço oficial).
@@ -268,9 +268,9 @@ As referências P1 a P11 no texto vêm da versão 0.1; todas foram respondidas e
 
 ### 8.3 Perguntas em aberto
 
-- **A1.** Como a venda chega hoje ao software do cupom fiscal: digitação dupla, integração do Anota Ai com ele, ou outro caminho?
+- **A1.** (Respondida em 16/10/2026: digitação dupla hoje; no futuro este sistema emitirá o cupom fiscal.)
 - **A2.** Quem pode pedir ao Anota Ai o acesso de integração (token)? Sem isso o submódulo fica só desenhado.
-- **A3.** "Pedido local só pelo app" quer dizer que os pedidos de balcão são digitados neste sistema, e em nenhum outro lugar?
+- **A3.** (Respondida em 16/10/2026: sim, o pedido local é digitado só neste sistema.)
 - **A4.** RH: quantos funcionários e como o ponto é registrado hoje? (Não respondida.)
 - **A5.** Produção: a ordem é massa, pizzaiolo, acabamento? O que vem depois (entrega, expedição) e em qual estação? O que cada um dos 2 tablets do pizzaiolo mostra?
 - **A6.** Impressora do acabamento: qual modelo ou tipo, e o que deve sair impresso (sabor, número do pedido, cliente, observações)?
