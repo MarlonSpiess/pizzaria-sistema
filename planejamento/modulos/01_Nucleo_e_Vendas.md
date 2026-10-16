@@ -1,6 +1,6 @@
 # Detalhamento 01: Núcleo e Vendas
 
-Versão 0.1, 16/10/2026. Rascunho para discussão. Parte do [Plano Macro v0.2](../00_Plano_Macro.md).
+Versão 0.2, 16/10/2026. Inclui as respostas B1 a B10 de Marlon. Rascunho para discussão. Parte do [Plano Macro v0.2](../00_Plano_Macro.md).
 
 **Critério de sucesso:** ao fim deste documento, Marlon consegue dizer "é isso" ou "falta isto" sobre o que o Núcleo e o módulo de Vendas fazem, quais dados guardam e como se ligam aos outros módulos. Telas desenhadas e tabelas finais vêm depois da sua aprovação.
 
@@ -17,6 +17,16 @@ Marcações: **[Decisão]** é de Marlon; **[Kit]** vem do Kit Aplicação Web; 
 - 2 PCs na recepção, ambos ligados ao Anota Ai, e 4 tablets na produção **[Decisão]**.
 - Roda local, com espelho na nuvem previsto para depois **[Decisão]**. Stack do kit: FastAPI, PostgreSQL, HTML **[Decisão]**.
 - Ainda não há token nem contato com o Anota Ai **[Decisão]**.
+- Tamanhos Grande e Broto; a Grande pode ter 2 sabores; há bordas e adicionais **[Decisão B1]**.
+- O preço é o mesmo no balcão e no Anota Ai, mas varia por categoria (Tradicionais e Especiais) e por tamanho **[Decisão B2]**.
+- Só retirada e entrega, sem consumo no salão **[Decisão B3]**.
+- Taxa de entrega variável; entregadores são terceiros **[Decisão B4]**.
+- Pagamentos: dinheiro, Pix, cartão de crédito e cartão de débito **[Decisão B5]**.
+- Desconto e cancelamento seguem a sugestão (atendente até um limite, gerente acima, motivo obrigatório); o limite é um percentual nos parâmetros do sistema **[Decisão B6]**.
+- Número do pedido reinicia por dia; o código interno deve chegar ao Anota Ai por API e ao cliente por WhatsApp "ou algo similar" **[Decisão B7]**.
+- Cadastro de cliente na primeira compra, com nome, telefone e endereço **[Decisão B8]**.
+- Login pessoal e intransferível **[Decisão B9]**.
+- Só o administrador geral e o desenvolvedor pedem acesso ao Anota Ai **[Decisão B10]**.
 
 ---
 
@@ -31,7 +41,7 @@ Marcações: **[Decisão]** é de Marlon; **[Kit]** vem do Kit Aplicação Web; 
 | Usuários e perfis | Quem entra, o que pode fazer | [Kit] |
 | Segurança de acesso | Login, sessão, bloqueio de tentativas | [Kit] |
 | Auditoria | Quem registrou ou alterou cada fato de negócio | [Kit] |
-| Parâmetros da loja | Identificador da loja, nome, regime tributário, fuso, formas de pagamento aceitas | [Decisão] e [Prática] |
+| Parâmetros da loja | Identificador da loja, nome, regime tributário, fuso, formas de pagamento aceitas, limite de desconto por perfil (em %) | [Decisão] e [Prática] |
 | Cadastro de itens | Insumos, preparos e produtos de venda | Plano macro, seção 2.2 |
 | Cardápio e preços | O que se vende, em que tamanho, por qual preço, em qual canal | [Prática] |
 | Pessoas | Clientes, fornecedores, funcionários, entregadores | Plano macro, seção 2.2 |
@@ -88,7 +98,7 @@ A ficha técnica (receita de cada produto) é cadastro do Núcleo, mas só é pr
 
 | Registro | O que guarda |
 |---|---|
-| Pedido | Número, loja, canal, data e hora, cliente, tipo (entrega, retirada, salão [Suposição]), situação, totais, usuário |
+| Pedido | Número, loja, canal, data e hora, cliente, tipo (entrega ou retirada), situação, totais, usuário |
 | Item do pedido | Produto, tamanho/variação, quantidade, preço na hora da venda, observações |
 | Observação de item | Tipo: acréscimo, retirada ou observação livre (os três tipos que o Anota Ai usa, segundo [Fonte 1]) |
 | Pagamento | Forma, valor, situação, troco; no caso de pagamento online, o código externo com prefixo ONLINE_ ou OFFLINE_ [Fonte 1] |
@@ -96,6 +106,14 @@ A ficha técnica (receita de cada produto) é cadastro do Núcleo, mas só é pr
 | Entrega | Entregador, taxa, saída e retorno (detalhes no módulo de Produção) |
 | Cancelamento | Motivo, usuário, momento |
 | Código externo | Identificador do pedido, do produto e da forma de pagamento no Anota Ai, para ligar os dois lados |
+
+**Cardápio e preço (B1 e B2).**
+
+- Produto de venda: pizza, com **tamanho** (Grande ou Broto) e **categoria** (Tradicionais ou Especiais). O preço base vem da combinação categoria e tamanho, igual no balcão e no Anota Ai.
+- A pizza **Grande** aceita 2 sabores; a Broto, 1 sabor [Decisão B1; que a Broto aceite só 1 é suposição minha].
+- **Borda** e **adicional** são itens cobrados à parte, com preço próprio.
+- Preço por canal fica fora do início: como o preço é o mesmo, basta uma tabela de preços; se algum dia mudar, cria-se a segunda tabela [Prática].
+- Falta a lista de sabores por categoria e os preços (pergunta C1) e a regra de preço da pizza de 2 sabores (C2).
 
 Regras de dado: preço do item é **copiado** para o pedido (mudar o cardápio não altera venda antiga); dinheiro em `NUMERIC`; data e hora geradas pelo servidor, no fuso America/Sao_Paulo; cada registro leva o identificador da loja [Kit, 5.4] e [Decisão].
 
@@ -129,22 +147,53 @@ O desenho visual vem depois da aprovação deste documento; segue a skill `front
 
 Cada ligação funciona também sem o módulo vizinho (princípio do plano macro): sem Produção, o pedido simplesmente não gera OP; sem Estoques, não baixa insumo.
 
+### 3.7 Número do pedido e aviso ao cliente (B7)
+
+**Número.** Reinicia a cada dia **[Decisão]**. Por isso o sistema guarda dois identificadores: um interno, único para sempre, e o número do dia (por exemplo "37"), que a produção e o cliente usam. A busca por número exige a data [Prática].
+
+**Aviso ao cliente.** Marlon pediu que o código chegue ao Anota Ai por API e ao cliente por WhatsApp ou similar, e aceita sugestões. O que encontrei:
+
+| Opção | Como funciona | Prós e contras |
+|---|---|---|
+| Retorno ao Anota Ai por API | Nosso sistema envia o código ao Anota Ai | **Não encontrei documentação pública** de envio de dados ao Anota Ai; o manual do Teknisa descreve só a entrada de pedidos [Fonte 1]. Depende do token e da documentação que o Anota Ai fornecer. Não confirmado |
+| Link de WhatsApp com mensagem pronta | O sistema monta um link que abre o WhatsApp com a mensagem escrita; o atendente confirma o envio | Sem custo de API e sem aprovação; custa 1 clique por pedido [Prática] |
+| API oficial do WhatsApp | Envio automático pelo sistema | Mensagem fora da janela de 24 horas só com modelo aprovado pela Meta; exige número dedicado e provedor ou integração própria [Fonte 4]. A cobrança por mensagem muda em 1/10/2026; um site de parceiro usa R$ 0,043 por mensagem como estimativa, não como valor oficial [Fonte 3] |
+| SMS | Mensagem de texto | Não pesquisei |
+
+**Recomendação [Prática].** No beta, exibir o número do dia em destaque na tela da recepção e na identificação impressa, e oferecer o link de WhatsApp de 1 clique. Deixar a API oficial do WhatsApp e o retorno ao Anota Ai para depois do token e de uma conta de volume real. A decisão e o custo estão na pergunta C5.
+
 ---
 
-## 4. Perguntas em aberto para este detalhamento
+## 4. Perguntas
 
-Para responder rápido, as que têm recomendação podem ser aceitas com "ok".
+### 4.1 Respondidas em 16/10/2026
 
-- **B1. Cardápio.** Quais tamanhos de pizza existem e como se chamam? Há meio a meio, bordas e adicionais? Pelo manual do Teknisa, produto fracionado precisa ser cadastrado como item separado no Anota Ai [Fonte 1]; recomendo modelar meio a meio como pedido de dois sabores na mesma pizza, e não como produto novo.
-- **B2. Preço por canal.** O preço é o mesmo no balcão e no Anota Ai, ou muda? Recomendo permitir preço por canal desde o início.
-- **B3. Tipos de pedido.** Além de entrega e retirada, há consumo no salão? Recomendo começar com entrega e retirada.
-- **B4. Entrega.** A taxa é fixa, por bairro ou por distância? Os entregadores são funcionários ou terceiros?
-- **B5. Pagamentos aceitos.** Quais formas (dinheiro, Pix, débito, crédito, voucher)? Há pagamento dividido em mais de uma forma?
-- **B6. Desconto e cancelamento.** Quem pode dar desconto e cancelar? Recomendo atendente até um limite e gerente acima dele, com motivo sempre obrigatório. Qual o limite?
-- **B7. Numeração.** O número do pedido reinicia a cada dia ou segue contínuo? Recomendo reiniciar por dia, com data no registro, para a produção chamar "pedido 37".
-- **B8. Cliente.** Cadastro por telefone na primeira compra? Qual o mínimo de dados necessário (nome, telefone, endereço)?
-- **B9. Quem usa.** Quantas pessoas operam a recepção em cada turno, e todas usam o mesmo login ou cada uma o seu? Recomendo um login por pessoa, para a auditoria funcionar.
-- **B10. Anota Ai.** Quem pode pedir o acesso de integração ao Anota Ai? (pergunta A2 do plano)
+| # | Tema | Resposta de Marlon |
+|---|---|---|
+| B1 | Cardápio | Grande e Broto; Grande com até 2 sabores; há bordas e adicionais |
+| B2 | Preço por canal | Igual nos dois aplicativos; varia por categoria (Tradicionais e Especiais) e tamanho |
+| B3 | Tipos de pedido | Só retirada e entrega |
+| B4 | Entrega | Taxa variável; entregadores terceiros |
+| B5 | Pagamentos | Dinheiro, Pix, crédito e débito |
+| B6 | Desconto e cancelamento | Sugestão aceita; limite em % nos parâmetros |
+| B7 | Numeração | Reinicia por dia; código interno ao Anota Ai por API e ao cliente por WhatsApp ou similar |
+| B8 | Cliente | Cadastro na primeira compra com nome, telefone e endereço |
+| B9 | Logins | Pessoal e intransferível |
+| B10 | Acesso ao Anota Ai | Só o administrador geral e o desenvolvedor |
+
+Ficaram sem resposta: quantas pessoas operam a recepção por turno (parte da B9) e se há pagamento dividido (parte da B5); entram em C4 e C6.
+
+### 4.2 Em aberto
+
+- **C1. Cardápio.** Quais sabores há em Tradicionais e em Especiais, e quais os preços por tamanho, das bordas e dos adicionais? Pode enviar o cardápio em foto ou planilha.
+- **C2. Dois sabores.** Na Grande de 2 sabores, o preço é o do sabor mais caro, a média dos dois ou outra regra? As duas primeiras são comuns [Prática]; recomendo o mais caro por ser mais simples de explicar ao cliente.
+- **C3. Taxa de entrega.** O atendente digita o valor a cada pedido ou há tabela por região? Como o entregador terceiro é pago (por entrega, diária ou outro)?
+- **C4. Pagamento.** Há pagamento dividido em mais de uma forma? Dinheiro registra o valor recebido e calcula o troco? Recomendo que sim aos dois.
+- **C5. Aviso ao cliente.** Começamos com o link de WhatsApp de 1 clique (recomendado) e deixamos a API oficial para depois? O cliente do Anota Ai já recebe aviso do próprio Anota Ai?
+- **C6. Login nos tablets e na recepção.** Quantas pessoas operam a recepção por turno? Nos tablets da produção, cada pizzaiolo entra com o login pessoal do turno? Recomendo que sim, com sessão longa, para a auditoria saber quem fez cada etapa.
+- **C7. Pedido de acesso ao Anota Ai.** Como só o administrador geral e o desenvolvedor pedem o acesso, o pedido será feito por você? Posso redigir o texto do pedido para você enviar.
+
+Limites de desconto: o sistema terá os campos em %; os valores iniciais ficam vazios até você definir.
 
 Perguntas do plano macro que ficam para depois deste módulo: A4 (RH), A5 e A6 (Produção e impressora), A7 (confirmar a maior dor).
 
@@ -168,3 +217,5 @@ Por dependência: usuários e perfis, parâmetros da loja, cadastro de itens e c
 
 1. Teknisa, "Manual AnotaAi": https://universidade.teknisa.com/wp-content/uploads/2025/12/Manual_AnotaAi.pdf (integração de um parceiro; não é documentação oficial da API do Anota Ai).
 2. Kit Aplicação Web (Allex Corp, 16/10/2026): `01_Manual_Tecnico.md`, seções citadas.
+3. Digisac, "Preço da API Oficial do WhatsApp: o que muda a partir de 1º de outubro" (22/09/2026): https://digisac.com.br/blog/preco-whatsapp-api-outubro-2026 (fornecedor de software; o valor em reais é estimativa de parceiros, não da Meta).
+4. Drag, "API oficial do WhatsApp": https://www.dragapp.com/pt-br/blog/api-oficial-do-whatsapp/ (fornecedor de software; confirmar em fonte primária da Meta antes de contratar).
