@@ -1,6 +1,6 @@
 # Plano Macro: Sistema Integrado da Pizzaria
 
-Versão 0.3, 16/10/2026. Inclui as decisões de Marlon às perguntas das versões anteriores (seção 8); o restante segue em discussão.
+Versão 0.4, 18/10/2026. Inclui as decisões de Marlon às perguntas das versões anteriores (seção 8); o restante segue em discussão.
 
 **Critério de sucesso deste documento:** dar a cada um dos 9 módulos um objetivo, uma lista de submódulos candidatos e as integrações com os outros, definir os princípios de dados (local agora, nuvem depois) e listar o que só o Marlon pode decidir. Detalhamento de telas, tabelas e regras fica para os documentos de cada módulo.
 
@@ -38,7 +38,7 @@ As "5 Leis" do gabarito do projeto (Integração, Hierarquia, Automação, Evolu
 
 Estes cadastros são usados por vários módulos; se cada módulo tiver o seu, eles divergem [Prática].
 
-- **Itens**: insumo (farinha, muçarela, caixa de pizza), material de uso e consumo [Suposição: classe de item, citada por Marlon em 16/10/2026], preparo intermediário (massa, molho) e produto de venda (pizza grande calabresa, refrigerante). Com unidade de medida e conversões (saco 25 kg para g).
+- **Itens**: insumo (farinha, muçarela, caixa de pizza), material de uso e consumo (decisão de Marlon, 18/10/2026), preparo intermediário (massa, molho) e produto de venda (pizza grande calabresa, refrigerante). Com unidade de medida e conversões (saco 25 kg para g).
 - **Ficha técnica (receita)**: quanto de cada insumo vai em cada produto ou preparo. É a peça que liga Vendas, Produção, Estoques e Custos. Proposta: cadastro no núcleo, mantido pelo módulo de Custos/Produção.
 - **Pessoas e empresas**: fornecedores, clientes, funcionários, entregadores (um cadastro com papéis, ou cadastros separados; a decidir no detalhamento).
 - **Plano de contas gerencial e centros de custo**: categorias de receita e despesa que alimentam o fluxo de caixa e a DRE.
@@ -276,10 +276,10 @@ As referências P1 a P11 no texto vêm da versão 0.1; todas foram respondidas e
 - **A3.** (Respondida em 16/10/2026: sim, o pedido local é digitado só neste sistema.)
 - **A4.** (Respondida em 16/10/2026: a quantidade de colaboradores é variável e vinculada ao cadastro; o ponto é informado no início e, no futuro, pode ser importado de ponto eletrônico biométrico.)
 - **A5.** (Respondida em 16/10/2026: ver o comportamento por função em Produção, seção 4.7. Detalhes ficam para o módulo Produção, que Marlon descreveu como separado e especial.)
-- **A6.** (Respondida em parte em 16/10/2026: impressora térmica portátil com etiqueta autoadesiva, modelo variável. Falta saber o que sai impresso na etiqueta.)
+- **A6.** (Respondida em 16 e 18/10/2026: etiqueta autoadesiva em impressora térmica portátil, modelo variável; imprime sabor, número do pedido, cliente e observações.)
 - **A7.** (Respondida em 16/10/2026: prioridade é vendas, produção e caixa, mantendo no horizonte estoques, insumos, custos fixos e variáveis, imobilizado e material de uso e consumo.)
-- **E1.** Material de uso e consumo (por exemplo, limpeza) entra como classe de item no módulo de Estoques e Compras? Recomendo que sim.
-- **E2.** O que deve sair impresso na etiqueta do acabamento (sabor, número do pedido, cliente, observações)?
+- **E1.** (Respondida em 18/10/2026: sim, material de uso e consumo é classe de item em Estoques e Compras.)
+- **E2.** (Respondida em 18/10/2026: a etiqueta leva sabor, número do pedido, cliente e observações, conforme a lista proposta.)
 
 ---
 

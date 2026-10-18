@@ -1,6 +1,6 @@
 # Detalhamento 01: Núcleo e Vendas
 
-Versão 0.3, 16/10/2026. Inclui as respostas B1 a B10 e C1 a C7 de Marlon. Rascunho para discussão. Parte do [Plano Macro v0.3](../00_Plano_Macro.md).
+Versão 0.4, 18/10/2026. Inclui as respostas B1 a B10, C1 a C7, D1, D3, D4, D5, E1 e E2 de Marlon. Rascunho para discussão. Parte do [Plano Macro v0.4](../00_Plano_Macro.md).
 
 **Critério de sucesso:** ao fim deste documento, Marlon consegue dizer "é isso" ou "falta isto" sobre o que o Núcleo e o módulo de Vendas fazem, quais dados guardam e como se ligam aos outros módulos. Telas desenhadas e tabelas finais vêm depois da sua aprovação.
 
@@ -123,7 +123,7 @@ A ficha técnica (receita de cada produto) é cadastro do Núcleo, mas só é pr
 - **Borda** e **adicional** são itens cobrados à parte, com preço próprio.
 - Preço por canal fica fora do início: como o preço é o mesmo, basta uma tabela de preços; se algum dia mudar, cria-se a segunda tabela [Prática].
 - **Cadastro de produtos único**, também sincronizado com o Anota Ai (decisão C1). Não está confirmado que o Anota Ai receba o cadastro por API. O manual do Teknisa mostra que o Anota Ai liga cada produto a um "ID Externo" e que produto fracionado é cadastrado à parte [Fonte 1]. Cada produto terá um campo de código externo por canal [Prática].
-- **Preço da pizza de 2 sabores (decisão C2):** cada metade tem preço. Exemplo de Marlon: toda tradicional R$ 35,00; toda especial R$ 50,00 (R$ 35,00 mais R$ 7,50 por cada metade especial); meia tradicional e meia especial R$ 42,50. Isso equivale a somar a metade do preço de cada sabor inteiro (35 dividido por 2, mais 50 dividido por 2, dá 42,50). Confirmo essa leitura na pergunta D1.
+- **Preço por sabor (decisões C2 e D1):** cada sabor tem o seu preço por tamanho no cadastro de produtos. A Broto tem 1 sabor. A Grande com 2 sabores custa a metade do preço de cada sabor inteiro. Exemplo de Marlon: sabor tradicional R$ 35,00 e sabor especial R$ 50,00; toda tradicional R$ 35,00, toda especial R$ 50,00 e meia e meia R$ 42,50 (35 dividido por 2, mais 50 dividido por 2). Os valores são exemplos; os preços reais virão do cadastro.
 - Faltam a lista de sabores por categoria e os preços por tamanho, das bordas e dos adicionais (pergunta D2).
 
 Regras de dado: preço do item é **copiado** para o pedido (mudar o cardápio não altera venda antiga); dinheiro em `NUMERIC`; data e hora geradas pelo servidor, no fuso America/Sao_Paulo; cada registro leva o identificador da loja [Kit, 5.4] e [Decisão].
@@ -175,6 +175,13 @@ Cada ligação funciona também sem o módulo vizinho (princípio do plano macro
 
 **Recomendação [Prática].** No beta, exibir o número do dia em destaque na tela da recepção e na identificação impressa, e oferecer o link de WhatsApp de 1 clique para pedido feito no balcão. Deixar a API oficial do WhatsApp e o retorno ao Anota Ai para depois do token e de uma conta de volume real.
 
+### 3.8 Fechamento da venda, pagamento, entrega e sincronização (D3, D4, D5)
+
+- **Pagamento (D4):** dinheiro, Pix, crédito e débito; a venda pode ser paga em mais de uma forma. No dinheiro, o sistema registra o valor recebido e calcula o troco.
+- **Desconto e acréscimo (D4):** ao fechar a venda, o atendente pode aplicar desconto e acréscimo adicional. O desconto respeita o limite em % do perfil (B6). Proponho motivo obrigatório nos dois e registro na auditoria, como no cancelamento [Suposição; pergunta F3].
+- **Entrega (D3):** o entregador terceiro recebe por entrega, mais um valor único informado por disponibilidade. Falta saber se o valor por entrega é o da taxa digitada e a que período a disponibilidade se refere (perguntas F1 e F2).
+- **Sincronização do cadastro com o Anota Ai (D5):** a origem padrão é o nosso sistema. Marlon pediu deixar "janelas" para outras situações, conforme a API do Anota Ai e futuros parceiros. Proponho configurar a sincronização por canal e por campo (por exemplo, preço e disponibilidade), indicando se o nosso sistema envia, recebe ou não sincroniza [Prática].
+
 ---
 
 ## 4. Perguntas
@@ -196,7 +203,7 @@ Cada ligação funciona também sem o módulo vizinho (princípio do plano macro
 
 Ficaram sem resposta: quantas pessoas operam a recepção por turno (parte da B9) e se há pagamento dividido (parte da B5); entram em C4 e C6.
 
-### 4.2 Respondidas em 16/10/2026 (C1 a C7)
+### 4.2 Respondidas em 16 e 18/10/2026 (C1 a C7, D1, D3, D4, D5, E1 e E2)
 
 | # | Tema | Resposta de Marlon |
 |---|---|---|
@@ -207,18 +214,21 @@ Ficaram sem resposta: quantas pessoas operam a recepção por turno (parte da B9
 | C5 | Aviso ao cliente | O Anota Ai avisa os pedidos dele pelo WhatsApp; no futuro, o nosso sistema avisa os pedidos feitos no nosso aplicativo |
 | C6 | Logins | De 1 a 5 pessoas na recepção; na produção, cada colaborador com login próprio e aplicativo móvel diferente por função |
 | C7 | Pedido de acesso | Marlon faz depois que o sistema funcionar; o software de venda pode mudar, ter outros ou nenhum |
+| D1 | Dois sabores | Valores por sabor no cadastro; Broto com 1 sabor; Grande com 2 sabores soma a metade do preço de cada sabor |
+| D3 | Entregador | Pago por entrega, mais um valor único informado por disponibilidade |
+| D4 | Troco, desconto e acréscimo | Sim ao troco; desconto e acréscimo adicional no fechamento da venda |
+| D5 | Sincronização | Segue a sugestão (nosso cadastro como origem), com janelas para outras situações conforme a API e futuros parceiros |
+| E1 | Material de uso e consumo | Classe de item em Estoques e Compras |
+| E2 | Etiqueta | Sabor, número do pedido, cliente e observações |
 
 ### 4.3 Em aberto
 
-- **D1.** Confirmar a regra da pizza de 2 sabores: o preço é a soma da metade do preço de cada sabor inteiro? Os valores do exemplo (R$ 35,00 e R$ 50,00) são da Grande?
-- **D2.** Quando formos cadastrar: quais sabores há em Tradicionais e em Especiais, e quais os preços por tamanho, das bordas e dos adicionais? Pode enviar em foto ou planilha.
-- **D3.** Como o entregador terceiro é pago (por entrega, diária ou outro)? Isso define se o sistema guarda a taxa por entrega para o acerto.
-- **D4.** No dinheiro, o sistema registra o valor recebido e calcula o troco? Recomendo que sim. No pagamento dividido, há limite de formas por pedido?
-- **D5.** Para a sincronização do cadastro com o Anota Ai: a direção é nosso sistema para o Anota Ai (nós somos a origem)? Recomendo que sim, para o preço nunca divergir.
+- **D2.** Quando formos cadastrar: quais sabores há em Tradicionais e em Especiais, e quais os preços por tamanho, das bordas e dos adicionais? Pode enviar em foto ou planilha. Não bloqueia o desenho; bloqueia só a carga do cadastro.
+- **F1.** O valor por entrega pago ao entregador é o mesmo da taxa de entrega digitada, ou é um valor próprio?
+- **F2.** O "valor único por disponibilidade" é por turno, por dia ou por outro período?
+- **F3.** Desconto e acréscimo no fechamento da venda: exigem motivo? Recomendo motivo obrigatório nos dois, com desconto limitado pelo % do perfil e tudo registrado na auditoria.
 
 Limites de desconto: o sistema terá os campos em %; os valores iniciais ficam vazios até você definir.
-
-Perguntas do plano macro ainda abertas: E1 (material de uso e consumo) e E2 (o que sai na etiqueta).
 
 ---
 
