@@ -1,6 +1,6 @@
 # Detalhamento 01: Núcleo e Vendas
 
-Versão 0.4, 18/10/2026. Inclui as respostas B1 a B10, C1 a C7, D1, D3, D4, D5, E1 e E2 de Marlon. Rascunho para discussão. Parte do [Plano Macro v0.4](../00_Plano_Macro.md).
+Versão 0.5, 18/10/2026. Inclui todas as respostas de Marlon até F3. Rascunho pronto para aprovação. Parte do [Plano Macro v0.4](../00_Plano_Macro.md).
 
 **Critério de sucesso:** ao fim deste documento, Marlon consegue dizer "é isso" ou "falta isto" sobre o que o Núcleo e o módulo de Vendas fazem, quais dados guardam e como se ligam aos outros módulos. Telas desenhadas e tabelas finais vêm depois da sua aprovação.
 
@@ -48,7 +48,7 @@ Marcações: **[Decisão]** é de Marlon; **[Kit]** vem do Kit Aplicação Web; 
 | Usuários e perfis | Quem entra, o que pode fazer | [Kit] |
 | Segurança de acesso | Login, sessão, bloqueio de tentativas | [Kit] |
 | Auditoria | Quem registrou ou alterou cada fato de negócio | [Kit] |
-| Parâmetros da loja | Identificador da loja, nome, regime tributário, fuso, formas de pagamento aceitas, limite de desconto por perfil (em %) | [Decisão] e [Prática] |
+| Parâmetros da loja | Identificador da loja, nome, regime tributário, fuso, formas de pagamento aceitas, limite de desconto por perfil (em %), valor padrão por entrega e valor padrão da diária do entregador | [Decisão] e [Prática] |
 | Cadastro de itens | Insumos, preparos e produtos de venda | Plano macro, seção 2.2 |
 | Cardápio e preços | O que se vende, em que tamanho, por qual preço, em qual canal | [Prática] |
 | Pessoas | Clientes, fornecedores, funcionários, entregadores | Plano macro, seção 2.2 |
@@ -178,8 +178,9 @@ Cada ligação funciona também sem o módulo vizinho (princípio do plano macro
 ### 3.8 Fechamento da venda, pagamento, entrega e sincronização (D3, D4, D5)
 
 - **Pagamento (D4):** dinheiro, Pix, crédito e débito; a venda pode ser paga em mais de uma forma. No dinheiro, o sistema registra o valor recebido e calcula o troco.
-- **Desconto e acréscimo (D4):** ao fechar a venda, o atendente pode aplicar desconto e acréscimo adicional. O desconto respeita o limite em % do perfil (B6). Proponho motivo obrigatório nos dois e registro na auditoria, como no cancelamento [Suposição; pergunta F3].
-- **Entrega (D3):** o entregador terceiro recebe por entrega, mais um valor único informado por disponibilidade. Falta saber se o valor por entrega é o da taxa digitada e a que período a disponibilidade se refere (perguntas F1 e F2).
+- **Desconto e acréscimo (D4 e F3):** ao fechar a venda, o atendente pode aplicar desconto e acréscimo adicional. O desconto respeita o limite em % do perfil (B6). Motivo obrigatório nos dois, com registro na auditoria [Decisão F3].
+- **Entrega e entregador (D3, F1, F2):** o entregador terceiro recebe um valor **por entrega** e um valor **por diária** (por dia). Os dois valores padrão ficam nos parâmetros da loja e podem ser alterados no **fechamento das entregas**, que é o acerto do entregador ao fim do dia. A taxa cobrada do cliente é outro valor, digitado pelo atendente (C3).
+- **Fechamento das entregas:** lista as entregas do entregador no dia, com o valor por entrega, a diária e o total a pagar, editáveis nessa tela. O acerto de dinheiro do entregador ao fim do turno é do módulo Fechamento de Caixa; aqui só se apura quanto cada entregador recebe [Prática].
 - **Sincronização do cadastro com o Anota Ai (D5):** a origem padrão é o nosso sistema. Marlon pediu deixar "janelas" para outras situações, conforme a API do Anota Ai e futuros parceiros. Proponho configurar a sincronização por canal e por campo (por exemplo, preço e disponibilidade), indicando se o nosso sistema envia, recebe ou não sincroniza [Prática].
 
 ---
@@ -218,15 +219,15 @@ Ficaram sem resposta: quantas pessoas operam a recepção por turno (parte da B9
 | D3 | Entregador | Pago por entrega, mais um valor único informado por disponibilidade |
 | D4 | Troco, desconto e acréscimo | Sim ao troco; desconto e acréscimo adicional no fechamento da venda |
 | D5 | Sincronização | Segue a sugestão (nosso cadastro como origem), com janelas para outras situações conforme a API e futuros parceiros |
+| F1 | Pagamento do entregador | Um valor por entrega e outro por diária; padrões nos parâmetros, alteráveis no fechamento das entregas |
+| F2 | Período da disponibilidade | Por dia (a diária) |
+| F3 | Desconto e acréscimo | Segue a sugestão: motivo obrigatório, desconto limitado pelo % do perfil, tudo na auditoria |
 | E1 | Material de uso e consumo | Classe de item em Estoques e Compras |
 | E2 | Etiqueta | Sabor, número do pedido, cliente e observações |
 
 ### 4.3 Em aberto
 
 - **D2.** Quando formos cadastrar: quais sabores há em Tradicionais e em Especiais, e quais os preços por tamanho, das bordas e dos adicionais? Pode enviar em foto ou planilha. Não bloqueia o desenho; bloqueia só a carga do cadastro.
-- **F1.** O valor por entrega pago ao entregador é o mesmo da taxa de entrega digitada, ou é um valor próprio?
-- **F2.** O "valor único por disponibilidade" é por turno, por dia ou por outro período?
-- **F3.** Desconto e acréscimo no fechamento da venda: exigem motivo? Recomendo motivo obrigatório nos dois, com desconto limitado pelo % do perfil e tudo registrado na auditoria.
 
 Limites de desconto: o sistema terá os campos em %; os valores iniciais ficam vazios até você definir.
 
