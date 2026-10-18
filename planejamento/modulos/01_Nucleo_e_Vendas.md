@@ -242,6 +242,7 @@ Por dependência: usuários e perfis, parâmetros da loja, cadastro de itens e c
 ## 6. O que este documento ainda não responde
 
 - Como será o instalador e a rotina diária do servidor local (qual PC, ligar e desligar, backup).
+- Pendências vindas de Produção (aguardam OK de Marlon, ver `02_Producao.md` seção 8 e H1 a H3): calzone, refrigerante e acompanhamento no cardápio; borda e adicional como campos do item; canal iFood; Id universal do pedido.
 - Layout das telas e fluxo exato de cliques.
 - Produção por função (massa, pizzaiolo, acabamento): Marlon a descreveu como módulo separado e especial; este documento só cobre o que Vendas entrega a ela.
 - Emissão fiscal pelo nosso sistema (projeto futuro, a pesquisar quando chegar a hora, incluindo o tipo de documento fiscal exigido no seu estado e município).

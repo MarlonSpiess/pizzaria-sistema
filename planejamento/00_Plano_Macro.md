@@ -165,7 +165,7 @@ Para cada módulo: objetivo, submódulos candidatos, o que recebe e o que entreg
   - **Massa:** vê as bordas por pedido e a quantidade de massas abertas normais necessárias. A massa é maleável (pode ser produzida antes) e pode ser perdida por vários motivos, que o sistema precisa registrar.
   - **Pizzaiolo:** vê só a pizza que precisa produzir, não o pedido. Os pedidos entram numa fila e as pizzas são solicitadas em sequência, não importa quantos pizzaiolos haja. Ao confirmar a manufatura, a pizza vai para o forno.
   - **Acabamento:** vê os pedidos e as pizzas que estão no forno (depois da confirmação do pizzaiolo) e imprime a identificação em etiqueta autoadesiva, numa impressora térmica portátil; o modelo da impressora varia.
-  - Marlon avisou que Produção é um módulo separado e especial e que voltará a explicar. O desenho acima é só o que foi dito até agora.
+  - Marlon explicou o fluxo completo em 18/10/2026. O detalhamento vigente está em `planejamento/modulos/02_Producao.md` (v0.2) e substitui o desenho acima.
 - OP de pré-preparo: massa, molho, cortes de recheio feitos em lote, que consomem insumos e geram estoque de preparo intermediário com validade.
 - Expedição e entrega: atribuição de entregador, saída, retorno.
 - Indicadores: tempo médio por fase, atrasos, refação (pizza refeita por erro).

@@ -1,8 +1,8 @@
 # Detalhamento 02: Produção
 
-Versão 0.1, 18/10/2026. Rascunho para discussão, escrito só com o que Marlon explicou até agora. Parte do [Plano Macro](../00_Plano_Macro.md). Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), aprovado por Marlon em 18/10/2026.
+Versão 0.2, 18/10/2026. Reescrito a partir da explicação completa de Marlon. Rascunho para discussão. Parte do [Plano Macro](../00_Plano_Macro.md). Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), aprovado em 18/10/2026.
 
-**Critério de sucesso:** Marlon lê o fluxo, as visões por função e os dados e diz "é assim" ou corrige; as perguntas da seção 7 ficam respondidas antes de qualquer desenho de tela.
+**Critério de sucesso:** Marlon lê o fluxo, as fases e os dados e diz "é assim" ou corrige; as perguntas da seção 9 ficam respondidas antes de qualquer desenho de tela.
 
 Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fonte específica; **[Suposição]** é minha e precisa de confirmação.
 
@@ -10,108 +10,189 @@ Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fon
 
 ## 1. O que já está decidido
 
-- Produção é um módulo separado e especial; Marlon explicará os detalhes **[Decisão]**.
-- Ordem de produção (OP) por pedido e também por lote de pré-preparo, pedido primeiro **[Decisão P7]**.
-- O aplicativo móvel tem comportamento diferente em cada função (massa, pizzaiolo, acabamento), e cada colaborador tem login próprio **[Decisão A5 e C6]**.
-- Equipamentos planejados: 1 tablet na massa, 2 no pizzaiolo e 1 no acabamento, este com impressora **[Decisão P9]**.
-- A impressora é térmica portátil, com etiqueta autoadesiva; o modelo varia **[Decisão A6]**.
-- A etiqueta leva sabor, número do pedido, cliente e observações **[Decisão E2]**.
-- O pedido nasce em Vendas; o número do pedido reinicia por dia **[Decisão B7]**.
-- Só há retirada e entrega; o entregador é terceiro **[Decisão B3 e B4]**.
-- Perdas de massa por vários motivos precisam ser registradas **[Decisão A5]**.
+- O módulo roda sobre uma **API interna nossa**, em segundo plano num dos PCs. Os tablets a alimentam, chamando-a a cada fase executada **[Decisão, 18/10/2026]**.
+- O pedido pode entrar de forma manual no nosso sistema ou por API de um aplicativo de venda; Produção funciona igual nos dois casos **[Decisão, 18/10/2026]**.
+- Cada função (massa, pizzaiolo, acabamento) tem um comportamento próprio no aplicativo móvel, e cada colaborador tem login próprio **[Decisão A5 e C6]**.
+- Equipamentos: 1 tablet na massa, 2 no pizzaiolo, 1 no acabamento com impressora **[Decisão P9]**; impressora térmica portátil com etiqueta autoadesiva, modelo variável **[Decisão A6]**; a etiqueta leva sabor, número do pedido, cliente e observações **[Decisão E2]**.
+- OP por pedido e também por lote de pré-preparo, pedido primeiro **[Decisão P7]**.
+- Só retirada e entrega; o entregador é terceiro **[Decisão B3 e B4]**.
 
 ---
 
 ## 2. Objetivo
 
-Levar cada pizza do pedido até o balcão de saída, mostrando a cada pessoa só o que a sua função precisa, registrando tempos, responsáveis e perdas, e avisando Vendas, Estoques e BI do que aconteceu.
+Levar cada pizza do pedido até a retirada ou o despacho, mostrando a cada pessoa só o que a sua função precisa, calculando a necessidade de massa, estimando a hora da entrega e registrando tempos, responsáveis e perdas.
 
 ---
 
-## 3. Fluxo, com o que Marlon explicou
+## 3. Como o módulo se liga (arquitetura)
 
-A unidade de trabalho é a **pizza**, não o pedido: o pedido é dividido em pizzas, e as pizzas entram numa fila **[Decisão A5]**.
-
-1. **Vendas confirma o pedido.** Cada pizza do pedido vira um item na fila de produção **[Suposição: o momento exato da entrada na fila está na pergunta G3]**.
-2. **Massa.** Vê as bordas por pedido e a quantidade de massas abertas normais que a fila exige. A massa é maleável: pode ser produzida antes da necessidade **[Decisão A5]**.
-3. **Pizzaiolo.** Vê só a pizza que precisa produzir, não o pedido. As pizzas são solicitadas em sequência, não importa quantos pizzaiolos haja. Quando o pizzaiolo confirma a manufatura, a pizza segue para o forno **[Decisão A5]**.
-4. **Forno.** A pizza fica no forno depois da confirmação do pizzaiolo **[Decisão A5; quem registra a entrada e a saída está na pergunta G5]**.
-5. **Acabamento.** Vê os pedidos e as pizzas que estão no forno, e imprime a etiqueta de identificação **[Decisão A5 e A6]**.
-6. **Saída.** Retirada pelo cliente ou entrega pelo entregador terceiro **[Suposição: onde e quem registra a saída está na pergunta G6]**.
+- Uma **API interna** roda em segundo plano num dos PCs da recepção. Os tablets da massa, do pizzaiolo e do acabamento, e a tela do balcão, falam com ela pela rede da loja **[Decisão]**.
+- O pedido entra por duas portas: digitado no balcão ou vindo de um aplicativo de venda (Anota Aí e outros). Nas duas, o pedido tem os mesmos dados e dispara o mesmo fluxo **[Decisão]**.
+- Isso combina com o plano: um servidor local, os demais aparelhos como clientes, e só os canais externos dependendo de internet **[Prática]**.
+- Falta definir qual PC é o servidor, como a API inicia sozinha quando o PC liga e o que se faz se esse PC parar (pergunta H11).
 
 ---
 
-## 4. Visão de cada função no aplicativo móvel
+## 4. O fluxo em 5 passos, como Marlon descreveu
 
-| Função | Vê | Faz | Origem |
-|---|---|---|---|
-| Massa | Bordas por pedido; quantidade de massas abertas normais necessárias | Registra a massa produzida e as perdas, com motivo | [Decisão A5] |
-| Pizzaiolo | Só a pizza a produzir: sabor(es), tamanho, borda, adicionais [Suposição: e as observações da pizza] | Pede a próxima pizza da fila; confirma a manufatura | [Decisão A5] |
-| Acabamento | Pedidos e as pizzas deles que estão no forno | Confere, imprime a etiqueta e libera [Suposição: a liberação] | [Decisão A5 e A6] |
-
-Regras de comportamento que proponho **[Prática]**:
-
-- **Pedir a próxima pizza é uma operação única:** quando dois pizzaiolos pedem ao mesmo tempo, o sistema entrega pizzas diferentes, nunca a mesma. Cada confirmação registra quem, quando e qual pizza.
-- **Nenhuma função vê valores** de venda nem dados pessoais do cliente, exceto o que a etiqueta exige (E2).
-- **Login pessoal em todas as funções** (C6): cada tablet entra com a pessoa do turno; trocar de pessoa exige novo login, para a auditoria saber quem fez cada etapa.
+1. **Entra o pedido**, com os dados da seção 6.
+2. **Gera a necessidade total de massas abertas por tamanho.** Pode existir estoque de massa aberta, que abate a necessidade.
+3. **Gera a lista de pizzas para montagem** (grande, broto ou calzone).
+4. **Gera o checklist de produção** para o acabamento e o despacho interno.
+5. **Gera o checklist de entrega**, no balcão ou no despacho para o motoboy.
 
 ---
 
-## 5. Dados guardados (candidatos)
+## 5. Fases, por função
+
+### 5.1 Massa (duas fases) **[Decisão]**
+
+- **Fase 1, preparo das massas:** bater, bolear e deixar crescer. O operador lança o **total de massas por tamanho** (Grande ou Broto). Essas massas também podem ser usadas para calzone.
+- **Fase 2, produção de massas abertas e de massas com borda:** a necessidade é gerada a partir dos pedidos que **ainda não entraram em produção**. Pode existir estoque de massa aberta.
+- Perdas de massa por vários motivos são registradas com o motivo **[Decisão A5]**.
+
+### 5.2 Montagem, o pizzaiolo **[Decisão]**
+
+- Recebe **sempre a próxima pizza** para montagem. A lista pega os pedidos um a um e coloca os itens nela.
+- Pode **retroceder a pizza atual uma posição** na lista, para o caso de falta momentânea de algum insumo.
+- Ao marcar como **produzida**, a pizza entra automaticamente **"no forno"**; essa lista alimenta o acabamento.
+
+### 5.3 Pedido urgente **[Decisão]**
+
+- O balcão (Vendas) pode inserir um pedido como **urgente**: ele vai para o topo da lista, e o sistema **refaz a lista toda, menos os itens que já estão em produção**.
+
+### 5.4 Acabamento **[Decisão]**
+
+- Enxerga **duas listas:** todos os pedidos em aberto (só consulta) e os pedidos ligados às pizzas que estão no forno.
+- Marca cada pizza como **acabada** depois de sair do forno, receber o acabamento e ser empacotada.
+- Quando as pizzas do pedido terminam, marca o pedido original como **acabado**, e ele vai para a lista de **despacho** ou de **retirada**, conforme o pedido identifica.
+
+---
+
+## 6. Dados que Marlon definiu
+
+### 6.1 Pedido **[Decisão]**
+
+| Campo | Observação |
+|---|---|
+| Id | Único, sequencial, universal |
+| Id do dia | Único e sequencial dentro do dia (igual ao número do pedido de Vendas, B7) |
+| Id no aplicativo de venda | Código do pedido no Anota Aí, iFood ou outro |
+| Aplicativo de venda | Anota Aí, iFood ou outro |
+| Cliente | Nome, WhatsApp e outros |
+| Data e hora do pedido | |
+| Data e hora de entrega calculada | Calculada pela quantidade de pedidos na frente vezes o tempo médio de preparo total (ver 8.6) |
+| Data e hora de entrega sugerida | Ver pergunta H4 |
+| Data e hora de entrega real | |
+| Tempo total de preparo | |
+| Retirada ou entrega | |
+| Observações gerais | |
+
+### 6.2 Itens do pedido **[Decisão]**
+
+| Campo | Observação |
+|---|---|
+| Sequência | Número do item dentro do pedido |
+| Produto | Pizza Grande, pizza Broto, calzone, refrigerante, acompanhamento e outros |
+| Sabor 1 | Para pizza Grande, Broto ou calzone |
+| Sabor 2 | Só para pizza Grande |
+| Observações do item | |
+
+### 6.3 Dados que o fluxo gera **[Suposição de nome e campos]**
 
 | Registro | O que guarda |
 |---|---|
-| Pizza a produzir | Pedido de origem, número do pedido do dia, sabor(es), tamanho, borda, adicionais, observações, situação, hora de cada etapa, quem fez cada etapa |
-| Fila de produção | Ordem das pizzas aguardando; o que cada pizzaiolo puxou |
-| Necessidade de massa | Calculada da fila: massas abertas normais e bordas por pedido (não é cadastro, é consulta) |
-| Perda de massa | Quantidade, motivo, quem registrou, quando |
-| Evento de etapa | Cada mudança de etapa com usuário e hora, só inserção (auditoria) |
-| Etiqueta | O que foi impresso (sabor, número do pedido, cliente, observações), quando e por quem |
-| Lote de pré-preparo | Preparo (massa, molho, outros), quantidade produzida, responsável, data; consome insumos e gera saldo de preparo |
+| Pizza a produzir | Item de origem, sabor(es), tamanho, borda, situação, hora de cada etapa, quem fez cada etapa |
+| Lista de montagem | Ordem das pizzas aguardando; o que cada pizzaiolo está montando |
+| Lote de massa (fase 1) | Tamanho, quantidade, responsável, hora |
+| Estoque de massa aberta | Quantidade por tamanho e tipo (normal ou com borda) |
+| Necessidade de massa (fase 2) | Calculada dos pedidos que não entraram em produção, menos o estoque; é consulta, não cadastro |
+| Perda de massa | Quantidade, motivo, quem registrou |
+| Evento de etapa | Mudança de etapa com usuário e hora, só inserção (auditoria) |
+| Etiqueta | O que foi impresso, quando e por quem |
 
-Situações propostas para a pizza **[Suposição]**: na fila, em produção (puxada pelo pizzaiolo), no forno, pronta, entregue ao cliente ou ao entregador, perdida, refeita.
+**Quem é dono de quê [Prática].** O pedido e os itens nascem em Vendas e continuam sendo de Vendas. Hora de entrega calculada, real, tempo total de preparo e todas as etapas são de Produção, ligadas ao pedido pelo Id. Assim cada módulo escreve só nas suas tabelas.
 
 ---
 
-## 6. Integrações
+## 7. Situações propostas **[Suposição]**
+
+| Objeto | Situações |
+|---|---|
+| Pizza | na lista, em montagem, no forno, acabada, perdida |
+| Pedido | recebido, em produção, acabado, despachado ou retirado, cancelado |
+
+---
+
+## 8. O que verifiquei no que foi explicado
+
+Conferi o fluxo com o que já está aprovado em Núcleo e Vendas. Seis pontos pedem uma decisão:
+
+1. **Borda e adicional não aparecem nos itens.** Vendas decidiu que há bordas e adicionais cobrados à parte, e a fase 2 da massa trata massas com borda. Mas a tabela de itens de Produção só tem produto, sabores e observações. Onde a borda e os adicionais ficam registrados? Recomendo campos próprios no item, não texto livre (pergunta H1).
+2. **Calzone, refrigerante e acompanhamento são produtos novos para Vendas.** O cardápio aprovado só fala de pizzas Grande e Broto. Precisam entrar no cadastro de produtos, com preço (pergunta H1).
+3. **iFood aparece como aplicativo de venda.** Até agora os canais eram balcão e Anota Ai. O iFood vem pelo Anota Aí ou é um canal separado? (pergunta H2).
+4. **"Id universal" e um banco por loja.** Um número sequencial só é único dentro de um banco. Para valer entre lojas, recomendo guardar o identificador da loja junto do Id, ou usar um identificador único global (pergunta H3). Não precisa agora, porque há uma loja só, mas decide o desenho da tabela.
+5. **A estimativa de entrega por "pedidos na frente vezes tempo médio" pode errar.** Um pedido de 1 pizza e outro de 6 pesam igual, e dois pizzaiolos trabalham em paralelo. Recomendo estimar por **pizzas na frente**, dividir pelo número de pizzaiolos ativos e somar forno, acabamento e deslocamento da entrega. O tempo médio sai do histórico real da própria loja [Prática]. Preciso do seu aval (pergunta H4).
+6. **Quando o pizzaiolo retrocede a pizza,** a falta de insumo some do registro, e ela é uma informação valiosa para Estoques. Recomendo pedir o motivo ao retroceder e avisar Estoques [Prática] (pergunta H5).
+
+---
+
+## 9. Integrações
 
 | Com | O que passa | Direção |
 |---|---|---|
-| Vendas | Pedido confirmado vira pizzas na fila | Vendas para Produção |
-| Vendas | Situação do pedido (por exemplo, pronto) | Produção para Vendas |
-| Estoques | Consumo de insumos pela ficha técnica; consumo e perda de massa | Produção para Estoques |
-| Custos | Perdas (massa e pizza), para o CMV real | Produção para Custos |
-| BI | Tempo em cada etapa, atrasos, refações | Produção para BI |
-| Impressão | Etiqueta no acabamento | Produção para a impressora |
+| Vendas | Pedido e itens entram em Produção | Vendas para Produção |
+| Vendas | Pedido urgente, vindo do balcão | Vendas para Produção |
+| Vendas | Situação do pedido e hora de entrega real | Produção para Vendas |
+| Estoques | Consumo de insumos e de massa; perdas; falta de insumo ao retroceder | Produção para Estoques |
+| Custos | Perdas de massa e de pizza, para o CMV real | Produção para Custos |
+| BI | Tempos por etapa, atrasos, refações | Produção para BI |
+| Impressora | Etiqueta | Produção para a impressora |
 
-Como em todo o plano, cada ligação tem forma manual para o módulo funcionar sozinho: sem Estoques, o consumo simplesmente não é baixado **[Prática]**.
-
-**Impressora [Prática].** Como o modelo varia, o sistema terá uma camada de impressão separada do conteúdo da etiqueta: o conteúdo é sempre o mesmo, e cada modelo ganha o seu "driver". Como a impressora conecta (Wi-Fi, Bluetooth, cabo) define o desenho; está na pergunta G9.
-
----
-
-## 7. Perguntas em aberto
-
-As cinco primeiras travam o desenho do fluxo; as demais podem esperar.
-
-- **G1.** O que é a "massa aberta normal"? Qual a diferença para a massa da pizza com borda? A Broto usa massa própria?
-- **G2.** A borda é feita na estação da massa, e quais bordas existem (a lista de bordas entra com o cadastro, D2)?
-- **G3.** Quando o pedido entra na fila: assim que é confirmado, ou só depois do pagamento? Existe pedido agendado para um horário futuro?
-- **G4.** Qual a ordem da fila? Recomendo ordem de chegada, com o gerente podendo priorizar um pedido.
-- **G5.** Quantos fornos há? Quem registra a pizza entrando no forno e quem registra a saída: o pizzaiolo, o acabamento ou o próprio sistema ao confirmar?
-- **G6.** O pedido só sai quando todas as pizzas estão prontas? Há bebidas e outros produtos no pedido, e passam pela produção? Quem registra a saída para o cliente ou o entregador?
-- **G7.** Quais são os motivos de perda de massa? Há perda de pizza pronta (queimou, saiu errada, caiu)? Quem registra?
-- **G8.** Refação (pizza errada ou reclamação): como registrar? Recomendo uma nova pizza ligada à original, com motivo.
-- **G9.** Como a impressora conecta ao tablet do acabamento: Wi-Fi, Bluetooth ou cabo? Há Wi-Fi na cozinha?
-- **G10.** Cancelamento de pedido já em produção: as pizzas já feitas viram perda registrada?
-- **G11.** Há meta de tempo por etapa, com alerta de atraso?
-- **G12.** Pré-preparo em lote: quais preparos existem (massa em bolas, molho, cortes) e como são feitos hoje?
-- **G13.** Se a internet cair, a produção continua? Recomendo que sim: tablets e servidor conversam pela rede local da loja, e só o Anota Ai depende de internet.
+Como em todo o plano, cada ligação tem forma manual para o módulo funcionar sozinho **[Prática]**.
 
 ---
 
-## 8. O que este documento ainda não cobre
+## 10. Perguntas
+
+### 10.1 Das perguntas anteriores (G1 a G13)
+
+| # | Situação |
+|---|---|
+| G1 massa aberta normal | Respondida: a fase 2 gera massas abertas e massas com borda, por tamanho |
+| G2 onde se faz a borda | Respondida: na fase 2 da massa. A lista de bordas vem com o cadastro (D2) |
+| G3 quando entra na fila | Respondida em parte: ao entrar o pedido. Falta saber se existe pedido agendado (H6) |
+| G4 ordem da fila | Respondida: ordem de chegada, com pedido urgente no topo |
+| G5 forno | Respondida: a pizza entra no forno ao ser marcada como produzida; a saída é do acabamento. Falta o número de fornos (H7) |
+| G6 saída do pedido | Respondida em parte: o acabamento marca o pedido como acabado. Faltam os itens que não são pizza e quem marca a entrega (H8) |
+| G7 perdas | Em aberto (H9) |
+| G8 refação | Em aberto (H10) |
+| G9 impressora | Em aberto: falta o momento da impressão e a conexão (H8 e H11) |
+| G10 cancelamento em produção | Em aberto (H10) |
+| G11 meta de tempo | Respondida em parte: o tempo médio entra na estimativa (H4) |
+| G12 pré-preparo em lote | Respondida em parte: o lote de massa é a fase 1. Falta saber se há outros lotes (H9) |
+| G13 internet | Respondida: a API roda num PC e os tablets usam a rede local |
+
+### 10.2 Novas
+
+- **H1.** Borda e adicional: onde entram no item? Calzone, refrigerante e acompanhamento: precisam de preço no cadastro; o calzone tem um tamanho só? Quais acompanhamentos existem?
+- **H2.** iFood: vem pelo Anota Aí ou é um canal separado?
+- **H3.** "Id universal": único entre lojas? Recomendo a loja junto do Id.
+- **H4.** Hora de entrega calculada x sugerida: qual a diferença e quem vê cada uma? O tempo médio de preparo é digitado ou vem do histórico? Aceita a estimativa por pizzas na frente?
+- **H5.** Ao retroceder a pizza, ela volta uma posição? O sistema pergunta o motivo, por exemplo "falta de insumo"? Recomendo que sim.
+- **H6.** Existe pedido agendado para um horário futuro? Quem pode marcar um pedido como urgente?
+- **H7.** Quantos fornos a loja tem?
+- **H8.** No acabamento, o pedido é marcado como acabado à mão ou sozinho quando todas as pizzas ficam acabadas? Refrigerante e acompanhamento entram no checklist do acabamento? Quem marca como entregue ou retirado e grava a hora de entrega real: o balcão ou o despacho? Quando a etiqueta é impressa: ao marcar a pizza como acabada, e uma por pizza ou uma por pedido?
+- **H9.** Quais os motivos de perda de massa, e há perda de pizza pronta (queimou, saiu errada, caiu)? Há outros preparos em lote além da massa, como molho?
+- **H10.** Refação (pizza errada ou reclamação) e cancelamento de pedido já em produção: como registrar? Recomendo nova pizza ligada à original, com motivo, e perda registrada para o que já foi feito.
+- **H11.** Qual PC é o servidor, a API inicia sozinha ao ligar o PC, e como a impressora conecta ao tablet (Wi-Fi, Bluetooth ou cabo)? Há Wi-Fi na cozinha?
+- **H12.** Fase 1 da massa: quem lança o total (a função massa), gasta farinha e outros insumos pela ficha técnica, e o estoque de massa aberta é contado e informado pelo operador?
+
+---
+
+## 11. O que este documento ainda não cobre
 
 - Desenho de telas dos tablets e fluxo de cliques.
-- Tabelas finais e regras de cálculo da necessidade de massa.
+- Tabelas finais e regras de cálculo da necessidade de massa e da estimativa de entrega.
 - Ficha técnica da massa e dos preparos (depende de Estoques e Custos).
