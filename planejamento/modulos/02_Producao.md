@@ -186,7 +186,15 @@ Pontos de verificação da seção 8:
 
 Perguntas: H1 sim, H2 sim, H3 sim, H4 sim, H5 sim. H8, em parte: a pizza **entregue** é marcada no balcão; no acabamento a pizza fica finalizada ao fim de "acabar" **[Decisão]**.
 
-H8, fechada: o pedido é marcado como acabado **obrigatoriamente à mão** (nunca sozinho); refrigerante e acompanhamento **não** entram no checklist do acabamento; a etiqueta é **uma por pizza**, com nome do cliente, Id do pedido e nome do sabor **[Decisão]**. Abertas: H6, H7 e H9 a H12.
+H8, fechada: o pedido é marcado como acabado **obrigatoriamente à mão** (nunca sozinho); refrigerante e acompanhamento **não** entram no checklist do acabamento; a etiqueta é **uma por pizza**, com nome do cliente, Id do pedido e nome do sabor **[Decisão]**. Rodada final (18/10/2026):
+- **H6** ok: pedido agendado entra na fila só perto da hora; urgente só gerente e atendente **[Decisão]**.
+- **H7**: forno esteira, assa a pizza em 2 minutos e comporta de 4 a 6 pizzas por vez; há variações de forno. O tempo de forno e a capacidade viram parâmetros da loja **[Decisão]**; o estado "no forno" deve aceitar várias pizzas ao mesmo tempo.
+- **H9** ok para perda de massa e de pizza pronta, com motivo em tabela. **Não há outros preparos em lote** além da massa **[Decisão]**.
+- **H10** ok: refação é nova pizza ligada à original, com motivo, e a perda do que já foi feito é registrada **[Decisão]**.
+- **H11**: a conexão (impressora e tablets) deve aceitar as duas formas por contingência **[Decisão]**. Entendi como Wi-Fi mais uma alternativa (Bluetooth ou cabo) e dois PCs aptos a servir a API; Marlon confirma se estiver errado **[Suposição]**.
+- **H12** ok: a função massa lança o total, o sistema baixa farinha e demais insumos pela ficha técnica, e o estoque de massa aberta é contado pelo operador **[Decisão]**.
+
+Todas as perguntas de Produção estão respondidas.
 
 ### 10.2 Novas
 
