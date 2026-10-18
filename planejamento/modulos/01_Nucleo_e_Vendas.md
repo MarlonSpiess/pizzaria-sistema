@@ -242,7 +242,7 @@ Por dependência: usuários e perfis, parâmetros da loja, cadastro de itens e c
 ## 6. O que este documento ainda não responde
 
 - Como será o instalador e a rotina diária do servidor local (qual PC, ligar e desligar, backup).
-- Pendências vindas de Produção (aguardam OK de Marlon, ver `02_Producao.md` seção 8 e H1 a H3): calzone, refrigerante e acompanhamento no cardápio; borda e adicional como campos do item; canal iFood; Id universal do pedido.
+- Decisões vindas de Produção (Marlon, 18/10/2026, ver `02_Producao.md` seção 10.3), a incorporar em Vendas: calzone e bebidas entram no cardápio exportado ao Anota Aí; borda é um adicional, e todo extra é adicional com preço somado ao item; iFood futuro como canal via adaptador; Id do pedido leva o identificador da loja.
 - Layout das telas e fluxo exato de cliques.
 - Produção por função (massa, pizzaiolo, acabamento): Marlon a descreveu como módulo separado e especial; este documento só cobre o que Vendas entrega a ela.
 - Emissão fiscal pelo nosso sistema (projeto futuro, a pesquisar quando chegar a hora, incluindo o tipo de documento fiscal exigido no seu estado e município).

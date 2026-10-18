@@ -174,6 +174,20 @@ Como em todo o plano, cada ligação tem forma manual para o módulo funcionar s
 | G12 pré-preparo em lote | Respondida em parte: o lote de massa é a fase 1. Falta saber se há outros lotes (H9) |
 | G13 internet | Respondida: a API roda num PC e os tablets usam a rede local |
 
+### 10.3 Respondidas por Marlon em 18/10/2026
+
+Pontos de verificação da seção 8:
+1. **Borda é um adicional** (assim como cheddar extra, catupiri extra ou qualquer insumo extra). Todo extra é um adicional com valor somado ao item vendido. Não existe campo "borda" separado: o item leva uma lista de adicionais **[Decisão]**.
+2. **O cardápio é montado aqui e exportado ao Anota Aí**, incluindo pizzas, calzones e bebidas **[Decisão]**.
+3. **iFood**: uso futuro, no mesmo modelo do "Pedidos 10" (um canal a mais, via adaptador) **[Decisão]**.
+4. **Id universal**: o identificador da loja vai junto do Id **[Decisão]**.
+5. **Estimativa por pizzas na frente** (dividido pelos pizzaiolos ativos) **[Decisão]**.
+6. **Retroceder exige motivo**, escolhido numa tabela: falta de insumo, saída inesperada do pizzaiolo, erro na borda, outros **[Decisão]**. Falta de insumo avisa Estoques.
+
+Perguntas: H1 sim, H2 sim, H3 sim, H4 sim, H5 sim. H8, em parte: a pizza **entregue** é marcada no balcão; no acabamento a pizza fica finalizada ao fim de "acabar" **[Decisão]**.
+
+Ainda aberto em H8: o pedido é marcado como acabado à mão ou sozinho; refrigerante e acompanhamento entram no checklist do acabamento; a etiqueta é uma por pizza ou uma por pedido. Abertas também H6, H7 e H9 a H12.
+
 ### 10.2 Novas
 
 - **H1.** Borda e adicional: onde entram no item? Calzone, refrigerante e acompanhamento: precisam de preço no cadastro; o calzone tem um tamanho só? Quais acompanhamentos existem?
