@@ -1,6 +1,6 @@
 # Detalhamento 01: Núcleo e Vendas
 
-Versão 0.5, 18/10/2026. Inclui todas as respostas de Marlon até F3. Rascunho pronto para aprovação. Parte do [Plano Macro v0.4](../00_Plano_Macro.md).
+Versão 0.5, 18/10/2026. Inclui todas as respostas de Marlon até F3. **Aprovado por Marlon em 18/10/2026** ("tudo certo até aqui"), com a única pendência D2 (lista de sabores e preços, para a carga do cadastro). Parte do [Plano Macro v0.4](../00_Plano_Macro.md).
 
 **Critério de sucesso:** ao fim deste documento, Marlon consegue dizer "é isso" ou "falta isto" sobre o que o Núcleo e o módulo de Vendas fazem, quais dados guardam e como se ligam aos outros módulos. Telas desenhadas e tabelas finais vêm depois da sua aprovação.
 
