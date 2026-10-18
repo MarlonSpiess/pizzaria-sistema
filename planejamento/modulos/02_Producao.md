@@ -186,7 +186,7 @@ Pontos de verificação da seção 8:
 
 Perguntas: H1 sim, H2 sim, H3 sim, H4 sim, H5 sim. H8, em parte: a pizza **entregue** é marcada no balcão; no acabamento a pizza fica finalizada ao fim de "acabar" **[Decisão]**.
 
-Ainda aberto em H8: o pedido é marcado como acabado à mão ou sozinho; refrigerante e acompanhamento entram no checklist do acabamento; a etiqueta é uma por pizza ou uma por pedido. Abertas também H6, H7 e H9 a H12.
+H8, fechada: o pedido é marcado como acabado **obrigatoriamente à mão** (nunca sozinho); refrigerante e acompanhamento **não** entram no checklist do acabamento; a etiqueta é **uma por pizza**, com nome do cliente, Id do pedido e nome do sabor **[Decisão]**. Abertas: H6, H7 e H9 a H12.
 
 ### 10.2 Novas
 
