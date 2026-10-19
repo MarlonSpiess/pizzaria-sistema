@@ -55,6 +55,15 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 
 ## 5. Perguntas
 
+### 5.1 Respondidas por Marlon em 19/10/2026
+
+- **I1:** o caixa fecha **por dia**, um fechamento diário **[Decisão]**.
+- **I2:** **uma só** gaveta de dinheiro para a loja; um caixa aberto por vez, com o operador registrado **[Decisão]**.
+- **I5:** **contagem cega sim**, com o atendente contando e o gerente aprovando diferenças **[Decisão]**.
+- **I8:** o entregador é **registrado por pedido** (o que recebeu e o troco levado) e **acerta no fim do turno** **[Decisão]**.
+
+### 5.2 Em aberto
+
 | # | Pergunta | Minha recomendação |
 |---|---|---|
 | I1 | O caixa fecha uma vez por dia ou por turno? Quais os turnos e o horário de funcionamento? | Por turno, se houver troca de pessoa |
