@@ -2,7 +2,7 @@
 
 Versão 0.5, 18/10/2026. Inclui as decisões de Marlon às perguntas das versões anteriores (seção 8); o restante segue em discussão.
 
-**Situação dos módulos:** Núcleo e Vendas aprovados em 18/10/2026 ([detalhamento](modulos/01_Nucleo_e_Vendas.md)); Produção aprovada em 19/10/2026 ([detalhamento](modulos/02_Producao.md)); Fechamento de Caixa em detalhamento ([rascunho](modulos/03_Fechamento_de_Caixa.md)); os demais ainda no nível do plano macro.
+**Situação dos módulos:** Núcleo e Vendas aprovados em 18/10/2026 ([detalhamento](modulos/01_Nucleo_e_Vendas.md)); Produção aprovada em 19/10/2026 ([detalhamento](modulos/02_Producao.md)); Fechamento de Caixa v0.2 aguardando aprovação ([detalhamento](modulos/03_Fechamento_de_Caixa.md)); os demais ainda no nível do plano macro.
 
 **Critério de sucesso deste documento:** dar a cada um dos 9 módulos um objetivo, uma lista de submódulos candidatos e as integrações com os outros, definir os princípios de dados (local agora, nuvem depois) e listar o que só o Marlon pode decidir. Detalhamento de telas, tabelas e regras fica para os documentos de cada módulo.
 

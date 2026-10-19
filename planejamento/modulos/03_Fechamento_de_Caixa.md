@@ -1,8 +1,8 @@
 # Detalhamento 03: Fechamento de Caixa
 
-Versão 0.1, 19/10/2026. Rascunho para discussão, montado só com o que Marlon já decidiu e com boas práticas marcadas. Parte do [Plano Macro](../00_Plano_Macro.md). Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md) e de [Produção](02_Producao.md), ambos aprovados.
+Versão 0.2, 19/10/2026. Consolidada com as respostas I1 a I12 de Marlon. Aguarda aprovação. Parte do [Plano Macro](../00_Plano_Macro.md). Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md) e de [Produção](02_Producao.md), ambos aprovados.
 
-**Critério de sucesso:** Marlon responde as perguntas da seção 5, corrige o desenho e diz "é assim". Só então o módulo vira v0.2 para aprovação.
+**Critério de sucesso:** Marlon lê o desenho e as respostas da seção 5 e diz "aprovado" ou aponta o que corrigir.
 
 Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fonte específica; **[Suposição]** é minha e precisa de confirmação.
 
@@ -29,7 +29,7 @@ Garantir, a cada turno ou dia, que o dinheiro e os comprovantes conferem com as 
 
 | Etapa | O que acontece |
 |---|---|
-| Abertura | Quem abre informa o fundo de troco; fica registrado quem, quando e quanto |
+| Abertura | Uma gaveta, um fechamento por dia. Quem abre (gerente ou atendente) informa o fundo de troco; fica registrado quem, quando e quanto |
 | Durante o turno | Cada pagamento recebido em Vendas vira valor esperado por forma de pagamento; sangrias (retiradas) e suprimentos (entradas) são lançados com motivo |
 | Fechamento | **Contagem cega:** o operador informa o que contou sem ver o esperado; só depois o sistema mostra a diferença |
 | Conferência | Pix, crédito e débito conferidos com o extrato e as maquininhas; pedidos sem CF informado listados |
@@ -62,22 +62,18 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 - **I5:** **contagem cega sim**, com o atendente contando e o gerente aprovando diferenças **[Decisão]**.
 - **I8:** o entregador é **registrado por pedido** (o que recebeu e o troco levado) e **acerta no fim do turno** **[Decisão]**.
 
-### 5.2 Em aberto
+### 5.2 Respondidas em 19/10/2026 (todas as recomendações aceitas)
 
-| # | Pergunta | Minha recomendação |
-|---|---|---|
-| I1 | O caixa fecha uma vez por dia ou por turno? Quais os turnos e o horário de funcionamento? | Por turno, se houver troca de pessoa |
-| I2 | Quantas gavetas de dinheiro existem: uma por PC da recepção ou uma só para a loja? | Uma gaveta, um caixa aberto por vez, com o operador registrado |
-| I3 | O fundo de troco é um valor fixo por dia? Quem abre o caixa? | Valor padrão nos parâmetros, alterável na abertura; abre gerente ou atendente do turno |
-| I4 | Há sangria (retirada de dinheiro) e suprimento? Quem autoriza e com qual motivo? | Sim, com motivo em tabela e autorização do gerente acima de um valor nos parâmetros |
-| I5 | Concorda com a contagem cega no fechamento? Quem fecha: o atendente ou só o gerente? | Sim, contagem cega; o atendente conta e o gerente aprova diferenças |
-| I6 | Existe tolerância de diferença (por exemplo até R$ 2)? O que se faz com sobra e falta, e quem responde por ela? | Tolerância nos parâmetros; acima dela, justificativa obrigatória |
-| I7 | Quantas maquininhas há e como confere o cartão e o Pix: extrato da adquirente, da conta ou ambos? Quais taxas e prazos de recebimento valem para Contas a Receber? | Conferir por extrato; taxas e prazos nos parâmetros por forma de pagamento |
-| I8 | Pedido do Anota Aí pago no app (online) e pedido pago na entrega: como o entregador recebe e presta contas do dinheiro e da maquininha? | Registrar por pedido o que o entregador recebeu e o troco levado, e acertar no fim do turno |
-| I9 | Pode pagar pequenas despesas com o dinheiro do caixa (gás, diarista, entregador)? | Sim, como sangria com motivo e comprovante, e o lançamento segue para Contas a Pagar |
-| I10 | Pedido cancelado depois de pago: o dinheiro é devolvido como? | Estorno registrado com motivo e autorização, ligado ao pedido |
-| I11 | O pedido sem CF informado impede o fechamento ou só avisa? | Só avisa, com a lista na tela, enquanto o CF for digitado em software de terceiro |
-| I12 | Quem recebe o relatório do turno e em que formato (tela, impressão, WhatsApp)? | Tela e impressão; o envio por WhatsApp fica para depois |
+- **I3:** fundo de troco com valor padrão nos parâmetros, alterável na abertura; abre gerente ou atendente do turno **[Decisão]**.
+- **I4:** sangria e suprimento com motivo em tabela; acima de um valor definido nos parâmetros, autorização do gerente **[Decisão]**.
+- **I6:** tolerância de diferença nos parâmetros; acima dela, justificativa obrigatória **[Decisão]**.
+- **I7:** o número de maquininhas é **variável, podendo passar de 2, sem limite**; se o sistema precisar de um teto técnico, usa-se 999 **[Decisão]**. Cartão e Pix são conferidos por extrato; taxas e prazos de recebimento ficam nos parâmetros, por forma de pagamento e por maquininha **[Decisão da recomendação]**.
+- **I9:** pequenas despesas pagas do caixa são sangria com motivo e comprovante, e seguem para Contas a Pagar **[Decisão]**.
+- **I10:** pedido cancelado depois de pago gera estorno com motivo e autorização, ligado ao pedido **[Decisão]**.
+- **I11:** pedido sem CF informado só avisa, não impede o fechamento **[Decisão]**.
+- **I12:** relatório do turno em tela e impressão; envio por WhatsApp fica para depois **[Decisão]**.
+
+Todas as perguntas do módulo estão respondidas.
 
 ---
 
