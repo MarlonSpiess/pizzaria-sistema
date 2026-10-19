@@ -74,6 +74,16 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 
 ## 6. Perguntas
 
+### 6.1 Respondidas por Marlon em 19/10/2026 (recomendações aceitas)
+
+- **L1:** fator de correção cadastrado por insumo; 1,0 quando não se souber **[Decisão]**.
+- **L3:** cada tipo de despesa é marcado como fixo ou variável **[Decisão]**.
+- **L7:** começar sem meta de CMV e de margem, e propor depois a partir do histórico **[Decisão]**.
+- **L8:** o sistema sugere o preço por margem desejada e também mostra a margem do preço atual; a decisão do preço é sempre de Marlon **[Decisão]**.
+
+### 6.2 Em aberto
+
+
 | # | Pergunta | Minha recomendação |
 |---|---|---|
 | L1 | A planilha de ficha técnica traz o fator de correção e o rendimento (por exemplo, queijo fatiado, massa que encolhe)? | Cadastrar fator por insumo; usar 1,0 quando você não souber |
