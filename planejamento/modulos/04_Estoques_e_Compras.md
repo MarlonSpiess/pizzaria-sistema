@@ -1,6 +1,6 @@
 # Detalhamento 04: Estoques e Compras
 
-Versão 0.2, 19/10/2026. Consolidada com as respostas J1 a J14 de Marlon. Aguarda aprovação. Parte do [Plano Macro](../00_Plano_Macro.md), seção 4.3. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md) e [Fechamento de Caixa](03_Fechamento_de_Caixa.md), todos aprovados.
+Versão 0.2, 19/10/2026. Consolidada com as respostas J1 a J14 de Marlon. **APROVADA por Marlon em 19/10/2026.** Parte do [Plano Macro](../00_Plano_Macro.md), seção 4.3. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md) e [Fechamento de Caixa](03_Fechamento_de_Caixa.md), todos aprovados.
 
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
@@ -113,8 +113,8 @@ Todas as perguntas do módulo estão respondidas.
 
 ## 7. Efeitos em outros módulos (a incorporar)
 
-- **Núcleo:** novo perfil **subgerente**, com poder de compra e aprovação de pedido de compra. As permissões exatas (desconto, cancelamento, fechamento de caixa) precisam de definição **[Pendente de Marlon]**.
-- **Vendas:** preço de funcionário com desconto e limite de quantidade, por funcionário e por período. Falta definir o desconto, o limite e como se identifica o funcionário **[Pendente de Marlon]**.
+- **Núcleo:** novo perfil **subgerente**, com poder de compra e aprovação de pedido de compra. Permissões: as do gerente, exceto aprovar diferença de caixa **[Decisão, 19/10/2026]**.
+- **Vendas:** preço de funcionário com desconto e limite de quantidade, por funcionário e por período. Regra decidida em 19/10/2026: funcionário cadastrado, limite de quantidade por dia e percentual de desconto nos parâmetros **[Decisão]**.
 - **Custos:** recebe o valor do consumo interno e o custo médio dos insumos.
 - **Parâmetros da loja:** valor de aprovação de compra; locais de armazenamento.
 
