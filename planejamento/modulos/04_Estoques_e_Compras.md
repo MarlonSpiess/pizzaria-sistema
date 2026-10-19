@@ -1,8 +1,8 @@
 # Detalhamento 04: Estoques e Compras
 
-Versão 0.1, 19/10/2026. Rascunho para discussão, montado com o que Marlon já decidiu, com o plano macro e com boas práticas marcadas. Parte do [Plano Macro](../00_Plano_Macro.md), seção 4.3. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md) e [Fechamento de Caixa](03_Fechamento_de_Caixa.md), todos aprovados.
+Versão 0.2, 19/10/2026. Consolidada com as respostas J1 a J14 de Marlon. Aguarda aprovação. Parte do [Plano Macro](../00_Plano_Macro.md), seção 4.3. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md) e [Fechamento de Caixa](03_Fechamento_de_Caixa.md), todos aprovados.
 
-**Critério de sucesso:** Marlon responde as perguntas da seção 6, corrige o desenho e diz "é assim". Só então o módulo vira v0.2 para aprovação.
+**Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
 Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fonte específica; **[Suposição]** é minha e precisa de confirmação.
 
@@ -91,28 +91,36 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 
 Formato da ficha técnica (Marlon, 19/10/2026): a planilha traz, para **1/2 Grande ou Broto**, o **nome do sabor** e a lista de **ingrediente e quantidade**; pode vir como planilha de Excel. Leitura minha: a quantidade vale para meia Grande, que é igual a uma Broto; uma Grande de um sabor consome o dobro, e uma Grande de dois sabores consome a quantidade de cada sabor **[Suposição, a confirmar]**.
 
-### 6.2 Em aberto
+### 6.2 Respondidas em 19/10/2026
 
-| # | Pergunta | Minha recomendação |
-|---|---|---|
-| J1 | Quais são os locais de armazenamento (freezer, câmara fria, estoque seco, outros)? | Cadastrar os locais que existirem, nos parâmetros |
-| J2 | Quantos itens aproximadamente (insumos, embalagens, bebidas, material de limpeza)? Há planilha ou lista hoje? | Carregar por planilha na primeira vez |
-| J3 | Hoje existe contagem de estoque? Com que frequência (diária, semanal, mensal)? | Contagem rápida diária dos itens críticos e completa mensal |
-| J4 | Quais itens têm validade que importa (queijo, molho, frios, bebida)? Controla lote? | Lote e validade só para os perecíveis marcados no item |
-| J5 | Como o consumo é baixado: pela ficha técnica de cada pizza ao concluir o pedido, ou por contagem periódica, ou os dois? | Os dois: ficha técnica no dia a dia e inventário para corrigir a diferença |
-| J6 | Há ficha técnica hoje (receita com gramas de cada insumo por sabor e tamanho)? Quem pode informar os valores? | Começar pelos sabores mais vendidos e crescer |
-| J7 | Quem compra? Um comprador, o gerente ou o dono? Há aprovação do pedido de compra acima de um valor? | Pedido aprovado pelo gerente acima de um valor nos parâmetros |
-| J8 | Como compra: fornecedores fixos com pedido por WhatsApp ou telefone, ou cotação entre vários? Quantos fornecedores? | Pedido registrado por fornecedor, cotação só quando você quiser |
-| J9 | Como chega a nota (papel, XML por e-mail)? Quer importar o XML da NF-e ou digitar? | Digitar no começo e importar XML depois |
-| J10 | Compras são pagas à vista, a prazo ou ambos? Quem confere o recebimento? | Registrar prazo e forma por fornecedor e o conferente por entrega |
-| J11 | Compra de dinheiro do caixa (feira, mercado) para reposição urgente entra aqui como compra? | Sim, como compra sem pedido, ligada à sangria do caixa |
-| J12 | Há refeição de funcionário ou consumo interno que deva sair do estoque? | Sim, como saída "consumo interno", com valor para o RH e Custos |
-| J13 | O estoque mínimo e o ponto de pedido: você define por item ou quer sugestão pelo consumo médio? | Sugestão pelo consumo médio, com você aprovando |
-| J14 | O preço de custo do insumo é o da última compra ou a média? | Custo médio móvel, com o último preço visível |
+- **J1:** locais de armazenamento: **todos os sugeridos** (freezer, câmara fria e estoque seco) **[Decisão]**.
+- **J2:** tamanho do cadastro **[Decisão]**:
+  - Cardápio: 50 sabores de pizza, 10 calzones, 10 bebidas e 4 bordas (podem crescer).
+  - Insumos em estoque: cerca de 40, incluindo os da massa; os ingredientes de montagem são de 25 a 30.
+  - Material de uso e consumo (limpeza e outros): cerca de 100 itens.
+- **J4:** lote e validade para **todos os insumos de pizzas e calzones, inclusive as massas** **[Decisão]**.
+- **J7:** compra e aprovação do pedido de compra ficam com o **administrador do sistema, o proprietário, o gerente e o subgerente** **[Decisão]**. O perfil **subgerente** é novo (ver seção 7).
+- **J8:** pedido registrado por fornecedor; cotação só quando Marlon quiser **[Decisão]**.
+- **J10:** prazo e forma de pagamento por fornecedor; conferente registrado por entrega **[Decisão]**.
+- **J11:** compra urgente paga com dinheiro do caixa entra como **compra sem pedido, ligada à sangria** **[Decisão]**.
+- **J12:** refeição de funcionário e consumo interno saem do estoque como **"consumo interno"**, com valor para **Custos** (não para o RH) **[Decisão]**. Em Vendas, funcionário compra com **preço especial com desconto e limite de quantidade** (ver seção 7).
+- **J13:** estoque mínimo por **sugestão pelo consumo médio**, com Marlon aprovando **[Decisão]**.
+- **J14:** custo por **custo médio móvel**, com os **últimos 3 preços visíveis**, para enxergar tendência e sazonalidade **[Decisão]**.
+
+Todas as perguntas do módulo estão respondidas.
 
 ---
 
-## 7. O que este documento ainda não cobre
+## 7. Efeitos em outros módulos (a incorporar)
+
+- **Núcleo:** novo perfil **subgerente**, com poder de compra e aprovação de pedido de compra. As permissões exatas (desconto, cancelamento, fechamento de caixa) precisam de definição **[Pendente de Marlon]**.
+- **Vendas:** preço de funcionário com desconto e limite de quantidade, por funcionário e por período. Falta definir o desconto, o limite e como se identifica o funcionário **[Pendente de Marlon]**.
+- **Custos:** recebe o valor do consumo interno e o custo médio dos insumos.
+- **Parâmetros da loja:** valor de aprovação de compra; locais de armazenamento.
+
+---
+
+## 8. O que este documento ainda não cobre
 
 - Telas e fluxo de cliques.
 - Tabelas finais e regras de cálculo do custo médio.
