@@ -1,6 +1,6 @@
 # Detalhamento 05: Contas a Pagar/Receber e Fluxo de Caixa
 
-Versão 0.2, 19/10/2026. Consolidada com as respostas K1 a K14 de Marlon. Aguarda aprovação. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md), [Fechamento de Caixa](03_Fechamento_de_Caixa.md) e [Estoques e Compras](04_Estoques_e_Compras.md), todos aprovados.
+Versão 0.2, 19/10/2026. Consolidada com as respostas K1 a K14 de Marlon. **APROVADA por Marlon em 19/10/2026.** Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md), [Fechamento de Caixa](03_Fechamento_de_Caixa.md) e [Estoques e Compras](04_Estoques_e_Compras.md), todos aprovados.
 
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
