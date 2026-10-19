@@ -2,7 +2,7 @@
 
 Versão 0.5, 18/10/2026. Inclui as decisões de Marlon às perguntas das versões anteriores (seção 8); o restante segue em discussão.
 
-**Situação dos módulos:** Núcleo e Vendas aprovados em 18/10/2026 ([detalhamento](modulos/01_Nucleo_e_Vendas.md)); Produção em detalhamento ([rascunho](modulos/02_Producao.md)); os demais ainda no nível do plano macro.
+**Situação dos módulos:** Núcleo e Vendas aprovados em 18/10/2026 ([detalhamento](modulos/01_Nucleo_e_Vendas.md)); Produção aprovada em 19/10/2026 ([detalhamento](modulos/02_Producao.md)); Fechamento de Caixa em detalhamento ([rascunho](modulos/03_Fechamento_de_Caixa.md)); os demais ainda no nível do plano macro.
 
 **Critério de sucesso deste documento:** dar a cada um dos 9 módulos um objetivo, uma lista de submódulos candidatos e as integrações com os outros, definir os princípios de dados (local agora, nuvem depois) e listar o que só o Marlon pode decidir. Detalhamento de telas, tabelas e regras fica para os documentos de cada módulo.
 
@@ -165,7 +165,7 @@ Para cada módulo: objetivo, submódulos candidatos, o que recebe e o que entreg
   - **Massa:** vê as bordas por pedido e a quantidade de massas abertas normais necessárias. A massa é maleável (pode ser produzida antes) e pode ser perdida por vários motivos, que o sistema precisa registrar.
   - **Pizzaiolo:** vê só a pizza que precisa produzir, não o pedido. Os pedidos entram numa fila e as pizzas são solicitadas em sequência, não importa quantos pizzaiolos haja. Ao confirmar a manufatura, a pizza vai para o forno.
   - **Acabamento:** vê os pedidos e as pizzas que estão no forno (depois da confirmação do pizzaiolo) e imprime a identificação em etiqueta autoadesiva, numa impressora térmica portátil; o modelo da impressora varia.
-  - Marlon explicou o fluxo completo em 18/10/2026. O detalhamento vigente está em `planejamento/modulos/02_Producao.md` (v0.3, aguardando aprovação) e substitui o desenho acima.
+  - Marlon explicou o fluxo completo em 18/10/2026. O detalhamento vigente está em `planejamento/modulos/02_Producao.md` (v0.3, aprovada em 19/10/2026) e substitui o desenho acima.
 - OP de pré-preparo: massa, molho, cortes de recheio feitos em lote, que consomem insumos e geram estoque de preparo intermediário com validade.
 - Expedição e entrega: atribuição de entregador, saída, retorno.
 - Indicadores: tempo médio por fase, atrasos, refação (pizza refeita por erro).

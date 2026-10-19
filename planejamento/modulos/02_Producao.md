@@ -1,6 +1,6 @@
 # Detalhamento 02: Produção
 
-Versão 0.3, 18/10/2026. Consolidada com todas as respostas de Marlon (G1 a G13 e H1 a H12). Aguarda aprovação. Parte do [Plano Macro](../00_Plano_Macro.md). Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), aprovado em 18/10/2026.
+Versão 0.3, 18/10/2026. Consolidada com todas as respostas de Marlon (G1 a G13 e H1 a H12). **APROVADA por Marlon em 19/10/2026.** Parte do [Plano Macro](../00_Plano_Macro.md). Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), aprovado em 18/10/2026.
 
 **Critério de sucesso:** Marlon lê o documento e diz "aprovado" ou aponta o que corrigir. Aprovado, o módulo segue para o desenho das tabelas e das telas dos tablets.
 
