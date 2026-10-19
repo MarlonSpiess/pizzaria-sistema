@@ -1,8 +1,8 @@
 # Detalhamento 05: Contas a Pagar/Receber e Fluxo de Caixa
 
-Versão 0.1, 19/10/2026. Rascunho para discussão, montado com o que Marlon já decidiu, com o plano macro (seção 4.4) e com boas práticas marcadas. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md), [Fechamento de Caixa](03_Fechamento_de_Caixa.md) e [Estoques e Compras](04_Estoques_e_Compras.md), todos aprovados.
+Versão 0.2, 19/10/2026. Consolidada com as respostas K1 a K14 de Marlon. Aguarda aprovação. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md), [Fechamento de Caixa](03_Fechamento_de_Caixa.md) e [Estoques e Compras](04_Estoques_e_Compras.md), todos aprovados.
 
-**Critério de sucesso:** Marlon responde as perguntas da seção 6, corrige o desenho e diz "é assim". Só então o módulo vira v0.2 para aprovação.
+**Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
 Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fonte específica; **[Suposição]** é minha e precisa de confirmação.
 
@@ -76,25 +76,18 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 - **K6:** **não há fiado, convênio nem venda a prazo por padrão** **[Decisão]**.
 - **K7:** o entregador é **conta a pagar, com baixa no acerto do dia** **[Decisão]**.
 
-### 6.2 Em aberto
+### 6.2 Respondidas em 19/10/2026 (todas as recomendações aceitas)
 
+- **K3:** a forma de pagamento é registrada em cada baixa **[Decisão]**.
+- **K8:** lança o gerente ou o subgerente; aprova o administrador acima de um valor nos parâmetros **[Decisão]**.
+- **K9:** conciliação bancária digitada no começo; importação de OFX depois **[Decisão]**.
+- **K10:** fluxo de caixa projetado para 30 dias, com 7 em destaque **[Decisão]**.
+- **K11:** empréstimos e financiamentos são títulos parcelados, ligados ao Imobilizado quando forem bem **[Decisão]**.
+- **K12:** tributos, contador e alvarás viram contas recorrentes cadastradas à mão no começo; o regime tributário fica como parâmetro **[Decisão]**.
+- **K13:** pro-labore, folha e encargos entram como valor gerencial vindo do RH; a folha legal continua com o contador **[Decisão]**.
+- **K14:** retirada do proprietário é separada de despesa, para não distorcer o resultado **[Decisão]**.
 
-| # | Pergunta | Minha recomendação |
-|---|---|---|
-| K1 | Quais contas bancárias a loja usa? Há conta separada do proprietário? | Cadastrar as contas da loja; conta pessoal fora do sistema |
-| K2 | Quais as despesas fixas recorrentes (aluguel, energia, água, internet, contador, sistema, outras) e dia de vencimento? | Cadastrar como recorrentes, gerando o título todo mês |
-| K3 | Como a loja paga: dinheiro do caixa, transferência, Pix, boleto, cartão? Há pagamento por débito automático? | Registrar a forma em cada baixa |
-| K4 | As vendas do Anota Aí chegam por repasse ou o cliente paga direto à loja? Com que prazo e taxa? | Cadastrar o repasse por canal, com prazo e taxa nos parâmetros |
-| K5 | Quando o cliente paga online pelo Anota Aí (Pix ou cartão), esse dinheiro entra em qual conta e em quanto tempo? | Mesmo cadastro de K4, por canal |
-| K6 | Existe fiado, convênio ou venda a prazo para clientes? | Não existe por padrão; só se você disser |
-| K7 | Como é o pagamento do entregador: no mesmo dia, semanal ou mensal? Sai do caixa do dia? | Tratar como conta a pagar, com baixa no acerto do dia ou na data combinada |
-| K8 | Quem lança e quem aprova pagamentos? Há limite por perfil? | Lança o gerente ou subgerente; aprova o administrador acima de um valor nos parâmetros |
-| K9 | Conciliação bancária: importar OFX do banco ou digitar? Qual banco? | Digitar no começo, OFX depois, como a nota fiscal |
-| K10 | Quer ver o fluxo de caixa projetado por quantos dias (7, 30, 90)? | 30 dias, com 7 em destaque |
-| K11 | Há empréstimos, financiamentos ou parcelas de equipamentos hoje? | Cadastrar como títulos parcelados, ligados ao Imobilizado quando for bem |
-| K12 | Tributos e taxas (Simples ou outro regime, contador, alvarás) viram contas a pagar recorrentes? | Sim, cadastrados à mão no começo; o regime fica como parâmetro |
-| K13 | Pro-labore, folha e encargos: entram em Contas a Pagar como valor gerencial vindo do RH? | Sim; a folha legal continua com o contador |
-| K14 | Há conta de adiantamento, sócios ou retiradas do proprietário que precisem ser separadas das despesas? | Separar retirada do proprietário de despesa, para não distorcer o resultado |
+Todas as perguntas do módulo estão respondidas.
 
 ---
 
