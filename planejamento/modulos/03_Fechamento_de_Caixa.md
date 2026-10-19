@@ -1,6 +1,6 @@
 # Detalhamento 03: Fechamento de Caixa
 
-Versão 0.2, 19/10/2026. Consolidada com as respostas I1 a I12 de Marlon. Aguarda aprovação. Parte do [Plano Macro](../00_Plano_Macro.md). Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md) e de [Produção](02_Producao.md), ambos aprovados.
+Versão 0.2, 19/10/2026. Consolidada com as respostas I1 a I12 de Marlon. **APROVADA por Marlon em 19/10/2026.** Parte do [Plano Macro](../00_Plano_Macro.md). Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md) e de [Produção](02_Producao.md), ambos aprovados.
 
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 5 e diz "aprovado" ou aponta o que corrigir.
 
