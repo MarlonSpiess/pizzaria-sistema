@@ -82,6 +82,15 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 
 ## 6. Perguntas
 
+### 6.1 Respondidas por Marlon em 19/10/2026
+
+- **J3:** contagem **diária dos itens críticos** e **completa mensal** **[Decisão]**.
+- **J5:** o consumo é baixado **pelos dois caminhos**: ficha técnica no dia a dia e inventário. O módulo **deve ter a rotina de inventário e de ajuste de estoque** **[Decisão]**.
+- **J6:** **já existe uma planilha com a ficha técnica** **[Decisão]**. Falta Marlon enviá-la para eu ler o formato e planejar a carga.
+- **J9:** a nota fiscal é **digitada no começo**; a importação de XML fica para depois **[Decisão]**.
+
+### 6.2 Em aberto
+
 | # | Pergunta | Minha recomendação |
 |---|---|---|
 | J1 | Quais são os locais de armazenamento (freezer, câmara fria, estoque seco, outros)? | Cadastrar os locais que existirem, nos parâmetros |
@@ -106,4 +115,4 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 - Telas e fluxo de cliques.
 - Tabelas finais e regras de cálculo do custo médio.
 - Importação de XML de NF-e (pesquisar quando chegar a hora).
-- Ficha técnica completa (depende das respostas J5 e J6).
+- Carga da ficha técnica: depende da planilha que Marlon vai enviar.
