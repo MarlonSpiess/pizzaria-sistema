@@ -68,6 +68,17 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 
 ## 6. Perguntas
 
+### 6.1 Respondidas por Marlon em 19/10/2026
+
+- **K1:** haverá um **cadastro de contas bancárias**, por loja, porque **cada loja é uma empresa à parte** e pode ter várias contas **[Decisão]**. Isso reforça o identificador da loja em todo registro e a visão futura de várias lojas.
+- **K2:** despesas fixas são **cadastradas como recorrentes**, com um **cadastro de tipos de despesa** **[Decisão]**.
+- **K4 e K5:** repasse **por canal**, com prazo e taxa nos parâmetros (minha sugestão, aceita) **[Decisão]**.
+- **K6:** **não há fiado, convênio nem venda a prazo por padrão** **[Decisão]**.
+- **K7:** o entregador é **conta a pagar, com baixa no acerto do dia** **[Decisão]**.
+
+### 6.2 Em aberto
+
+
 | # | Pergunta | Minha recomendação |
 |---|---|---|
 | K1 | Quais contas bancárias a loja usa? Há conta separada do proprietário? | Cadastrar as contas da loja; conta pessoal fora do sistema |
