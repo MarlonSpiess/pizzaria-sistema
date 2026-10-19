@@ -89,6 +89,8 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 - **J6:** **já existe uma planilha com a ficha técnica** **[Decisão]**. Falta Marlon enviá-la para eu ler o formato e planejar a carga.
 - **J9:** a nota fiscal é **digitada no começo**; a importação de XML fica para depois **[Decisão]**.
 
+Formato da ficha técnica (Marlon, 19/10/2026): a planilha traz, para **1/2 Grande ou Broto**, o **nome do sabor** e a lista de **ingrediente e quantidade**; pode vir como planilha de Excel. Leitura minha: a quantidade vale para meia Grande, que é igual a uma Broto; uma Grande de um sabor consome o dobro, e uma Grande de dois sabores consome a quantidade de cada sabor **[Suposição, a confirmar]**.
+
 ### 6.2 Em aberto
 
 | # | Pergunta | Minha recomendação |
