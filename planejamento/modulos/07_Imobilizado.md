@@ -1,8 +1,8 @@
 # Detalhamento 07: Imobilizado
 
-Versão 0.1, 20/10/2026 (atualizada com M1, M2, M3 e M6). Rascunho para discussão, montado com o que Marlon já decidiu, com o plano macro (seção 4.2) e com boas práticas marcadas. Depende dos módulos já aprovados, em especial [Estoques e Compras](04_Estoques_e_Compras.md), [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md) e [Custos](06_Custos.md).
+Versão 0.2, 20/10/2026. Consolidada com as respostas M1 a M18 de Marlon. Aguarda aprovação. Montada com o que Marlon já decidiu, com o plano macro (seção 4.2) e com boas práticas marcadas. Depende dos módulos já aprovados, em especial [Estoques e Compras](04_Estoques_e_Compras.md), [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md) e [Custos](06_Custos.md).
 
-**Critério de sucesso:** Marlon responde as perguntas da seção 6, corrige o desenho e diz "é assim". Só então o módulo vira v0.2 para aprovação.
+**Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
 Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fonte específica; **[Suposição]** é minha e precisa de confirmação.
 
@@ -89,36 +89,24 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 - **M3:** depreciação pelos **dois métodos**, com a **taxa fiscal como padrão** **[Decisão]**.
 - **M6:** **agenda por bem, com alerta antes do vencimento**, e Marlon pediu montar **toda a rotina de manutenção, preventiva, preditiva e corretiva**, com controle de custos, materiais de manutenção, equipamentos e outros (seção 3.1) **[Decisão]**.
 
-### 6.2 Em aberto
+### 6.2 Respondidas em 20/10/2026 (recomendações aceitas)
 
+- **M4:** valor residual zero por padrão, alterável por bem **[Decisão]**.
+- **M5:** a depreciação começa quando o bem entra em uso **[Decisão]**.
+- **M7:** a manutenção é feita por terceiro, funcionário ou ambos; fornecedor ou responsável registrado em cada ordem de serviço **[Decisão]**.
+- **M8:** seguro e garantia são controlados, com vencimento e alerta **[Decisão]**.
+- **M9:** **inicialmente só entregadores terceiros**, sem veículos no cadastro; **no futuro pode haver veículos próprios**, então o cadastro de bens deve aceitar a categoria veículo (placa, quilometragem, documentos) sem mudar a estrutura **[Decisão]**.
+- **M10:** só o que é da loja entra; bens do proprietário ficam fora **[Decisão]**.
+- **M11:** cadastra o gerente ou o subgerente; a baixa é aprovada pelo administrador **[Decisão]**.
+- **M12:** plaqueta ou etiqueta com código em cada bem, com inventário anual **[Decisão]**.
+- **M13:** plano preventivo começa pelo forno, a câmara e o freezer, e cresce **[Decisão]**.
+- **M14:** a preditiva começa com leitura digitada na inspeção; sensores automáticos só no futuro **[Decisão]**.
+- **M15:** estoque mínimo só das peças críticas; o resto é comprado por ordem de serviço **[Decisão]**.
+- **M16:** abre qualquer perfil de gestão, executa funcionário ou terceiro, e o administrador aprova acima de um valor nos parâmetros **[Decisão]**.
+- **M17:** a parada de um bem crítico avisa a produção e registra o tempo parado, ligado ao pedido atrasado quando houver **[Decisão]**.
+- **M18:** o custo de manutenção pode ser fixo (contrato) ou variável (chamado), marcado por tipo de despesa **[Decisão]**.
 
-| # | Pergunta | Minha recomendação |
-|---|---|---|
-| M1 | Quais bens a loja tem hoje? Existe lista, planilha ou nota fiscal? | Carregar por planilha na primeira vez |
-| M2 | A partir de qual valor uma compra é bem do imobilizado (por exemplo, acima de R$ 1.200) e não despesa? | Valor mínimo nos parâmetros; confirmar com o contador |
-| M3 | Quer depreciar pela taxa fiscal, pela vida útil real, ou os dois? | Os dois, com a fiscal como padrão |
-| M4 | Os bens têm valor residual esperado (o que vale no fim da vida)? | Zero por padrão, alterável por bem |
-| M5 | A depreciação começa na compra ou quando o bem entra em uso? | Quando entra em uso |
-| M6 | Há manutenção preventiva programada (limpeza do forno, revisão da moto, outros)? De quanto em quanto tempo? | Agenda por bem, com alerta antes do vencimento |
-| M7 | A manutenção é feita por terceiro, funcionário ou ambos? | Registrar fornecedor ou responsável em cada manutenção |
-| M8 | Existe seguro ou garantia que valha controlar? | Sim, com data de vencimento e alerta |
-| M9 | A loja tem motos ou veículos próprios, ou só entregadores terceiros? | Só terceiros, como já definido; sem veículos no cadastro |
-| M10 | Há bens de uso do proprietário misturados com os da loja? | Separar; só o que é da loja entra |
-| M11 | Quem cadastra, quem dá baixa e quem aprova a baixa? | Cadastra o gerente ou subgerente; baixa aprovada pelo administrador |
-| M12 | Quer plaqueta ou etiqueta com código em cada bem e inventário periódico? | Sim, com inventário anual |
-
----
-
-### 6.3 Novas, vindas do pedido de manutenção completa
-
-| # | Pergunta | Minha recomendação |
-|---|---|---|
-| M13 | Quais bens precisam de plano preventivo hoje (forno esteira, masseira, freezer, câmara, tablets, impressora, outros) e com que periodicidade? | Começar pelo forno, a câmara e o freezer, e crescer |
-| M14 | A manutenção preditiva usa que leitura em cada bem (horas de uso, temperatura, consumo, outra)? Quem faz a leitura e com que frequência? | Começar com leitura digitada na inspeção; sensores automáticos só no futuro |
-| M15 | Peças e materiais de manutenção ficam em estoque ou são comprados na hora? | Estoque mínimo só das peças críticas, o resto comprado por ordem de serviço |
-| M16 | Quem abre, quem executa e quem aprova a ordem de serviço? Há valor acima do qual o administrador aprova? | Abre qualquer perfil de gestão; executa funcionário ou terceiro; aprova o administrador acima de um valor nos parâmetros |
-| M17 | A parada de um bem crítico (forno) deve avisar a produção e registrar o tempo perdido? | Sim, com o tempo parado ligado ao pedido atrasado, quando houver |
-| M18 | O custo da manutenção é custo fixo (contrato mensal) ou variável (por chamado), ou os dois? | Os dois, marcados por tipo de despesa, como em Custos |
+Todas as perguntas do módulo estão respondidas.
 
 ---
 
