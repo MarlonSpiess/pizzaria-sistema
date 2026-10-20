@@ -1,8 +1,8 @@
 # Detalhamento 06: Custos
 
-Versão 0.1, 19/10/2026. Rascunho para discussão, montado com o que Marlon já decidiu, com o plano macro (seção 4.5) e com boas práticas marcadas. Depende de todos os módulos já aprovados: [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md), [Fechamento de Caixa](03_Fechamento_de_Caixa.md), [Estoques e Compras](04_Estoques_e_Compras.md) e [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md).
+Versão 0.2, 20/10/2026. Consolidada com as respostas L1 a L12 de Marlon (L6 ainda é suposição). Aguarda aprovação. Depende de todos os módulos já aprovados: [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md), [Fechamento de Caixa](03_Fechamento_de_Caixa.md), [Estoques e Compras](04_Estoques_e_Compras.md) e [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md).
 
-**Critério de sucesso:** Marlon responde as perguntas da seção 6, corrige o desenho e diz "é assim". Só então o módulo vira v0.2 para aprovação.
+**Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
 Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fonte específica; **[Suposição]** é minha e precisa de confirmação.
 
@@ -81,23 +81,16 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 - **L7:** começar sem meta de CMV e de margem, e propor depois a partir do histórico **[Decisão]**.
 - **L8:** o sistema sugere o preço por margem desejada e também mostra a margem do preço atual; a decisão do preço é sempre de Marlon **[Decisão]**.
 
-### 6.2 Em aberto
+### 6.2 Respondidas em 20/10/2026
 
-
-| # | Pergunta | Minha recomendação |
-|---|---|---|
-| L1 | A planilha de ficha técnica traz o fator de correção e o rendimento (por exemplo, queijo fatiado, massa que encolhe)? | Cadastrar fator por insumo; usar 1,0 quando você não souber |
-| L2 | A embalagem (caixa, saco, guardanapo) entra no custo de cada pizza? | Sim, como insumo da ficha de cada tamanho |
-| L3 | Quais custos você considera fixos hoje (aluguel, pessoal, energia, outros) e quais variáveis? | Usar o cadastro de tipos de despesa e marcar cada tipo como fixo ou variável |
-| L4 | Pessoal da produção e do atendimento é custo fixo, variável ou rateado por pizza? | Fixo, com o rateio por pizza só como indicador |
-| L5 | A energia e o gás do forno entram no custo da pizza ou ficam como custo fixo? | Fixo, a menos que você queira estimar por pizza |
-| L6 | O custo da entrega (diária e valor por entrega) é custo do pedido de entrega? | Sim, variável, apenas nos pedidos de entrega |
-| L7 | Qual a meta de CMV e de margem da loja? Tem alguma referência hoje? | Começar sem meta e propor depois, a partir do histórico |
-| L8 | Quer precificar por margem desejada (o sistema sugere o preço) ou só ver a margem do preço atual? | Os dois; a decisão do preço é sempre sua |
-| L9 | O CMV real é calculado por mês, por semana ou por dia? | Mensal, com fechamento do estoque no inventário completo |
-| L10 | O preço de funcionário entra na margem como desconto ou fica fora da análise? | Entra como desconto, com visão separada |
-| L11 | Promoção e desconto concedido entram como redução de receita ou como custo? | Redução de receita, com motivo, como já definido em Vendas |
-| L12 | A depreciação do forno e dos equipamentos entra no custo fixo? | Sim, vinda do Imobilizado |
+- **L2:** a embalagem (caixa, saco, guardanapo) **entra no custo de cada pizza**, como insumo da ficha de cada tamanho **[Decisão]**.
+- **L4:** pessoal de produção e atendimento é **custo fixo**, com rateio por pizza **só como indicador** **[Decisão]**.
+- **L5:** energia e gás do forno são **custo fixo**, porque o forno e a energia seguem o horário de trabalho e não a produção **[Decisão]**.
+- **L6:** o custo da entrega (diária e valor por entrega) é custo variável apenas dos pedidos de entrega **[Suposição, Marlon não respondeu]**.
+- **L9:** CMV real **mensal**, com fechamento no inventário completo **[Decisão]**.
+- **L10:** o preço de funcionário entra na margem como desconto, com visão separada **[Decisão]**.
+- **L11:** promoção e desconto são **redução de receita**, com motivo **[Decisão]**.
+- **L12:** a depreciação do forno e dos equipamentos entra no custo fixo, **vinda do Imobilizado** **[Decisão]**.
 
 ---
 
