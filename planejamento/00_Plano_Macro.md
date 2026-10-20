@@ -1,10 +1,8 @@
 # Plano Macro: Sistema Integrado da Pizzaria
 
-Versão 0.5, 18/10/2026. Inclui as decisões de Marlon às perguntas das versões anteriores (seção 8); o restante segue em discussão.
+Versão 1.0, 20/10/2026. Consolida o plano macro e os detalhamentos dos nove módulos e do núcleo, todos aprovados por Marlon entre 18 e 20/10/2026. **Aguarda a aprovação final de Marlon.** Os documentos de cada módulo (pasta `modulos/`) são a fonte de verdade de cada assunto; este documento dá a visão do conjunto.
 
-**Situação dos módulos:** Núcleo e Vendas aprovados em 18/10/2026 ([detalhamento](modulos/01_Nucleo_e_Vendas.md)); Produção aprovada em 19/10/2026 ([detalhamento](modulos/02_Producao.md)); Fechamento de Caixa aprovado em 19/10/2026 ([detalhamento](modulos/03_Fechamento_de_Caixa.md)); Estoques e Compras aprovado em 19/10/2026 ([detalhamento](modulos/04_Estoques_e_Compras.md)); Contas a Pagar/Receber e Fluxo de Caixa aprovado em 19/10/2026 ([detalhamento](modulos/05_Contas_e_Fluxo_de_Caixa.md)); Custos aprovado em 20/10/2026 ([detalhamento](modulos/06_Custos.md)); Imobilizado aprovado em 20/10/2026 ([detalhamento](modulos/07_Imobilizado.md)); RH aprovado em 20/10/2026 ([detalhamento](modulos/08_RH.md)); BI v0.2 aguardando aprovação ([detalhamento](modulos/09_BI.md)); os demais ainda no nível do plano macro.
-
-**Critério de sucesso deste documento:** dar a cada um dos 9 módulos um objetivo, uma lista de submódulos candidatos e as integrações com os outros, definir os princípios de dados (local agora, nuvem depois) e listar o que só o Marlon pode decidir. Detalhamento de telas, tabelas e regras fica para os documentos de cada módulo.
+**Critério de sucesso deste documento:** Marlon lê a visão do conjunto (módulos, integrações, ordem de construção, parâmetros e pendências) e diz "aprovado" ou aponta o que corrigir. Aprovado, o planejamento termina e começa o desenho técnico.
 
 **Como ler as fontes.** Cada afirmação vem de uma de três origens, sinalizadas no texto:
 
@@ -74,125 +72,35 @@ Decisão de Marlon (16/10/2026): o beta roda local, com espelho na nuvem (Fly.io
 
 ---
 
-## 4. Os 9 módulos
+## 4. Os módulos e onde estão detalhados
 
-Para cada módulo: objetivo, submódulos candidatos, o que recebe e o que entrega. Submódulos são candidatos, a lapidar um a um.
+A numeração original de Marlon (1 a 9) é mantida abaixo; os arquivos seguem a ordem em que foram detalhados.
 
-### 4.1 Módulo 1: RH
+| Módulo | Situação | Documento |
+|---|---|---|
+| 0 Núcleo (usuários, perfis, parâmetros, cadastros, auditoria) | Aprovado em 18/10/2026 | [01_Nucleo_e_Vendas.md](modulos/01_Nucleo_e_Vendas.md) |
+| 6 Vendas (balcão e Anota Aí) | Aprovado em 18/10/2026 | [01_Nucleo_e_Vendas.md](modulos/01_Nucleo_e_Vendas.md) |
+| 7 Produção | Aprovado em 19/10/2026 | [02_Producao.md](modulos/02_Producao.md) |
+| 8 Fechamento de Caixa | Aprovado em 19/10/2026 | [03_Fechamento_de_Caixa.md](modulos/03_Fechamento_de_Caixa.md) |
+| 3 Estoques e Compras | Aprovado em 19/10/2026 | [04_Estoques_e_Compras.md](modulos/04_Estoques_e_Compras.md) |
+| 4 Contas a Pagar/Receber e Fluxo de Caixa | Aprovado em 19/10/2026 | [05_Contas_e_Fluxo_de_Caixa.md](modulos/05_Contas_e_Fluxo_de_Caixa.md) |
+| 5 Custos | Aprovado em 20/10/2026 | [06_Custos.md](modulos/06_Custos.md) |
+| 2 Imobilizado (com manutenção completa) | Aprovado em 20/10/2026 | [07_Imobilizado.md](modulos/07_Imobilizado.md) |
+| 1 RH | Aprovado em 20/10/2026 | [08_RH.md](modulos/08_RH.md) |
+| 9 BI | Aprovado em 20/10/2026 | [09_BI.md](modulos/09_BI.md) |
 
-**Objetivo.** Gerir o quadro de pessoas e o custo de pessoal da pizzaria.
+### 4.1 Resumo de cada módulo
 
-**Submódulos candidatos.** Cadastro de funcionários e contratos (CLT, intermitente, freelancer, motoboy terceiro); escalas e turnos; registro de ponto (informado no início; importação de ponto eletrônico biométrico no futuro, decisão de Marlon); banco de horas e horas extras; férias e afastamentos; prévia de folha e encargos para custo gerencial; comissões e gorjetas (se houver); treinamentos (ex.: boas práticas de manipulação de alimentos).
-
-**Recebe.** Do núcleo: cadastro de pessoas. De Vendas: base para comissão ou taxa de entrega, se aplicável.
-**Entrega.** A Contas a Pagar: salários, encargos, vale-transporte. A Custos: custo de mão de obra (fixo ou por produção). Ao BI: custo de pessoal na DRE.
-
-**Limites que proponho.**
-- A folha legal (eSocial, recibos oficiais, guias) costuma ser feita pelo escritório de contabilidade [Prática]. Proponho que o módulo seja **gerencial** e importe ou registre os valores da folha, sem substituir o contador [Suposição: pergunta P5].
-- Ponto eletrônico: a Portaria MTP 671/2021 define três tipos de registrador (REP-C, relógio físico; REP-A, alternativo, que depende de acordo ou convenção coletiva; REP-P, por programa, que precisa gerar o Arquivo Fonte de Dados) [Fonte 2]. Construir um REP-P próprio implica atender requisitos técnicos e legais da portaria. Recomendo importar o arquivo de um registrador já existente em vez de criar um. Pelo que sei, a CLT (art. 74, após a Lei 13.874/2019) exige controle de jornada a partir de 20 empregados por estabelecimento; tenho boa confiança nisso, mas confirme com o contador.
-
-### 4.2 Módulo 2: Imobilizado
-
-**Objetivo.** Controlar os bens de uso da pizzaria (forno, masseira, freezer, motos, móveis, computadores) e o custo que eles geram ao longo do tempo.
-
-**Submódulos candidatos.** Cadastro de bens (com nota, valor, data, local, responsável, plaqueta); depreciação mensal; manutenção preventiva e corretiva (agenda e histórico); baixa (venda, perda, descarte); seguros e garantias.
-
-**Recebe.** De Compras: aquisição de bem (nota fiscal). De Contas a Pagar: parcelas do bem.
-**Entrega.** A Custos: depreciação mensal como custo fixo. Ao BI: depreciação na DRE (gerencial). A Contas a Pagar: manutenções.
-
-**Referência de taxas.** A IN RFB 1.700/2017, Anexo III, traz as taxas fiscais; exemplos citados: máquinas e equipamentos 10% ao ano (10 anos), móveis e utensílios 20% (5 anos), veículos 25% (4 anos) [Fonte 3]. Para a DRE **gerencial** pode fazer mais sentido usar a vida útil real do bem (o forno pode durar mais ou menos que 10 anos) [Prática]. Proponho permitir as duas, com a fiscal como padrão.
-
-### 4.3 Módulo 3: Estoques e Compras
-
-**Objetivo.** Saber o que existe, o que foi consumido, o que se perdeu e o que precisa ser comprado.
-
-**Submódulos candidatos.**
-- Estoques: saldos por item e local (freezer, câmara, estoque seco); entradas; saídas por venda (baixa pela ficha técnica), por produção, por perda/desperdício e por consumo interno (refeição de funcionário); inventário periódico e ajuste; validade e lote (FIFO/PEPS); estoque mínimo e ponto de pedido.
-- Compras: cadastro de fornecedores; cotação; pedido de compra; recebimento com conferência contra o pedido; entrada da nota fiscal; histórico de preço por insumo.
-
-**Recebe.** De Vendas e Produção: consumo de insumos. Do núcleo: itens e fichas técnicas.
-**Entrega.** A Contas a Pagar: títulos das compras. A Custos: custo médio dos insumos e estoque inicial/final para o CMV. Ao Imobilizado: compras que são bens.
-
-**Por que é central.** O CMV pela fórmula de estoque é `CMV = Estoque Inicial + Compras - Estoque Final` [Fonte 4]. Sem estoque confiável não existe CMV confiável; por isso este módulo vem cedo na ordem proposta (seção 6).
-
-### 4.4 Módulo 4: Contas a Pagar/Receber e Fluxo de Caixa
-
-**Objetivo.** Saber o que a pizzaria deve, o que tem a receber e quanto dinheiro terá em cada dia.
-
-**Submódulos candidatos.** Contas a pagar (títulos, parcelas, recorrentes como aluguel e energia, agendamento, baixa); contas a receber (cartões com prazo e taxa da adquirente, Pix, repasses do Anota Ai ou de outros canais, fiado/convênio se houver); contas bancárias e caixas; conciliação bancária (importação de extrato OFX); conciliação de cartões (venda x repasse x taxa); fluxo de caixa realizado e projetado.
-
-**Recebe.** De Compras: títulos a pagar. Do RH: folha. De Vendas e Fechamento de Caixa: recebíveis por forma de pagamento. Do Imobilizado: parcelas e manutenções.
-**Entrega.** Ao BI: realizado por categoria (regime de caixa). A Custos: despesas fixas reais.
-
-**Ponto de atenção.** Taxas de cartão e do canal de delivery são custo variável relevante e muitas vezes ficam escondidas na diferença entre venda e repasse [Prática]. A conciliação é o que as revela.
-
-### 4.5 Módulo 5: Custos
-
-**Objetivo.** Saber quanto custa cada pizza e quanto custa manter a pizzaria aberta, para precificar e medir margem.
-
-**Submódulos candidatos.**
-- Ficha técnica e custo do produto: insumos, quantidades, fator de correção (perda no pré-preparo), rendimento; custo unitário recalculado quando o preço do insumo muda.
-- CMV teórico x CMV real: teórico = soma das fichas técnicas das vendas; real = fórmula de estoque. A diferença mede desperdício, porcionamento fora do padrão e desvios [Prática].
-- Custos e despesas fixas: aluguel, pessoal fixo, depreciação, sistemas.
-- Custos variáveis: insumos, embalagem, taxa de cartão, comissão do canal, entrega.
-- Precificação e margem de contribuição por produto e por canal (a mesma pizza tem margem diferente no balcão e no delivery por causa das taxas).
-- Ponto de equilíbrio.
-
-**Recebe.** De Estoques: custo dos insumos e saldos. De Vendas: mix vendido. De RH, Imobilizado e Contas a Pagar: custos fixos.
-**Entrega.** Ao BI: CMV e margens. A Vendas: sugestão de preço.
-
-**Referência.** O Sebrae, citado pela Saipos, aponta CMV ideal por volta de 30% a 40% do faturamento; a Saipos cita 25% a 35% para delivery [Fonte 4]. São referências de mercado, não metas: a meta da sua pizzaria sai do seu próprio histórico.
-
-### 4.6 Módulo 6: Vendas (integração Anota Ai)
-
-**Objetivo.** Registrar toda venda, de qualquer canal, uma única vez, com itens, valores, descontos, taxa de entrega e forma de pagamento.
-
-**Submódulos candidatos.** Cardápio e preços por canal; recebimento de pedidos do Anota Ai; pedidos de outros canais (balcão, telefone, salão, outros aplicativos) [pergunta P2]; cadastro de clientes e endereços; cancelamentos e estornos com motivo; promoções e cupons; entregas (entregador, taxa, tempo).
-
-**O que já se sabe sobre o Anota Ai [Fonte 1].** No manual da integração Teknisa x Anota Aí: a autenticação é por token fornecido pelo Anota Aí mais o ID da loja; cada produto é ligado pelo "ID Externo" cadastrado no Anota Aí; formas de pagamento por código externo (ONLINE_ ou OFFLINE_); observações de item em três tipos (acréscimo, retirada, observação); pedido com produto inexistente ou preço zerado é recusado. O manual não descreve atualização de status nem webhook. **Não encontrei documentação pública da API do Anota Ai**; o acesso provavelmente é por parceria. Em 16/10/2026 Marlon informou que ainda não há token nem contato com o Anota Ai; o material "já visto" não está nesta pasta do projeto.
-
-**Recebe.** Do núcleo: itens e preços.
-**Entrega.** A Produção: pedido vira ordem de produção. A Estoques: consumo pela ficha técnica. A Fechamento de Caixa: valor esperado por forma de pagamento. A Contas a Receber: recebíveis online e de cartão. Ao BI: receita.
-
-**Fiscal (decisão de Marlon, 16/10/2026).** Os canais são balcão (neste sistema) e Anota Ai. O cupom fiscal (CF) é emitido por software de terceiro; a evolução disso fica para o futuro. Hoje a venda é digitada duas vezes: neste sistema e no software do cupom fiscal; no futuro este sistema emitirá o cupom (resposta de Marlon à pergunta A1, 16/10/2026). Pedidos de balcão são digitados só neste sistema (resposta à A3).
-
-### 4.7 Módulo 7: Produção (Ordens de Produção)
-
-**Objetivo.** Acompanhar cada pedido da entrada até a entrega, e os preparos feitos em lote.
-
-**Submódulos candidatos.**
-- OP de pedido: gerada automaticamente pela venda. O aplicativo móvel se comporta de forma diferente em cada função, e cada colaborador tem login próprio (decisão de Marlon, 16/10/2026):
-  - **Massa:** vê as bordas por pedido e a quantidade de massas abertas normais necessárias. A massa é maleável (pode ser produzida antes) e pode ser perdida por vários motivos, que o sistema precisa registrar.
-  - **Pizzaiolo:** vê só a pizza que precisa produzir, não o pedido. Os pedidos entram numa fila e as pizzas são solicitadas em sequência, não importa quantos pizzaiolos haja. Ao confirmar a manufatura, a pizza vai para o forno.
-  - **Acabamento:** vê os pedidos e as pizzas que estão no forno (depois da confirmação do pizzaiolo) e imprime a identificação em etiqueta autoadesiva, numa impressora térmica portátil; o modelo da impressora varia.
-  - Marlon explicou o fluxo completo em 18/10/2026. O detalhamento vigente está em `planejamento/modulos/02_Producao.md` (v0.3, aprovada em 19/10/2026) e substitui o desenho acima.
-- OP de pré-preparo: massa, molho, cortes de recheio feitos em lote, que consomem insumos e geram estoque de preparo intermediário com validade.
-- Expedição e entrega: atribuição de entregador, saída, retorno.
-- Indicadores: tempo médio por fase, atrasos, refação (pizza refeita por erro).
-
-**Recebe.** De Vendas: pedidos. Do núcleo: fichas técnicas.
-**Entrega.** A Estoques: consumo e produção de intermediários. A Vendas: status do pedido (e ao Anota Ai, se a integração permitir retorno de status, o que não está confirmado). Ao BI: tempos e perdas.
-
-**Escopo (decisão de Marlon, 16/10/2026).** OP por pedido e também por lote de pré-preparo, pedido primeiro.
-
-### 4.8 Módulo 8: Fechamento de Caixa
-
-**Objetivo.** Garantir, a cada turno ou dia, que o dinheiro e os comprovantes conferem com as vendas.
-
-**Submódulos candidatos.** Abertura de caixa (fundo de troco); sangrias e suprimentos; recebimentos por forma de pagamento; contagem cega no fechamento (operador informa o contado sem ver o esperado) [Prática]; diferenças com justificativa e responsável; acerto de entregadores (dinheiro e troco); relatório do turno; envio dos totais a Contas a Receber e Fluxo de Caixa.
-
-**Recebe.** De Vendas: valor esperado por forma de pagamento.
-**Entrega.** A Contas a Receber e Fluxo de Caixa: valores realizados. Ao BI: quebras de caixa.
-
-### 4.9 Módulo 9: BI
-
-**Objetivo.** Transformar os registros dos outros módulos em decisão.
-
-**Submódulos candidatos.** DRE gerencial mensal (receita bruta, deduções, receita líquida, CMV, margem bruta, despesas variáveis, margem de contribuição, despesas fixas, EBITDA, depreciação, resultado); lucratividade por produto, por canal, por dia da semana e por turno; CMV teórico x real; ticket médio e volume; painel diário; metas e alertas (ex.: CMV acima da meta).
-
-**Recebe.** De todos. **Entrega.** Relatórios e painéis; não escreve em outros módulos.
-
-**Ponto de atenção.** A DRE gerencial depende de regime (caixa ou competência) e do regime tributário (as deduções do Simples Nacional são calculadas de forma diferente do Lucro Presumido) [Prática] [pergunta P8].
+- **Núcleo.** Usuários com login pessoal e intransferível, perfis (administrador, proprietário, gerente, subgerente, atendente, massa, pizzaiolo, acabamento), parâmetros da loja, auditoria e cadastros mestres: itens, ficha técnica, pessoas e empresas, plano de contas e tipos de despesa, formas de pagamento, loja.
+- **Vendas.** Pedido de balcão digitado só neste sistema e pedido do Anota Aí por adaptador, com cardápio único montado aqui e exportado ao Anota Aí (pizzas, calzones e bebidas; borda e extras são adicionais com preço). Pagamento dividido, desconto e acréscimo com motivo, cliente cadastrado na primeira compra, entregador terceiro, apoio à digitação do cupom fiscal.
+- **Produção.** Unidade de trabalho é a pizza. API interna num dos PCs, tablets por função (massa em duas fases, pizzaiolo com retrocesso e motivo, forno esteira, acabamento com etiqueta por pizza), pedido urgente e agendado, estimativa de entrega por pizzas na frente.
+- **Fechamento de Caixa.** Um caixa por dia, uma gaveta, contagem cega, sangrias e suprimentos, diferenças com justificativa, acerto do entregador por pedido, relatório do dia.
+- **Estoques e Compras.** Locais (freezer, câmara fria, estoque seco), baixa pela ficha técnica mais inventário e ajuste, lote e validade nos insumos de pizza e calzone, pedido de compra por fornecedor, nota digitada, custo médio móvel com os últimos 3 preços visíveis, consumo interno para Custos.
+- **Contas a Pagar/Receber e Fluxo de Caixa.** Contas bancárias por loja, despesas recorrentes por tipo, repasse por canal, entregador como conta a pagar, fluxo de 30 dias com 7 em destaque, conciliação digitada no começo.
+- **Custos.** Custo do produto pela ficha técnica, CMV teórico e real mensal, custos fixos e variáveis por tipo de despesa, margem e sugestão de preço por margem desejada, ponto de equilíbrio, começando sem meta.
+- **Imobilizado.** Bens cadastrados um a um, depreciação fiscal (padrão) ou por vida útil real, e rotina completa de manutenção preventiva, preditiva e corretiva com ordem de serviço, materiais e custos.
+- **RH.** Gerencial; folha legal com o contador. Pessoas e contratos por tipo, escala parametrizável (6x1, 5x2 e outras), ponto lançado pelo gerente, benefícios, prévia de folha, treinamentos com validade; salários só para administrador e proprietário.
+- **BI.** Só lê. Painel diário, DRE por competência, lucratividade por sabor e por categoria, CMV, produção, caixa, alertas na tela, histórico de 13 meses nas telas.
 
 ---
 
@@ -200,88 +108,106 @@ Para cada módulo: objetivo, submódulos candidatos, o que recebe e o que entreg
 
 | De | Para | O que passa |
 |---|---|---|
-| Vendas | Produção | Pedido gera OP |
-| Vendas / Produção | Estoques | Consumo de insumos pela ficha técnica |
-| Vendas | Fechamento de Caixa | Valor esperado por forma de pagamento |
-| Vendas | Contas a Receber | Recebíveis de cartão, Pix e canal online |
-| Compras | Contas a Pagar | Títulos da nota de compra |
-| Compras | Imobilizado | Aquisição de bem |
-| Estoques | Custos | Custo médio, estoque inicial e final |
-| RH | Contas a Pagar / Custos | Folha, encargos, custo de pessoal |
-| Imobilizado | Custos / BI | Depreciação mensal |
-| Fechamento de Caixa | Fluxo de Caixa | Valores realizados do turno |
-| Contas a Pagar/Receber | BI | Realizado por categoria |
-| Custos | BI / Vendas | CMV, margens, sugestão de preço |
+| Núcleo | Todos | Usuários e perfis, itens, ficha técnica, parâmetros, formas de pagamento, loja |
+| Vendas | Produção | Pedido, itens e adicionais; pedido urgente |
+| Produção | Vendas | Situação do pedido e entrega real |
+| Vendas e Produção | Estoques | Consumo pela ficha técnica; perdas; falta de insumo ao retroceder |
+| Vendas | Fechamento de Caixa | Valor esperado por forma de pagamento; descontos e cancelamentos; pedidos sem CF |
+| Vendas | Contas | Recebíveis por canal e total a pagar do entregador |
+| Fechamento de Caixa | Contas | Valores realizados por forma de pagamento; sangrias e suprimentos |
+| Estoques e Compras | Contas a Pagar | Títulos das compras |
+| Estoques e Compras | Imobilizado | Aquisição de bem |
+| Estoques | Custos | Custo médio, estoque inicial e final, perdas, consumo interno |
+| Contas | Custos | Despesas fixas reais, taxas de cartão e de canal |
+| RH | Núcleo, Produção, Vendas | Pessoa vira usuário; escala de pizzaiolos; funcionário com preço especial |
+| RH | Contas, Custos | Valor gerencial de folha, encargos e pro-labore; custo de pessoal |
+| Imobilizado | Contas, Custos, Produção | Parcelas e manutenções; depreciação; tempo parado de bem crítico |
+| Custos | Vendas | Sugestão de preço |
+| Todos | BI | Leitura de tudo, sem escrever |
 
-Cada linha desta tabela terá, no detalhamento, a forma automática e a forma manual (para o módulo funcionar isolado).
+Cada linha tem uma forma automática e uma forma manual, para cada módulo funcionar isolado.
 
 ---
 
-## 6. Ordem de construção proposta
+## 6. Ordem de construção
 
 **Princípio:** construir primeiro o que outros módulos consomem e o que dá resultado no dia a dia; o BI vem por último porque só é confiável quando os dados de origem são [Prática].
 
 | Etapa | Módulos | Por quê |
 |---|---|---|
-| 0 | Núcleo (usuários, perfis, auditoria, cadastros mestres, ficha técnica) | Todos dependem dele |
-| 1 | 6 Vendas + 7 Produção + 8 Fechamento de Caixa | Prioridade de Marlon: o pedido nasce em Vendas, é produzido por função e fecha no caixa; Anota Ai entra por último, como adaptador |
-| 2 | 3 Estoques e Compras | Com vendas e fichas técnicas, a baixa de estoque já é automática |
-| 3 | 4 Contas a Pagar/Receber e Fluxo de Caixa | Recebe compras e caixa já estruturados |
-| 4 | 5 Custos | Precisa de estoque, vendas e despesas |
-| 5 | 2 Imobilizado e 1 RH | Alimentam custo fixo; até lá entram como lançamento manual no financeiro |
-| 6 | 9 BI | Consolida tudo |
+| 0 | Núcleo (usuários, perfis, auditoria, parâmetros, cadastros mestres, ficha técnica) | Todos dependem dele |
+| 1 | Vendas, Produção e Fechamento de Caixa | Prioridade de Marlon; o Anota Aí entra por último, como adaptador |
+| 2 | Estoques e Compras | Com vendas e fichas técnicas, a baixa é automática |
+| 3 | Contas a Pagar/Receber e Fluxo de Caixa | Recebe compras e caixa já estruturados |
+| 4 | Custos | Precisa de estoque, vendas e despesas |
+| 5 | Imobilizado e RH | Alimentam custo fixo; até lá entram como lançamento manual em Contas |
+| 6 | BI | Consolida tudo |
 
-Alternativa razoável: começar por Estoques e Fichas técnicas se o CMV for hoje a maior dor. Minha recomendação é a ordem acima, porque sem vendas registradas a baixa de estoque continua manual. Prioridade de Marlon (16/10/2026): vendas, produção e caixa, sem perder de vista estoques, insumos, custos fixos e variáveis, imobilizado e material de uso e consumo.
+**Sugestão de primeiro incremento** [Suposição]: a menor fatia que a loja usa de ponta a ponta é o Núcleo com login e parâmetros, o cadastro do cardápio, o pedido de balcão com pagamento, a fila de produção por função e o fechamento do dia. Os demais módulos entram em seguida, na ordem acima.
 
 ---
 
-## 7. Fora do escopo do beta (proposta)
+## 7. Fora do escopo do beta
 
-- Emissão fiscal própria (cupom fiscal): hoje é feita por software de terceiro, com digitação dupla; a emissão pelo nosso sistema está prevista para o futuro (Marlon, 16/10/2026).
+- Emissão fiscal própria (cupom fiscal): hoje é feita por software de terceiro, com digitação dupla; prevista para o futuro.
 - Folha de pagamento legal e eSocial (fica com o contador).
-- Ser o registrador oficial de ponto (REP).
+- Ser o registrador oficial de ponto (REP); o relógio biométrico entra depois, por importação.
 - Contabilidade societária completa (o BI faz DRE gerencial, não balanço oficial).
-- Aplicativo de pedidos para o cliente final (o Anota Ai já cumpre esse papel).
+- Aplicativo de pedidos para o cliente final (o Anota Aí já cumpre esse papel).
+- Envio automático de WhatsApp ao cliente e alertas por WhatsApp (no beta, link de um clique).
+- Importação de XML de NF-e, de OFX e de folha do contador (no começo, digitação).
+- Previsão de vendas e sensores automáticos de manutenção.
+- Várias lojas (o esquema já prevê; a consolidação fica para um aplicativo central).
 
 ---
 
-## 8. Decisões de Marlon e perguntas em aberto
+## 8. Decisões de Marlon e pendências
 
-As referências P1 a P11 no texto vêm da versão 0.1; todas foram respondidas em 16/10/2026, abaixo.
+### 8.1 Decisões gerais
 
-### 8.1 Decisões
+Todas as decisões de negócio estão registradas nos documentos dos módulos, com a marcação [Decisão] e o código da pergunta. As de alcance geral:
 
-| # | Tema | Decisão de Marlon | Efeito no plano |
+| # | Tema | Decisão de Marlon |
+|---|---|---|
+| 1 | Canais e fiscal | Balcão (neste sistema) e Anota Aí; cupom fiscal por software de terceiro hoje |
+| 2 | Lojas | Uma loja por banco; cada loja é uma empresa à parte; no futuro um aplicativo central lê todos os bancos |
+| 3 | Onde roda | Local no início (PostgreSQL), espelho na nuvem (Fly.io) depois |
+| 4 | Equipamentos | 2 PCs na recepção, tablets por função, impressora térmica portátil de etiqueta, forno esteira |
+| 5 | Stack | FastAPI, PostgreSQL e HTML, padrão do kit |
+| 6 | Prioridade | Vendas, produção e caixa primeiro |
+| 7 | Regime tributário | Parâmetro da loja |
+| 8 | Acesso ao Anota Aí | Marlon pede só depois de o sistema funcionar |
+| 9 | Parâmetros | Valores configuráveis nos parâmetros da loja, sem valor fixo no código |
+
+### 8.2 Parâmetros da loja a definir antes de usar
+
+Ficam vazios ou com padrão e Marlon preenche na implantação:
+
+- Vendas: limite de desconto em % por perfil; taxa padrão de entrega e diária do entregador; desconto e limite diário do preço de funcionário.
+- Produção: tempo de forno e capacidade do forno; motivos de retrocesso e de perda.
+- Fechamento de Caixa: fundo de troco padrão; valor de sangria que exige o gerente; tolerância de diferença.
+- Estoques e Compras: locais de armazenamento; valor de compra que exige aprovação; fator de correção por insumo.
+- Contas: contas bancárias; taxa e prazo por maquininha (sem limite de maquininhas) e por canal; tipos de despesa (fixo ou variável); valor de pagamento que exige o administrador.
+- Imobilizado: valor mínimo para ser bem (confirmar com o contador); valor de ordem de serviço que exige o administrador; categorias de bem.
+- RH: tipos de escala; limite de horas extras; benefícios; tipos de contrato.
+- BI: metas (sem meta no começo); alertas ligados.
+
+### 8.3 Pendências abertas
+
+| # | Pendência | Quem resolve | Quando |
 |---|---|---|---|
-| 1 | Canais e fiscal | Vendas pelo balcão (neste sistema) e pelo Anota Ai. O cupom fiscal é emitido por software de terceiro; a evolução fica para o futuro | Fiscal fora do beta; Vendas registra e concilia |
-| 2 | Unidades | Uma loja. No futuro, um aplicativo lerá todos os bancos e centralizará as informações | Um banco por loja, esquema estável e legível em modo leitura, identificador de loja nos dados |
-| 3 | Maior dor | Seguir a recomendação | Ordem da seção 6 mantida, com Vendas e Fechamento de Caixa primeiro |
-| 4 | Regime tributário | Parametrizado por loja | Regime vira parâmetro da loja e muda as deduções da DRE |
-| 5 | RH | Seguir a recomendação | Módulo gerencial, folha legal com o contador |
-| 6 | Anota Ai | Ainda sem token nem contato | Submódulo só desenhado até haver acesso |
-| 7 | OP | Seguir a recomendação | Por pedido e por lote, pedido primeiro |
-| 8 | Onde roda | Local no início, com espelho na nuvem (Fly.io) previsto e, de início, sem espelho | PostgreSQL local; espelho só depois |
-| 9 | Equipamentos | 2 PCs na recepção, ambos ligados ao Anota Ai, com opção de pedido local só pelo app; 1 tablet na massa, 2 no pizzaiolo e 1 no acabamento, com impressora para identificar as pizzas | Vários aparelhos no mesmo banco pela rede da loja; Produção por estações; identificação impressa no acabamento |
-| 10 | Sistemas atuais | Nenhum além do Anota Ai | Nada a migrar |
-| 11 | Stack | Seguir a recomendação | FastAPI, PostgreSQL e HTML, padrão do kit |
-
-### 8.2 Consequências técnicas a decidir [Prática]
-
-- Dois PCs e quatro tablets no mesmo banco: um computador faz o papel de servidor local e os demais acessam pela rede da loja, pelo navegador. Qual PC será o servidor, e ele fica ligado durante toda a operação?
-- Anota Ai nos dois PCs: o recebimento de pedidos deve acontecer num ponto só (o servidor), para não duplicar pedidos; os dois PCs veem a mesma fila.
-- O modelo da impressora do acabamento define o formato da identificação (etiqueta ou comanda).
-
-### 8.3 Perguntas em aberto
-
-- **A1.** (Respondida em 16/10/2026: digitação dupla hoje; no futuro este sistema emitirá o cupom fiscal.)
-- **A2.** Quem pode pedir ao Anota Ai o acesso de integração (token)? Sem isso o submódulo fica só desenhado.
-- **A3.** (Respondida em 16/10/2026: sim, o pedido local é digitado só neste sistema.)
-- **A4.** (Respondida em 16/10/2026: a quantidade de colaboradores é variável e vinculada ao cadastro; o ponto é informado no início e, no futuro, pode ser importado de ponto eletrônico biométrico.)
-- **A5.** (Respondida em 16/10/2026: ver o comportamento por função em Produção, seção 4.7. Detalhes ficam para o módulo Produção, que Marlon descreveu como separado e especial.)
-- **A6.** (Respondida em 16 e 18/10/2026: etiqueta autoadesiva em impressora térmica portátil, modelo variável; imprime sabor, número do pedido, cliente e observações.)
-- **A7.** (Respondida em 16/10/2026: prioridade é vendas, produção e caixa, mantendo no horizonte estoques, insumos, custos fixos e variáveis, imobilizado e material de uso e consumo.)
-- **E1.** (Respondida em 18/10/2026: sim, material de uso e consumo é classe de item em Estoques e Compras.)
-- **E2.** (Respondida em 18/10/2026: a etiqueta leva sabor, número do pedido, cliente e observações, conforme a lista proposta.)
+| 1 | D2: lista de sabores e preços por tamanho, de bordas e adicionais | Marlon | Na carga do cadastro |
+| 2 | Planilha da ficha técnica (1/2 Grande ou Broto, sabor e ingredientes com quantidade) | Marlon | Na carga do cadastro |
+| 3 | Lista de bens, de fornecedores e de funcionários para a carga inicial | Marlon | Na implantação |
+| 4 | Token e contato do Anota Aí | Marlon pede após o sistema funcionar | Depois do sistema funcionando |
+| 5 | Modelos da impressora e dos fornos | Marlon | No desenho técnico |
+| 6 | Qual PC é o servidor e como o segundo assume se o primeiro parar | Marlon e desenvolvedor | No desenho técnico |
+| 7 | Backup diário fora da máquina e rotina de contingência | Desenvolvedor | No desenho técnico |
+| 8 | Identificador dos registros: UUID ou sequencial | Desenvolvedor | No desenho técnico |
+| 9 | Confirmar com o contador: valor mínimo de bem, regime, taxas de depreciação, regras de banco de horas, relatório mensal | Marlon | Antes de ligar os módulos |
+| 10 | LGPD: dados de clientes e funcionários, acesso e retenção | Desenvolvedor, com orientação jurídica | No desenho técnico |
+| 11 | Atualizar o cadastro de perfis do Núcleo com proprietário e subgerente (subgerente: permissões do gerente, exceto aprovar diferença de caixa) e incorporar em Vendas o preço de funcionário e os itens de cardápio vindos de Produção | Desenvolvedor | No desenho técnico |
+| 12 | Cupom fiscal pelo nosso sistema (tipo de documento exigido no estado e município) | A pesquisar | Projeto futuro |
 
 ---
 
