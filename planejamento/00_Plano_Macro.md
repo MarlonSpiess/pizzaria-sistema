@@ -82,7 +82,7 @@ A numeração original de Marlon (1 a 9) é mantida abaixo; os arquivos seguem a
 | 6 Vendas (balcão e Anota Aí) | Aprovado em 18/10/2026 | [01_Nucleo_e_Vendas.md](modulos/01_Nucleo_e_Vendas.md) |
 | 7 Produção | Aprovado em 19/10/2026 | [02_Producao.md](modulos/02_Producao.md) |
 | 8 Fechamento de Caixa | Aprovado em 19/10/2026 | [03_Fechamento_de_Caixa.md](modulos/03_Fechamento_de_Caixa.md) |
-| 3 Estoques e Compras | Aprovado em 19/10/2026 | [04_Estoques_e_Compras.md](modulos/04_Estoques_e_Compras.md) |
+| 3 Estoques e Compras | v0.3 em revisão (lista de compras e cotação, 20/10/2026) | [04_Estoques_e_Compras.md](modulos/04_Estoques_e_Compras.md) |
 | 4 Contas a Pagar/Receber e Fluxo de Caixa | Aprovado em 19/10/2026 | [05_Contas_e_Fluxo_de_Caixa.md](modulos/05_Contas_e_Fluxo_de_Caixa.md) |
 | 5 Custos | Aprovado em 20/10/2026 | [06_Custos.md](modulos/06_Custos.md) |
 | 2 Imobilizado (com manutenção completa) | Aprovado em 20/10/2026 | [07_Imobilizado.md](modulos/07_Imobilizado.md) |
@@ -95,7 +95,7 @@ A numeração original de Marlon (1 a 9) é mantida abaixo; os arquivos seguem a
 - **Vendas.** Pedido de balcão digitado só neste sistema e pedido do Anota Aí por adaptador, com cardápio único montado aqui e exportado ao Anota Aí (pizzas, calzones e bebidas; borda e extras são adicionais com preço). Pagamento dividido, desconto e acréscimo com motivo, cliente cadastrado na primeira compra, entregador terceiro, apoio à digitação do cupom fiscal.
 - **Produção.** Unidade de trabalho é a pizza. API interna num dos PCs, tablets por função (massa em duas fases, pizzaiolo com retrocesso e motivo, forno esteira, acabamento com etiqueta por pizza), pedido urgente e agendado, estimativa de entrega por pizzas na frente.
 - **Fechamento de Caixa.** Um caixa por dia, uma gaveta, contagem cega, sangrias e suprimentos, diferenças com justificativa, acerto do entregador por pedido, relatório do dia.
-- **Estoques e Compras.** Locais (freezer, câmara fria, estoque seco), baixa pela ficha técnica mais inventário e ajuste, lote e validade nos insumos de pizza e calzone, pedido de compra por fornecedor, nota digitada, custo médio móvel com os últimos 3 preços visíveis, consumo interno para Custos.
+- **Estoques e Compras.** Locais (freezer, câmara fria, estoque seco), baixa pela ficha técnica mais inventário e ajuste, lote e validade nos insumos de pizza e calzone, lista de necessidades com itens avulsos, cotação por fornecedor e lista de compras definitiva (em revisão), pedido de compra por fornecedor, nota digitada, custo médio móvel com os últimos 3 preços visíveis, consumo interno para Custos.
 - **Contas a Pagar/Receber e Fluxo de Caixa.** Contas bancárias por loja, despesas recorrentes por tipo, repasse por canal, entregador como conta a pagar, fluxo de 30 dias com 7 em destaque, conciliação digitada no começo.
 - **Custos.** Custo do produto pela ficha técnica, CMV teórico e real mensal, custos fixos e variáveis por tipo de despesa, margem e sugestão de preço por margem desejada, ponto de equilíbrio, começando sem meta.
 - **Imobilizado.** Bens cadastrados um a um, depreciação fiscal (padrão) ou por vida útil real, e rotina completa de manutenção preventiva, preditiva e corretiva com ordem de serviço, materiais e custos.

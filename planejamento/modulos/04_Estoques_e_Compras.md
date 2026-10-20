@@ -1,6 +1,6 @@
 # Detalhamento 04: Estoques e Compras
 
-Versão 0.2, 19/10/2026. Consolidada com as respostas J1 a J14 de Marlon. **APROVADA por Marlon em 19/10/2026.** Parte do [Plano Macro](../00_Plano_Macro.md), seção 4.3. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md) e [Fechamento de Caixa](03_Fechamento_de_Caixa.md), todos aprovados.
+Versão 0.3, 20/10/2026. Consolidada com as respostas J1 a J14 de Marlon e com a revisão da J8 (lista de compras e cotação) pedida em 20/10/2026. A v0.2 foi aprovada em 19/10/2026; **a v0.3 aguarda nova aprovação, só na parte de Compras (3.2, J8 e perguntas J8a a J8e).** Parte do [Plano Macro](../00_Plano_Macro.md), seção 4.3. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md) e [Fechamento de Caixa](03_Fechamento_de_Caixa.md), todos aprovados.
 
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
@@ -46,7 +46,11 @@ Manter o saldo real de cada item, registrar entradas e saídas com origem e resp
 | Submódulo | O que faz |
 |---|---|
 | Fornecedores | Cadastro com contato, prazo e forma de pagamento |
-| Pedido de compra | Do que falta ao pedido ao fornecedor |
+| Lista de necessidades | O sistema reúne tudo que precisa ser comprado: itens abaixo do mínimo ou do ponto de pedido, itens perto de vencer e a falta apontada pela Produção. O operador pode **acrescentar outros itens** à mão e **remover ou ajustar** quantidades, sempre com motivo para o que o sistema sugeriu e saiu |
+| Pedido de cotação | Da lista de necessidades gera uma **lista por fornecedor**, para pedir preço. Registra preço, prazo e condição que cada fornecedor respondeu, com data |
+| Mapa de cotação | Compara, item a item, os preços dos fornecedores e o último preço pago, com os últimos 3 preços do item (J14) |
+| Lista de compras definitiva | O comprador escolhe o fornecedor de cada item (ou o mapa sugere o mais barato, ele confirma) e o sistema fecha a lista; quem tem poder de aprovação (J7) aprova. Dela saem os pedidos de compra |
+| Pedido de compra | Um por fornecedor, gerado da lista definitiva ou digitado direto |
 | Recebimento | Conferência da entrega contra o pedido; diferenças registradas |
 | Entrada da nota | Valores e quantidades da nota entram nos movimentos e geram o título a pagar |
 | Histórico de preço | Preço por insumo e fornecedor ao longo do tempo |
@@ -100,7 +104,7 @@ Formato da ficha técnica (Marlon, 19/10/2026): a planilha traz, para **1/2 Gran
   - Material de uso e consumo (limpeza e outros): cerca de 100 itens.
 - **J4:** lote e validade para **todos os insumos de pizzas e calzones, inclusive as massas** **[Decisão]**.
 - **J7:** compra e aprovação do pedido de compra ficam com o **administrador do sistema, o proprietário, o gerente e o subgerente** **[Decisão]**. O perfil **subgerente** é novo (ver seção 7).
-- **J8:** pedido registrado por fornecedor; cotação só quando Marlon quiser **[Decisão]**.
+- **J8 (revisada em 20/10/2026):** o sistema monta a **lista de necessidades**, o operador pode **inserir outros itens**, e dela saem **listas de cotação por fornecedor**, o **controle das cotações** e a **lista de compras definitiva**, que gera os pedidos por fornecedor **[Decisão]**. Substitui a regra anterior (pedido por fornecedor e cotação opcional). Detalhes em 6.3.
 - **J10:** prazo e forma de pagamento por fornecedor; conferente registrado por entrega **[Decisão]**.
 - **J11:** compra urgente paga com dinheiro do caixa entra como **compra sem pedido, ligada à sangria** **[Decisão]**.
 - **J12:** refeição de funcionário e consumo interno saem do estoque como **"consumo interno"**, com valor para **Custos** (não para o RH) **[Decisão]**. Em Vendas, funcionário compra com **preço especial com desconto e limite de quantidade** (ver seção 7).
@@ -108,6 +112,16 @@ Formato da ficha técnica (Marlon, 19/10/2026): a planilha traz, para **1/2 Gran
 - **J14:** custo por **custo médio móvel**, com os **últimos 3 preços visíveis**, para enxergar tendência e sazonalidade **[Decisão]**.
 
 Todas as perguntas do módulo estão respondidas.
+
+---
+
+### 6.3 Perguntas da revisão da J8 (a responder)
+
+- **J8a:** a cotação é sempre obrigatória ou o comprador pode pular e ir direto da necessidade ao pedido, para itens do dia a dia? (recomendo: pode pular, escolhendo "fornecedor habitual" por item)
+- **J8b:** o item avulso que o operador insere pode ser algo fora do cadastro (ex.: compra pontual), ou só item já cadastrado? (recomendo: só cadastrado, com cadastro rápido de item novo pelo gerente)
+- **J8c:** a cotação é registrada à mão (telefone, WhatsApp) ou o sistema deve enviar a lista ao fornecedor? (recomendo: à mão no começo; no beta só gerar a lista para copiar ou imprimir)
+- **J8d:** um item pode ser dividido entre dois fornecedores na lista definitiva? (recomendo: sim)
+- **J8e:** quem aprova a lista definitiva: acima de um valor nos parâmetros, o gerente ou subgerente; abaixo, o próprio comprador? (recomendo: sim, valor de aprovação já previsto na seção 7)
 
 ---
 
