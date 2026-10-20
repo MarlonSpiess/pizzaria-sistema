@@ -1,6 +1,6 @@
 # Detalhamento 07: Imobilizado
 
-Versão 0.1, 20/10/2026. Rascunho para discussão, montado com o que Marlon já decidiu, com o plano macro (seção 4.2) e com boas práticas marcadas. Depende dos módulos já aprovados, em especial [Estoques e Compras](04_Estoques_e_Compras.md), [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md) e [Custos](06_Custos.md).
+Versão 0.1, 20/10/2026 (atualizada com M1, M2, M3 e M6). Rascunho para discussão, montado com o que Marlon já decidiu, com o plano macro (seção 4.2) e com boas práticas marcadas. Depende dos módulos já aprovados, em especial [Estoques e Compras](04_Estoques_e_Compras.md), [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md) e [Custos](06_Custos.md).
 
 **Critério de sucesso:** Marlon responde as perguntas da seção 6, corrige o desenho e diz "é assim". Só então o módulo vira v0.2 para aprovação.
 
@@ -38,6 +38,21 @@ Registrar cada bem com valor, data, local e responsável, calcular a depreciaç�
 | Seguros e garantias | Vencimento da garantia e da apólice, com alerta |
 | Inventário de bens | Conferência periódica do que existe e onde está |
 
+### 3.1 Manutenção ampliada **[Decisão M6, desenho Prática]**
+
+Marlon pediu a **rotina completa de manutenção**, com controle de custos, materiais de manutenção e equipamentos. Proposta:
+
+| Parte | O que faz |
+|---|---|
+| Plano preventivo | Tarefas periódicas por bem (limpeza do forno, revisão, troca de peça), por tempo ou por uso, com alerta antes do vencimento |
+| Manutenção preditiva | Acompanha leituras do bem (horas de uso, temperatura, consumo, ruído registrado em inspeção) e avisa quando uma leitura sai do normal, antes da quebra |
+| Manutenção corretiva | Registro da quebra, com data e hora da parada e da volta, causa e o que foi feito |
+| Ordem de serviço | Um número por manutenção, com bem, tipo, responsável (funcionário ou terceiro), peças, horas e custo; abre, executa e fecha |
+| Materiais de manutenção | Peças e insumos de manutenção como classe de item em Estoques e Compras, com saldo e baixa pela ordem de serviço |
+| Ferramentas e equipamentos de manutenção | Cadastro como bem ou como item de uso e consumo, conforme o valor |
+| Custos | Custo da manutenção por bem e por tipo, vindo da ordem de serviço, para Custos e Contas a Pagar |
+| Paradas | Tempo parado por bem, para medir o impacto na produção |
+
 **Referência de taxas.** Para a DRE gerencial pode fazer mais sentido a vida útil real do bem; proponho permitir as duas, com a fiscal como padrão (Plano Macro).
 
 ---
@@ -67,6 +82,16 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 
 ## 6. Perguntas
 
+### 6.1 Respondidas por Marlon em 20/10/2026
+
+- **M1:** os bens são **cadastrados um a um** **[Decisão]**.
+- **M2:** **valor mínimo** para ser bem nos parâmetros, **confirmado com o contador** **[Decisão]**.
+- **M3:** depreciação pelos **dois métodos**, com a **taxa fiscal como padrão** **[Decisão]**.
+- **M6:** **agenda por bem, com alerta antes do vencimento**, e Marlon pediu montar **toda a rotina de manutenção, preventiva, preditiva e corretiva**, com controle de custos, materiais de manutenção, equipamentos e outros (seção 3.1) **[Decisão]**.
+
+### 6.2 Em aberto
+
+
 | # | Pergunta | Minha recomendação |
 |---|---|---|
 | M1 | Quais bens a loja tem hoje? Existe lista, planilha ou nota fiscal? | Carregar por planilha na primeira vez |
@@ -81,6 +106,19 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 | M10 | Há bens de uso do proprietário misturados com os da loja? | Separar; só o que é da loja entra |
 | M11 | Quem cadastra, quem dá baixa e quem aprova a baixa? | Cadastra o gerente ou subgerente; baixa aprovada pelo administrador |
 | M12 | Quer plaqueta ou etiqueta com código em cada bem e inventário periódico? | Sim, com inventário anual |
+
+---
+
+### 6.3 Novas, vindas do pedido de manutenção completa
+
+| # | Pergunta | Minha recomendação |
+|---|---|---|
+| M13 | Quais bens precisam de plano preventivo hoje (forno esteira, masseira, freezer, câmara, tablets, impressora, outros) e com que periodicidade? | Começar pelo forno, a câmara e o freezer, e crescer |
+| M14 | A manutenção preditiva usa que leitura em cada bem (horas de uso, temperatura, consumo, outra)? Quem faz a leitura e com que frequência? | Começar com leitura digitada na inspeção; sensores automáticos só no futuro |
+| M15 | Peças e materiais de manutenção ficam em estoque ou são comprados na hora? | Estoque mínimo só das peças críticas, o resto comprado por ordem de serviço |
+| M16 | Quem abre, quem executa e quem aprova a ordem de serviço? Há valor acima do qual o administrador aprova? | Abre qualquer perfil de gestão; executa funcionário ou terceiro; aprova o administrador acima de um valor nos parâmetros |
+| M17 | A parada de um bem crítico (forno) deve avisar a produção e registrar o tempo perdido? | Sim, com o tempo parado ligado ao pedido atrasado, quando houver |
+| M18 | O custo da manutenção é custo fixo (contrato mensal) ou variável (por chamado), ou os dois? | Os dois, marcados por tipo de despesa, como em Custos |
 
 ---
 
