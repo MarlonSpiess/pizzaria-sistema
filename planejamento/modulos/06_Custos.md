@@ -1,6 +1,6 @@
 # Detalhamento 06: Custos
 
-Versão 0.2, 20/10/2026. Consolidada com as respostas L1 a L12 de Marlon (L6 ainda é suposição). Aguarda aprovação. Depende de todos os módulos já aprovados: [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md), [Fechamento de Caixa](03_Fechamento_de_Caixa.md), [Estoques e Compras](04_Estoques_e_Compras.md) e [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md).
+Versão 0.2, 20/10/2026. Consolidada com as respostas L1 a L12 de Marlon (L6 confirmada). **APROVADA por Marlon em 20/10/2026.** Depende de todos os módulos já aprovados: [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md), [Fechamento de Caixa](03_Fechamento_de_Caixa.md), [Estoques e Compras](04_Estoques_e_Compras.md) e [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md).
 
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
@@ -86,7 +86,7 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 - **L2:** a embalagem (caixa, saco, guardanapo) **entra no custo de cada pizza**, como insumo da ficha de cada tamanho **[Decisão]**.
 - **L4:** pessoal de produção e atendimento é **custo fixo**, com rateio por pizza **só como indicador** **[Decisão]**.
 - **L5:** energia e gás do forno são **custo fixo**, porque o forno e a energia seguem o horário de trabalho e não a produção **[Decisão]**.
-- **L6:** o custo da entrega (diária e valor por entrega) é custo variável apenas dos pedidos de entrega **[Suposição, Marlon não respondeu]**.
+- **L6:** o custo da entrega (diária e valor por entrega) é custo variável apenas dos pedidos de entrega **[Decisão, confirmada em 20/10/2026]**.
 - **L9:** CMV real **mensal**, com fechamento no inventário completo **[Decisão]**.
 - **L10:** o preço de funcionário entra na margem como desconto, com visão separada **[Decisão]**.
 - **L11:** promoção e desconto são **redução de receita**, com motivo **[Decisão]**.
