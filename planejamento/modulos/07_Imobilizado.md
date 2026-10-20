@@ -1,6 +1,6 @@
 # Detalhamento 07: Imobilizado
 
-Versão 0.2, 20/10/2026. Consolidada com as respostas M1 a M18 de Marlon. Aguarda aprovação. Montada com o que Marlon já decidiu, com o plano macro (seção 4.2) e com boas práticas marcadas. Depende dos módulos já aprovados, em especial [Estoques e Compras](04_Estoques_e_Compras.md), [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md) e [Custos](06_Custos.md).
+Versão 0.2, 20/10/2026. Consolidada com as respostas M1 a M18 de Marlon. **APROVADA por Marlon em 20/10/2026.** Montada com o que Marlon já decidiu, com o plano macro (seção 4.2) e com boas práticas marcadas. Depende dos módulos já aprovados, em especial [Estoques e Compras](04_Estoques_e_Compras.md), [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md) e [Custos](06_Custos.md).
 
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
