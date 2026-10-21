@@ -1,6 +1,6 @@
 # Detalhamento 04: Estoques e Compras
 
-Versão 0.3, 20/10/2026. Consolidada com as respostas J1 a J14 de Marlon e com a revisão da J8 (lista de compras e cotação) pedida em 20/10/2026. A v0.2 foi aprovada em 19/10/2026; **a v0.3 aguarda nova aprovação, só na parte de Compras (3.2, J8 e perguntas J8a a J8e).** Parte do [Plano Macro](../00_Plano_Macro.md), seção 4.3. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md) e [Fechamento de Caixa](03_Fechamento_de_Caixa.md), todos aprovados.
+Versão 0.3, 21/10/2026. Consolidada com as respostas J1 a J14 de Marlon e com a revisão da J8 (lista de compras e cotação) pedida em 20/10/2026. A v0.2 foi aprovada em 19/10/2026; **a revisão de Compras (3.2 e J8) teve as perguntas J8a a J8e respondidas por Marlon em 21/10/2026, que aceitou todas as sugestões.** Parte do [Plano Macro](../00_Plano_Macro.md), seção 4.3. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md) e [Fechamento de Caixa](03_Fechamento_de_Caixa.md), todos aprovados.
 
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
@@ -115,7 +115,7 @@ Todas as perguntas do módulo estão respondidas.
 
 ---
 
-### 6.3 Perguntas da revisão da J8 (a responder)
+### 6.3 Revisão da J8: respostas de Marlon em 21/10/2026 (aceitas todas as sugestões) **[Decisão]**
 
 - **J8a:** a cotação é sempre obrigatória ou o comprador pode pular e ir direto da necessidade ao pedido, para itens do dia a dia? (recomendo: pode pular, escolhendo "fornecedor habitual" por item)
 - **J8b:** o item avulso que o operador insere pode ser algo fora do cadastro (ex.: compra pontual), ou só item já cadastrado? (recomendo: só cadastrado, com cadastro rápido de item novo pelo gerente)
