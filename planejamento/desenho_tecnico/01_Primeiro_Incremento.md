@@ -1,6 +1,6 @@
 # Desenho técnico 01: Primeiro incremento
 
-Versão 0.1, 21/10/2026. Rascunho para aprovação de Marlon. Parte do [Plano Macro v1.0](../00_Plano_Macro.md), aprovado em 21/10/2026, seção 6 (etapas 0 e 1). Fontes de regra de negócio: [Núcleo e Vendas](../modulos/01_Nucleo_e_Vendas.md), [Produção](../modulos/02_Producao.md) e [Fechamento de Caixa](../modulos/03_Fechamento_de_Caixa.md). Fonte técnica: Kit Aplicação Web (Manual Técnico, citado como [Kit, seção]).
+Versão 0.2, 21/10/2026. Rascunho para aprovação de Marlon, com as respostas T1, T6, T7 e T10 incorporadas. Parte do [Plano Macro v1.0](../00_Plano_Macro.md), aprovado em 21/10/2026, seção 6 (etapas 0 e 1). Fontes de regra de negócio: [Núcleo e Vendas](../modulos/01_Nucleo_e_Vendas.md), [Produção](../modulos/02_Producao.md) e [Fechamento de Caixa](../modulos/03_Fechamento_de_Caixa.md). Fonte técnica: Kit Aplicação Web (Manual Técnico, citado como [Kit, seção]).
 
 **Critério de sucesso:** Marlon lê este desenho e diz "aprovado" ou aponta o que corrigir; com a aprovação, começa a construção da fatia 1A. Este documento não escreve código; define o que será construído, em que ordem e com quais tabelas e telas.
 
@@ -66,6 +66,9 @@ Código no repositório `MarlonSpiess/pizzaria-sistema`, pasta `sistema/`, ao la
 | Atualização das filas | Não há padrão no kit | Consulta a cada 3 segundos (polling) no começo; se pesar, troca por eventos do servidor. Não depende de internet |
 | Impressora de etiqueta | PDF com reportlab [Kit, seção 11] | Etiqueta gerada em PDF e impressa pelo navegador; o modelo da impressora decide o formato (pendente) |
 | Segundo PC servidor | Não há | Mesma instalação no segundo PC, parada; troca manual no começo (contingência H11) |
+| Horário de funcionamento | Servidor ligado 24 horas | **Os PCs não são servidores dedicados**: rede só local e uso por volta de 10 horas por dia **[Decisão T1, 21/10/2026]**. O sistema sobe quando o PC liga e desliga o banco de forma limpa antes de o PC apagar; nada roda de madrugada |
+| Tablet | Navegador comum | Tablet Android 14 ou superior, 1 a 2 GB de RAM e 32 GB de armazenamento **[Decisão T7]**: páginas leves, sem framework pesado, poucos dados por consulta |
+| Impressora de etiqueta | PDF pelo navegador | **Impressora térmica Bluetooth, modelo simples [Decisão T7].** Navegador de tablet não imprime direto em Bluetooth e, pelo que sei, o Web Bluetooth só funciona em página segura (HTTPS), que a rede local comum não oferece **[Suposição, a testar]**. Caminhos a testar antes da 1D: (a) HTTPS local com certificado próprio, (b) aplicativo de impressão no tablet que recebe o comando, (c) impressora ligada por cabo ou Wi-Fi a um PC. O teste usa o modelo real de Marlon |
 
 ---
 
@@ -215,7 +218,7 @@ Rotas em `/api`, um router por entidade, validação e perfis aplicados em todas
 
 - Login pessoal e intransferível; nenhuma senha padrão; primeiro administrador criado por script, com senha digitada sem eco **[Kit, 6.6]**.
 - Servidor aberto só na rede da loja; firewall do Windows liberando só a porta do sistema; sem exposição direta à internet.
-- **Backup:** `pg_dump` diário em horário de baixo movimento, copiado para fora da máquina (destino a definir, pergunta T6); teste de restauração faz parte da fatia 1A **[Decisão P8, Kit]**.
+- **Backup [Decisão T6, 21/10/2026]:** `pg_dump` diário **ao fechar o dia** (o PC não fica ligado de madrugada), gravado no PC e copiado para o **Google Drive**; segunda cópia mantida no computador de Marlon. Sistema avisa na tela se o último backup tem mais de 1 dia. Teste de restauração faz parte da fatia 1A **[Decisão P8, Kit]**. Credenciais do Drive ficam em variável de ambiente, nunca no git.
 - Atualização do sistema: backup antes, migrations, subida, `/health`; rotina escrita no instalador.
 - Relógio do servidor certo e fuso fixo; todas as horas gravadas pelo servidor.
 
@@ -225,6 +228,7 @@ Rotas em `/api`, um router por entidade, validação e perfis aplicados em todas
 
 | Risco | Tratamento |
 |---|---|
+| PC servidor desligado com o banco em uso (sem energia ou apagado por engano) | O PostgreSQL recupera após queda, mas o backup do dia pode faltar: botão "fazer backup agora" e aviso de backup atrasado; nobreak recomendado **[Prática]** |
 | Queda do PC servidor em pleno movimento | Segundo PC com a mesma instalação e cópia recente do banco; ensaio de troca antes de usar de verdade |
 | Queda da rede da loja | Roteador e cabos conferidos antes; tablets e PCs reconectam sozinhos; avisar na tela quando perder conexão |
 | Atendente digita pedido em dois PCs ao mesmo tempo | Contador do dia na transação; teste de corrida na suíte |
@@ -239,16 +243,16 @@ Rotas em `/api`, um router por entidade, validação e perfis aplicados em todas
 
 Cada uma com a recomendação entre parênteses.
 
-- **T1:** o servidor roda no PC da recepção que fica ligado a maior parte do dia, e o outro PC é reserva? (sim)
-- **T2:** os tablets usam o navegador em tela cheia, sem instalar aplicativo? (sim, no começo)
-- **T3:** as filas dos tablets podem atualizar a cada 3 segundos, sem tempo real instantâneo? (sim)
-- **T4:** na pizza Grande de dois sabores, arredondar a metade de cada sabor para cima quando sobrar meio centavo? (sim, e o total fica sempre com duas casas)
-- **T5:** pedido urgente, massa em duas fases e pedido agendado entram na fatia 1D depois da fila básica? (sim)
-- **T6:** onde fica o backup fora da máquina: pen drive trocado, HD externo ou pasta na nuvem que você já usa? (pasta na nuvem mais uma cópia em HD externo)
-- **T7:** qual o modelo da impressora de etiqueta e dos tablets, quando já souber? (preciso do modelo antes da fatia 1D)
-- **T8:** posso criar a pasta `sistema/` no repositório para o código, com testes e instruções de instalação? (sim)
-- **T9:** a fatia 1A pode começar assim que você aprovar este desenho, sem esperar a lista de sabores e preços? (sim, ela só é necessária na 1B)
-- **T10:** o protótipo das telas (em HTML clicável) antes da construção da 1C e da 1D? (sim, você aprova o visual antes do código)
+- **T1, respondida:** servidores não dedicados, só na rede local, uns 10 horas por dia **[Decisão]**.
+- **T2 (em aberto):** os tablets usam o navegador em tela cheia, sem instalar aplicativo? (sim, no começo)
+- **T3 (em aberto):** as filas dos tablets podem atualizar a cada 3 segundos, sem tempo real instantâneo? (sim)
+- **T4 (em aberto):** na pizza Grande de dois sabores, arredondar a metade de cada sabor para cima quando sobrar meio centavo? (sim, e o total fica sempre com duas casas)
+- **T5 (em aberto):** pedido urgente, massa em duas fases e pedido agendado entram na fatia 1D depois da fila básica? (sim)
+- **T6, respondida:** Google Drive e uma cópia no computador de Marlon **[Decisão]**.
+- **T7, respondida:** impressora térmica Bluetooth simples; tablet Android 14 ou superior com 1 a 2 GB de RAM e 32 GB **[Decisão]**. Falta o modelo exato da impressora para o teste de impressão (seção 2.4).
+- **T8 (em aberto):** posso criar a pasta `sistema/` no repositório para o código, com testes e instruções de instalação? (sim)
+- **T9 (em aberto):** a fatia 1A pode começar assim que você aprovar este desenho, sem esperar a lista de sabores e preços? (sim, ela só é necessária na 1B)
+- **T10, respondida:** sim, protótipo clicável das telas antes da construção da 1C e da 1D **[Decisão]**.
 
 ---
 
