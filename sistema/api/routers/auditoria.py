@@ -11,7 +11,7 @@ router = APIRouter(prefix="/auditoria", tags=["auditoria"])
 
 @router.get("")
 def listar(entidade: Optional[str] = Query(default=None, max_length=40), limite: int = Query(default=100, ge=1, le=500),
-           deslocamento: int = Query(default=0, ge=0), sessao=Depends(requer("auditoria.ver")), conn=Depends(get_db)):
+           deslocamento: int = Query(default=0, ge=0, le=1_000_000), sessao=Depends(requer("auditoria.ver")), conn=Depends(get_db)):
     filtro, params = "", [LOJA_ID]
     if entidade:
         filtro, params = " AND entidade = %s", [LOJA_ID, entidade]

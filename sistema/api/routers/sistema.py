@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from api.database import get_db
+from api.database import auditar, get_db
 from api.security import requer
 from api.services import backup
 
@@ -14,4 +14,8 @@ def situacao_backup(sessao=Depends(requer("sistema.backup.ver")), conn=Depends(g
 
 @router.post("/backup")
 def rodar_backup(sessao=Depends(requer("sistema.backup.rodar")), conn=Depends(get_db)):
-    return backup.fazer_backup(conn, sessao["usuario"])
+    conn.rollback()  # encerra a transação do request antes do dump longo; o backup usa conexão própria
+    resultado = backup.fazer_backup(sessao["usuario"])
+    auditar(conn, sessao, "backup_manual", "backup", resultado["arquivo"], depois={"sucesso": resultado["sucesso"]})
+    conn.commit()
+    return resultado

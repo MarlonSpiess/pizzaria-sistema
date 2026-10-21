@@ -47,6 +47,8 @@ def criar(dados: UsuarioCreate, sessao=Depends(requer("usuarios.gerir")), conn=D
 
 @router.patch("/{uid}")
 def alterar(uid: int, dados: UsuarioUpdate, sessao=Depends(requer("usuarios.gerir")), conn=Depends(get_db)):
+    # Serializa as alterações de usuário: duas desativações simultâneas não podem tirar o último administrador.
+    conn.execute("SELECT pg_advisory_xact_lock(2, 1)")
     atual = _obter(conn, uid)
     campos = dados.model_dump(exclude_unset=True)
     if not campos:
@@ -69,7 +71,8 @@ def alterar(uid: int, dados: UsuarioUpdate, sessao=Depends(requer("usuarios.geri
         invalidar_sessoes_usuario(conn, uid)
     novo = _obter(conn, uid)
     auditar(conn, sessao, "alterar", "usuario", uid,
-            antes={k: atual[k] for k in campos}, depois={k: novo[k] for k in campos})
+            antes={"usuario": atual["usuario"], **{k: atual[k] for k in campos}},
+            depois={"usuario": novo["usuario"], **{k: novo[k] for k in campos}})
     conn.commit()
     return novo
 

@@ -75,7 +75,7 @@ def test_backup_com_copia_extra_falhando_avisa(client, tmp_path, monkeypatch):
     monkeypatch.setattr(bk, "BACKUP_DIRS_EXTRA", [str(arquivo_no_lugar_de_pasta / "sub")])
     _, h = entrar(client, "administrador")
     r = client.post("/api/sistema/backup", headers=h).json()
-    assert r["sucesso"] and r["copias_falha"] == 1 and "falhou" in r["detalhe"]
+    assert r["sucesso"] and r["copias_falha"] == 1 and "falharam" in r["detalhe"] and "/" not in r["detalhe"]
 
 
 def test_backup_sem_pg_dump_registra_falha(client, tmp_path, monkeypatch):

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from api.database import agora, auditar, get_db
+from api.database import auditar, get_db
 from api.schemas import LoginIn, TrocarSenhaIn
 from api.security import (SENHA_DUMMY_HASH, criar_sessao, exigir_login_liberado, get_current_session, hash_senha,
                           invalidar_sessao, invalidar_sessoes_usuario, ip_cliente, limpar_falhas_login,
@@ -24,6 +24,8 @@ def login(dados: LoginIn, request: Request, conn=Depends(get_db)):
         raise HTTPException(status_code=401, detail=_CRED_INVALIDAS)
     limpar_falhas_login(conn, ip, dados.usuario)
     token = criar_sessao(conn, u["id"])
+    auditar(conn, {"usuario_id": u["id"], "usuario": u["usuario"]}, "login", "sessao", u["id"])
+    conn.commit()
     return {"token": token, "usuario": u["usuario"], "nome": u["nome"], "perfil": u["perfil"],
             "deve_trocar_senha": u["deve_trocar_senha"]}
 
@@ -31,6 +33,8 @@ def login(dados: LoginIn, request: Request, conn=Depends(get_db)):
 @router.post("/logout")
 def logout(sessao=Depends(get_current_session), conn=Depends(get_db)):
     invalidar_sessao(conn, sessao["token"])
+    auditar(conn, sessao, "logout", "sessao", sessao["usuario_id"])
+    conn.commit()
     return {"ok": True}
 
 

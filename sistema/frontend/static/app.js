@@ -102,7 +102,7 @@ async function abaPainel() {
       const b = await api("GET", "/sistema/backup");
       const cart = h("div", { class: "cartao" }, h("h2", {}, "Backup"));
       if (!b.ultimo_sucesso) cart.append(aviso("alerta", "Nenhum backup feito ainda."));
-      else cart.append(aviso(b.atrasado ? "alerta" : "ok", (b.atrasado ? "Backup atrasado. " : "Backup em dia. ") + "Último: " + fmtData(b.ultimo_sucesso.concluido_em)
+      else cart.append(aviso(b.atrasado || b.ultimo_sucesso.copias_falha || (b.copias_extras_configuradas && !b.ultimo_sucesso.copias_ok) ? "alerta" : "ok", (b.atrasado ? "Backup atrasado. " : (b.ultimo_sucesso.copias_falha || (b.copias_extras_configuradas && !b.ultimo_sucesso.copias_ok) ? "Backup feito, mas a cópia extra não foi concluída. " : "Backup em dia. ")) + "Último: " + fmtData(b.ultimo_sucesso.concluido_em)
         + " (" + b.ultimo_sucesso.copias_ok + " cópia(s) extra(s) ok" + (b.ultimo_sucesso.copias_falha ? ", " + b.ultimo_sucesso.copias_falha + " com falha" : "") + ")."));
       if (b.ultima_tentativa && !b.ultima_tentativa.sucesso) cart.append(aviso("erro", "A última tentativa falhou: " + (b.ultima_tentativa.detalhe || "sem detalhe")));
       if (!b.copias_extras_configuradas) cart.append(aviso("alerta", "Nenhuma cópia fora da pasta do sistema está configurada."));
@@ -145,11 +145,15 @@ async function abaUsuarios() {
         msg.replaceChildren();
         try { await api("PATCH", "/usuarios/" + x.id, { ativo: !x.ativo }); await carregar(); } catch (e) { msg.replaceChildren(aviso("erro", e.message)); }
       } }, x.ativo ? "Desativar" : "Reativar"), " ",
-      h("button", { class: "sec", onclick: async () => {
-        const nova = window.prompt("Senha provisória para " + x.usuario + " (mínimo 8 caracteres):");
-        if (!nova) return; msg.replaceChildren();
-        try { await api("POST", "/usuarios/" + x.id + "/redefinir-senha", { senha_nova: nova }); msg.replaceChildren(aviso("ok", "Senha redefinida. O usuário troca no próximo acesso.")); }
-        catch (e) { msg.replaceChildren(aviso("erro", e.message)); }
+      h("button", { class: "sec", onclick: (ev) => {
+        const celula = ev.target.parentNode;
+        const campo = h("input", { type: "password", autocomplete: "new-password", minlength: "8", placeholder: "Senha provisória" });
+        celula.replaceChildren(campo, h("button", { class: "sec", onclick: async () => {
+          msg.replaceChildren();
+          try { await api("POST", "/usuarios/" + x.id + "/redefinir-senha", { senha_nova: campo.value }); msg.replaceChildren(aviso("ok", "Senha redefinida. O usuário troca no próximo acesso.")); await carregar(); }
+          catch (e) { msg.replaceChildren(aviso("erro", e.message)); }
+        } }, "Salvar"), h("button", { class: "sec", onclick: () => carregar() }, "Cancelar"));
+        campo.focus();
       } }, "Redefinir senha"))));
     alvo.replaceChildren(msg, form, h("div", { class: "cartao tabela" }, h("h2", {}, "Usuários"),
       h("table", {}, h("thead", {}, h("tr", {}, ["Usuário", "Nome", "Perfil", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas))));

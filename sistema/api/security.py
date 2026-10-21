@@ -51,7 +51,8 @@ def _hash_token(token: str) -> str:
 
 def ip_cliente(request: Request) -> str:
     if CLIENT_IP_HEADER:
-        valor = request.headers.get(CLIENT_IP_HEADER, "").split(",")[0].strip()
+        # Último valor: o que o proxy confiável acrescentou. O primeiro pode ser forjado pelo cliente.
+        valor = request.headers.get(CLIENT_IP_HEADER, "").split(",")[-1].strip()
         if valor:
             return valor
     return request.client.host if request.client else "?"

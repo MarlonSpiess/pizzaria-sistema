@@ -8,16 +8,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from api.database import get_connection  # noqa: E402
 from api.services.backup import fazer_backup  # noqa: E402
 
 
 def main():
-    conn = get_connection()
-    try:
-        r = fazer_backup(conn, "script")
-    finally:
-        conn.close()
+    r = fazer_backup("script")
     if not r["sucesso"]:
         print(f"[erro] {r['detalhe']}", file=sys.stderr)
         sys.exit(2)

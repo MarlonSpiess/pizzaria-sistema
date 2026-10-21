@@ -32,6 +32,7 @@ def get_connection(connect_timeout: int = 10) -> psycopg.Connection:
                            user=DB_CONFIG["user"], password=DB_CONFIG["password"], row_factory=dict_row,
                            connect_timeout=connect_timeout)
     conn.execute(f"SET TIME ZONE '{TZ_BRASIL}'")
+    conn.commit()
     return conn
 
 
@@ -84,7 +85,7 @@ def traduzir_erro(e: psycopg.Error) -> HTTPException:
     if isinstance(e, psycopg.errors.CheckViolation):
         return HTTPException(status_code=400, detail="Valor fora do domínio permitido para este campo.")
     if isinstance(e, psycopg.errors.NotNullViolation):
-        return HTTPException(status_code=400, detail=f"Campo obrigatório não informado: {e.diag.column_name or '?'}.")
+        return HTTPException(status_code=400, detail="Campo obrigatório não informado.")
     if isinstance(e, psycopg.errors.DataError):
         return HTTPException(status_code=400, detail="Dado inválido para este campo.")
     if isinstance(e, psycopg.errors.IntegrityError):

@@ -19,6 +19,39 @@ FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
 LIMITE_CORPO = 1_000_000  # 1 MB basta para qualquer pedido da loja
 
 
+class LimiteCorpo:
+    """Middleware ASGI que corta corpo acima do limite, com ou sem Content-Length (inclui transferência em partes)."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        total = 0
+        excedeu = False
+
+        async def receive_limitado():
+            nonlocal total, excedeu
+            msg = await receive()
+            if msg["type"] == "http.request":
+                total += len(msg.get("body", b""))
+                if total > LIMITE_CORPO:
+                    excedeu = True
+                    return {"type": "http.request", "body": b"", "more_body": False}
+            return msg
+
+        async def send_limitado(msg):
+            if excedeu and msg["type"] == "http.response.start":
+                msg = {"type": "http.response.start", "status": 413,
+                       "headers": [(b"content-type", b"application/json")]}
+            elif excedeu and msg["type"] == "http.response.body":
+                msg = {"type": "http.response.body", "body": b'{"detail":"Corpo da requisicao grande demais."}'}
+            await send(msg)
+
+        await self.app(scope, receive_limitado, send_limitado)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     pool.open()
@@ -32,6 +65,7 @@ app = FastAPI(title="Sistema Integrado da Pizzaria", lifespan=lifespan,
               docs_url="/docs" if DOCS_ENABLED else None, redoc_url=None,
               openapi_url="/openapi.json" if DOCS_ENABLED else None)
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+app.add_middleware(LimiteCorpo)
 
 _CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; "
         "object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
@@ -39,9 +73,6 @@ _CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'
 
 @app.middleware("http")
 async def cabecalhos_e_limite(request: Request, call_next):
-    tamanho = request.headers.get("content-length")
-    if tamanho and tamanho.isdigit() and int(tamanho) > LIMITE_CORPO:
-        return JSONResponse(status_code=413, content={"detail": "Corpo da requisição grande demais."})
     resp = await call_next(request)
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["X-Frame-Options"] = "DENY"

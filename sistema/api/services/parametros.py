@@ -4,6 +4,7 @@ Valor guardado como texto; a regra de cada chave fica aqui, não espalhada nas t
 Limites iniciais ficam vazios até Marlon definir (decisão de 16/10/2026).
 """
 import json
+import re
 from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException
@@ -29,14 +30,19 @@ CATALOGO = {
 }
 
 
+_NUMERO = re.compile(r"^[0-9]{1,9}([.,][0-9]{1,6})?$")
+
+
 def descrever() -> list[dict]:
     return [{"chave": k, "tipo": t, "descricao": d} for k, (t, _, d) in CATALOGO.items()]
 
 
 def _dec(texto: str, minimo: Decimal, maximo: Decimal | None = None) -> Decimal:
+    if not _NUMERO.match(texto):  # só dígitos ASCII, com ponto ou vírgula decimal
+        raise ValueError("Número inválido.")
     try:
         v = Decimal(texto.replace(",", "."))
-    except (InvalidOperation, AttributeError):
+    except InvalidOperation:
         raise ValueError("Número inválido.")
     if not v.is_finite() or v < minimo or (maximo is not None and v > maximo):
         raise ValueError("Valor fora da faixa permitida.")
@@ -72,7 +78,7 @@ def normalizar(chave: str, valor) -> str | None:
         if tipo == "dinheiro":
             return str(_dec(valor, Decimal(0), Decimal("999999.99")).quantize(Decimal("0.01")))
         if tipo == "decimal_pos":
-            return str(_dec(valor, Decimal("0.1"), Decimal(1000)).normalize())
+            return format(_dec(valor, Decimal("0.1"), Decimal(1000)).normalize(), "f")
         if tipo == "inteiro_pos":
             d = _dec(valor, Decimal(1), Decimal(1000))
             if d != d.to_integral_value():
@@ -91,11 +97,11 @@ def vigentes(conn, loja_id: int) -> dict[str, dict]:
     gravados = {r["chave"]: r for r in linhas}
     saida = {}
     for chave, (tipo, padrao, desc) in CATALOGO.items():
-        if chave in gravados:
+        if chave in gravados and gravados[chave]["valor"] is not None:
             bruto, desde = gravados[chave]["valor"], gravados[chave]["vigente_desde"]
-        else:
+        else:  # nunca alterado ou limpo: vale o padrão do catálogo (que pode ser "não definido")
             bruto, desde = (json.dumps(padrao) if tipo == "formas" and padrao else padrao), None
         valor = json.loads(bruto) if (tipo == "formas" and bruto) else bruto
         saida[chave] = {"chave": chave, "tipo": tipo, "descricao": desc, "valor": valor,
-                        "vigente_desde": desde, "definido": chave in gravados}
+                        "vigente_desde": desde, "definido": desde is not None}
     return saida
