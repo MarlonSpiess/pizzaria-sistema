@@ -1,0 +1,29 @@
+:root{--creme:#FAF6EF;--escuro:#1E1A17;--tan:#F1E7D8;--linha:#E6DCCD;--cinza:#5E534A;--tinta:#2B2420;--vermelho:#B5361F;--ouro:#D9A441;--verde:#3E7A4B}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--creme);color:var(--tinta);font-size:16px}
+header{background:var(--escuro);color:#fff;display:flex;align-items:center;gap:16px;padding:10px 16px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;color:var(--ouro);flex:1}
+header span{color:#d8cfc4;font-size:14px}
+nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;background:var(--tan);border-bottom:1px solid var(--linha)}
+nav button{background:transparent;border:1px solid transparent;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:15px;color:var(--tinta)}
+nav button.ativo{background:#fff;border-color:var(--linha);font-weight:600}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.cartao{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px;margin-bottom:16px}
+.cartao h2{margin:0 0 12px;font-size:18px}
+label{display:block;font-size:14px;color:var(--cinza);margin:10px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid var(--linha);border-radius:8px;font-size:16px;background:#fff}
+button.principal{background:var(--vermelho);color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:16px;cursor:pointer;margin-top:14px}
+button.sec{background:#fff;border:1px solid var(--linha);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--linha);vertical-align:top}
+th{font-size:13px;color:var(--cinza)}
+.tabela{overflow-x:auto}
+.aviso{padding:10px 14px;border-radius:8px;margin-bottom:14px}
+.aviso.erro{background:#FBE9E5;color:#8a2412}
+.aviso.ok{background:#E8F3EA;color:#25552f}
+.aviso.alerta{background:#FFF3D6;color:#6b4a00}
+.login{max-width:380px;margin:8vh auto;padding:0 16px}
+.linha{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.linha>*{flex:1;min-width:140px}
+.pequeno{font-size:13px;color:var(--cinza)}
+@media (max-width:768px){main{padding:10px}}

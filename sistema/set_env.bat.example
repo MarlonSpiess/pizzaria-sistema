@@ -1,0 +1,12 @@
+@echo off
+rem Copie para set_env.bat (que fica fora do git) e preencha. Nunca versione senhas.
+set DB_HOST=localhost
+set DB_PORT=5432
+set DB_NAME=pizzaria
+set DB_USER=pizzaria_app
+set DB_PASS=troque_esta_senha
+set LOJA_ID=1
+set PIZZARIA_PORT=8080
+rem Pastas de cópia do backup: pasta do Google Drive para computador e pasta do computador de Marlon (separadas por ;)
+set BACKUP_DIRS_EXTRA=C:\Users\SEU_USUARIO\Google Drive\Backup Pizzaria;D:\Backup Pizzaria
+rem set PG_DUMP_PATH=C:\Program Files\PostgreSQL\16\bin\pg_dump.exe

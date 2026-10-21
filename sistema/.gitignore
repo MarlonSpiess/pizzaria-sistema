@@ -1,0 +1,11 @@
+.env
+set_env.bat
+*segredos*
+backups/
+*.bak
+*.log
+*.dump
+__pycache__/
+.claude/
+.pytest_cache/
+venv/
