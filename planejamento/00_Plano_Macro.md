@@ -1,6 +1,6 @@
 # Plano Macro: Sistema Integrado da Pizzaria
 
-Versão 1.0, 20/10/2026. Consolida o plano macro e os detalhamentos dos nove módulos e do núcleo, todos aprovados por Marlon entre 18 e 20/10/2026. **Aguarda a aprovação final de Marlon.** Os documentos de cada módulo (pasta `modulos/`) são a fonte de verdade de cada assunto; este documento dá a visão do conjunto.
+Versão 1.0, 20/10/2026. Consolida o plano macro e os detalhamentos dos nove módulos e do núcleo, todos aprovados por Marlon entre 18 e 20/10/2026. **APROVADO por Marlon em 21/10/2026.** Os documentos de cada módulo (pasta `modulos/`) são a fonte de verdade de cada assunto; este documento dá a visão do conjunto.
 
 **Critério de sucesso deste documento:** Marlon lê a visão do conjunto (módulos, integrações, ordem de construção, parâmetros e pendências) e diz "aprovado" ou aponta o que corrigir. Aprovado, o planejamento termina e começa o desenho técnico.
 
