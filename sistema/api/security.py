@@ -16,14 +16,18 @@ PERFIS = ("administrador", "proprietario", "gerente", "subgerente", "atendente",
 
 # Permissões por perfil. Perfil ausente ou permissão ausente = negado.
 # administrador e proprietário têm tudo; as demais permissões entram nas fatias seguintes.
-_TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar"}
+_TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar",
+          "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar"}
+_GERENCIA = {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar", "cardapio.ver", "cardapio.editar",
+             "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar"}
 PERMISSOES = {
     "administrador": _TODAS,
     "proprietario": _TODAS,
-    "gerente": {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar"},
+    "gerente": _GERENCIA,
     # Subgerente: permissões do gerente, exceto aprovar diferença de caixa (decisão de 19/10/2026; entra na fatia 1E).
-    "subgerente": {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar"},
-    "atendente": set(),
+    "subgerente": _GERENCIA,
+    # Atendente consulta o cardápio e os entregadores e cadastra cliente na primeira compra.
+    "atendente": {"cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver"},
     "massa": set(),
     "pizzaiolo": set(),
     "acabamento": set(),

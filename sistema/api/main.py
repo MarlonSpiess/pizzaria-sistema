@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.config import DB_CONFIG, DOCS_ENABLED
 from api.database import pool
-from api.routers import auditoria, auth, parametros, sistema, usuarios
+from api.routers import auditoria, auth, cardapio, parametros, pessoas, sistema, usuarios
 
 log = logging.getLogger("pizzaria")
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
@@ -111,7 +111,7 @@ def health():
         return JSONResponse(status_code=503, content={"status": "db_indisponivel"})
 
 
-for r in (auth.router, usuarios.router, parametros.router, auditoria.router, sistema.router):
+for r in (auth.router, usuarios.router, parametros.router, auditoria.router, sistema.router, cardapio.router, pessoas.router):
     app.include_router(r, prefix="/api")
 
 
