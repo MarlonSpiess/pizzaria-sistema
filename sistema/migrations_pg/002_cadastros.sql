@@ -82,3 +82,11 @@ CREATE TABLE IF NOT EXISTS entregador (
     criado_por BIGINT REFERENCES usuario(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_entregador_nome ON entregador (loja_id, lower(nome));
+
+-- Histórico de preço só de inserção (mesma regra da auditoria)
+DROP TRIGGER IF EXISTS trg_preco_produto_so_insercao ON preco_produto;
+CREATE TRIGGER trg_preco_produto_so_insercao BEFORE UPDATE OR DELETE ON preco_produto
+    FOR EACH ROW EXECUTE FUNCTION recusar_alteracao();
+DROP TRIGGER IF EXISTS trg_preco_adicional_so_insercao ON preco_adicional;
+CREATE TRIGGER trg_preco_adicional_so_insercao BEFORE UPDATE OR DELETE ON preco_adicional
+    FOR EACH ROW EXECUTE FUNCTION recusar_alteracao();

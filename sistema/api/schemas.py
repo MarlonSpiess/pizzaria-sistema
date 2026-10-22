@@ -176,11 +176,19 @@ from pydantic import AfterValidator  # noqa: E402
 
 from api.services.dinheiro import parse_reais  # noqa: E402
 
-Reais = Annotated[str, AfterValidator(lambda v: str(parse_reais(v)))]
+def _reais_positivo(v: str) -> str:
+    r = parse_reais(v)
+    if r <= 0:
+        raise ValueError("O preço deve ser maior que zero.")
+    return str(r)
+
+
+Reais = Annotated[str, AfterValidator(_reais_positivo)]
 TIPOS_PRODUTO = ("pizza", "calzone", "bebida", "acompanhamento")
 
 
 def _nome(v: str) -> str:
+    v = unicodedata.normalize("NFC", v or "")
     if not v or len(v) > 120:
         raise ValueError("Nome obrigatório, até 120 caracteres.")
     return v
@@ -195,8 +203,12 @@ def _texto_opcional(maximo: int):
 
 
 def _telefone(v: str) -> str:
+    if len(v) > 30 or any(c not in "0123456789()+-. " for c in v):
+        raise ValueError("Telefone inválido: use só números, espaço, parênteses, hífen e +.")
     digitos = "".join(c for c in v if c in "0123456789")
-    if not 8 <= len(digitos) <= 15 or len(v) > 30:
+    if len(digitos) in (12, 13) and digitos.startswith("55"):
+        digitos = digitos[2:]  # DDI do Brasil: o mesmo número não vira dois cadastros
+    if not 8 <= len(digitos) <= 15:
         raise ValueError("Telefone inválido: informe de 8 a 15 dígitos (com DDD).")
     return digitos
 

@@ -38,7 +38,7 @@ def calcular_pizza(conn, loja_id: int, tamanho: str, sabor1_id: int, sabor2_id, 
         s2 = _sabor(conn, loja_id, sabor2_id, tamanho)
         for s in (s1, s2):
             metade = metade_para_cima(s["valor"])
-            itens.append({"descricao": f"Metade {s['nome']} (Grande {fmt(s['valor'])} ÷ 2)", "valor": fmt(metade)})
+            itens.append({"descricao": f"Metade {s['nome']} (Grande {fmt(s['valor']).replace('.', ',')} ÷ 2)", "valor": fmt(metade)})
             total += metade
     else:
         itens.append({"descricao": f"{s1['nome']} ({tamanho})", "valor": fmt(s1["valor"])})

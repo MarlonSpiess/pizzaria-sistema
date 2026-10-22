@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, traduzir_erro
-from api.schemas import ClienteCreate, ClienteUpdate, EntregadorCreate, EntregadorUpdate
+from api.schemas import _telefone, ClienteCreate, ClienteUpdate, EntregadorCreate, EntregadorUpdate
 from api.security import requer
 
 router = APIRouter(tags=["pessoas"])
@@ -30,6 +30,7 @@ def _like(q: str) -> str:
 def listar_clientes(q: Optional[str] = Query(default=None, max_length=60), limite: int = Query(default=50, ge=1, le=200),
                     sessao=Depends(requer("clientes.ver")), conn=Depends(get_db)):
     sql, params = f"SELECT {_C} FROM cliente WHERE loja_id = %s", [LOJA_ID]
+    q = q.replace("\x00", "") if q else q
     if q and q.strip():
         digitos = "".join(c for c in q if c in "0123456789")
         sql += " AND (lower(nome) LIKE lower(%s) ESCAPE '\\'" + (" OR telefone LIKE %s)" if digitos else ")")
@@ -39,7 +40,10 @@ def listar_clientes(q: Optional[str] = Query(default=None, max_length=60), limit
 
 @router.get("/clientes/por-telefone/{telefone}")
 def cliente_por_telefone(telefone: str, sessao=Depends(requer("clientes.ver")), conn=Depends(get_db)):
-    digitos = "".join(c for c in telefone[:30] if c in "0123456789")
+    try:
+        digitos = _telefone(telefone)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado.")
     c = conn.execute(f"SELECT {_C} FROM cliente WHERE loja_id = %s AND telefone = %s", (LOJA_ID, digitos)).fetchone()
     if not c:
         raise HTTPException(status_code=404, detail="Cliente não encontrado.")

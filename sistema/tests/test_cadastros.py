@@ -220,3 +220,31 @@ def test_alteracoes_de_cadastro_ficam_na_auditoria(client, admin):
     assert {a["acao"] for a in aud} == {"criar", "alterar"} and all(a["usuario"] == login for a in aud)
     alterar = next(a for a in aud if a["acao"] == "alterar")
     assert alterar["antes"]["preco_grande"] == "30.00" and alterar["depois"]["preco_grande"] == "33.00"
+
+
+def test_qa1b_nul_na_busca_ddi_texto_solto_zero_e_nfc(client, admin):
+    _, h = admin
+    assert client.get("/api/clientes?q=%00", headers=h).status_code == 200
+    tel = "11" + str(97000000 + int(novo_login("d")[1:]))
+    assert client.post("/api/clientes", json={"nome": "Beto", "telefone": "+55 " + tel}, headers=h).json()["telefone"] == tel
+    assert client.post("/api/clientes", json={"nome": "Beto2", "telefone": tel}, headers=h).status_code == 409
+    assert client.post("/api/clientes", json={"nome": "X", "telefone": "ligar 11 98888-7777"}, headers=h).status_code == 422
+    assert client.get(f"/api/clientes/por-telefone/+55{tel}", headers=h).status_code == 200
+    assert client.post("/api/categorias", json={"nome": "Zero", "preco_padrao_grande": "0,00"}, headers=h).status_code == 422
+    n = novo_login("nfc")
+    assert client.post("/api/categorias", json={"nome": "Café " + n}, headers=h).status_code == 201
+    assert client.post("/api/categorias", json={"nome": "Café " + n}, headers=h).status_code == 409
+
+
+def test_qa1b_historico_de_preco_so_insercao(client, admin):
+    import os
+    import psycopg
+    _, h = admin
+    _pizza(client, h, _cat(client, h)["id"])
+    _adic(client, h)
+    with psycopg.connect(dbname=os.environ["DB_NAME"], host=os.environ["DB_HOST"], port=os.environ["DB_PORT"],
+                         user=os.environ["DB_USER"], password=os.environ["DB_PASS"]) as c:
+        for sql in ("UPDATE preco_produto SET valor = 1", "DELETE FROM preco_produto", "UPDATE preco_adicional SET valor = 1", "DELETE FROM preco_adicional"):
+            with pytest.raises(psycopg.Error):
+                c.execute(sql)
+            c.rollback()

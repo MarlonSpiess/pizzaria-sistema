@@ -78,6 +78,9 @@ function telaTrocaSenha() {
 
 const ABAS = [
   ["painel", "Painel", null],
+  ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"]],
+  ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"]],
+  ["entregadores", "Entregadores", ["administrador", "proprietario", "gerente", "subgerente", "atendente"]],
   ["usuarios", "Usuários", ["administrador", "proprietario"]],
   ["parametros", "Parâmetros", ["administrador", "proprietario", "gerente", "subgerente"]],
   ["auditoria", "Auditoria", ["administrador", "proprietario", "gerente", "subgerente"]],
@@ -195,13 +198,251 @@ async function abaAuditoria() {
     h("table", {}, h("thead", {}, h("tr", {}, ["Quando", "Quem", "Ação", "O quê", "Depois"].map((t) => h("th", {}, t)))), h("tbody", {}, linhas))));
 }
 
+// ---------------------------------------------------------------- Fatia 1B: cadastros
+const GERENCIA = ["administrador", "proprietario", "gerente", "subgerente"];
+const ehGerencia = () => GERENCIA.includes(estado.eu.perfil);
+const brl = (v) => v == null ? "" : "R$ " + String(v).replace(".", ",");
+const campo = (rotulo, el) => h("div", {}, h("label", {}, rotulo), el);
+const entradaPreco = (valor) => h("input", { inputmode: "decimal", placeholder: "0,00", value: valor == null ? "" : String(valor).replace(".", ","), autocomplete: "off" });
+const precoOuNulo = (el) => el.value.trim() === "" ? null : el.value.trim();
+const rotuloTipo = { pizza: "Pizza", calzone: "Calzone", bebida: "Bebida", acompanhamento: "Acompanhamento" };
+
+async function abaCardapio() {
+  const alvo = h("div"); moldura(alvo);
+  const msg = h("div");
+  const subs = [["pizza", "Sabores de pizza"], ["categorias", "Preços por categoria"], ["adicionais", "Bordas e adicionais"], ["outros", "Calzones, bebidas e outros"], ["simulador", "Simulador de preço"]];
+  if (!estado.sub) estado.sub = "pizza";
+  const editar = ehGerencia();
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  const ok = (t) => msg.replaceChildren(aviso("ok", t));
+
+  async function desenharSub() {
+    const nav = h("div", { class: "subnav" }, subs.map(([id, nome]) => h("button", { class: id === estado.sub ? "ativo" : "", onclick: () => { estado.sub = id; msg.replaceChildren(); desenharSub(); } }, nome)));
+    let corpo;
+    try {
+      if (estado.sub === "categorias") corpo = await subCategorias();
+      else if (estado.sub === "adicionais") corpo = await subAdicionais();
+      else if (estado.sub === "simulador") corpo = await subSimulador();
+      else corpo = await subProdutos(estado.sub === "pizza");
+    } catch (e) { corpo = aviso("erro", e.message); }
+    alvo.replaceChildren(nav, msg, corpo);
+  }
+
+  async function subCategorias() {
+    const lista = await api("GET", "/categorias");
+    const nome = h("input", { required: "" }), g = entradaPreco(), b = entradaPreco();
+    const form = h("form", { class: "cartao", onsubmit: async (ev) => {
+      ev.preventDefault();
+      try { await api("POST", "/categorias", { nome: nome.value, preco_padrao_grande: precoOuNulo(g), preco_padrao_broto: precoOuNulo(b) }); ok("Categoria criada."); desenharSub(); } catch (e) { falha(e); }
+    } }, h("h2", {}, "Nova categoria"), h("div", { class: "linha" }, campo("Nome (ex.: Tradicionais)", nome), campo("Preço padrão Grande", g), campo("Preço padrão Broto", b)),
+    h("button", { class: "principal", type: "submit" }, "Criar categoria"));
+    const linhas = lista.map((c) => {
+      const tr = h("tr", {});
+      const mostrar = () => tr.replaceChildren(h("td", {}, c.nome), h("td", {}, brl(c.preco_padrao_grande)), h("td", {}, brl(c.preco_padrao_broto)), h("td", {}, c.ativo ? "ativa" : "inativa"),
+        h("td", {}, editar ? [h("button", { class: "sec", onclick: edicao }, "Editar"), " ", h("button", { class: "sec", onclick: async () => {
+          try { await api("PATCH", "/categorias/" + c.id, { ativo: !c.ativo }); desenharSub(); } catch (e) { falha(e); }
+        } }, c.ativo ? "Inativar" : "Reativar")] : null));
+      const edicao = () => {
+        const n = h("input", { value: c.nome }), eg = entradaPreco(c.preco_padrao_grande), eb = entradaPreco(c.preco_padrao_broto);
+        tr.replaceChildren(h("td", {}, n), h("td", {}, eg), h("td", {}, eb), h("td", {}), h("td", {}, h("button", { class: "sec", onclick: async () => {
+          try { await api("PATCH", "/categorias/" + c.id, { nome: n.value, preco_padrao_grande: precoOuNulo(eg), preco_padrao_broto: precoOuNulo(eb) }); ok("Categoria salva."); desenharSub(); } catch (e) { falha(e); }
+        } }, "Salvar"), " ", h("button", { class: "sec", onclick: mostrar }, "Cancelar")));
+      };
+      mostrar(); return tr;
+    });
+    return h("div", {}, h("p", { class: "pequeno" }, "O preço padrão da categoria só preenche o cadastro de um sabor novo; cada sabor guarda o próprio preço."),
+      editar ? form : null, h("div", { class: "cartao tabela" }, h("h2", {}, "Categorias"),
+        h("table", {}, h("thead", {}, h("tr", {}, ["Categoria", "Padrão Grande", "Padrão Broto", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas))));
+  }
+
+  async function subProdutos(ehPizza) {
+    const [produtos, categorias] = await Promise.all([api("GET", "/produtos"), ehPizza ? api("GET", "/categorias") : Promise.resolve([])]);
+    const filtrados = produtos.filter((p) => ehPizza ? p.tipo === "pizza" : p.tipo !== "pizza");
+    const tipo = h("select", {}, ["calzone", "bebida", "acompanhamento"].map((t) => h("option", { value: t }, rotuloTipo[t])));
+    const nome = h("input", { required: "" }), ingr = h("input", { placeholder: "opcional" });
+    const cat = h("select", {}, categorias.filter((c) => c.ativo).map((c) => h("option", { value: c.id }, c.nome)));
+    const g = entradaPreco(), b = entradaPreco(), u = entradaPreco();
+    const padrao = () => { const c = categorias.find((x) => String(x.id) === cat.value); if (c) { g.value = c.preco_padrao_grande == null ? "" : String(c.preco_padrao_grande).replace(".", ","); b.value = c.preco_padrao_broto == null ? "" : String(c.preco_padrao_broto).replace(".", ","); } };
+    cat.onchange = padrao; if (ehPizza) padrao();  // trocar a categoria refaz os preços sugeridos
+    const form = h("form", { class: "cartao", onsubmit: async (ev) => {
+      ev.preventDefault();
+      const corpo = ehPizza ? { tipo: "pizza", nome: nome.value, categoria_id: Number(cat.value), ingredientes: ingr.value.trim() || null, preco_grande: precoOuNulo(g), preco_broto: precoOuNulo(b) }
+        : { tipo: tipo.value, nome: nome.value, ingredientes: ingr.value.trim() || null, preco_unico: precoOuNulo(u) };
+      try { await api("POST", "/produtos", corpo); ok("Cadastrado."); desenharSub(); } catch (e) { falha(e); }
+    } }, h("h2", {}, ehPizza ? "Novo sabor de pizza" : "Novo produto"),
+    h("div", { class: "linha" }, ehPizza ? campo("Categoria", cat) : campo("Tipo", tipo), campo("Nome", nome), campo("Ingredientes", ingr)),
+    h("div", { class: "linha" }, ehPizza ? [campo("Preço Grande", g), campo("Preço Broto", b)] : campo("Preço", u)),
+    h("button", { class: "principal", type: "submit" }, "Cadastrar"));
+    const cabeca = ehPizza ? ["Categoria", "Sabor", "Ingredientes", "Grande", "Broto", "Situação", ""] : ["Tipo", "Nome", "Preço", "Situação", ""];
+    const linhas = filtrados.map((p) => {
+      const tr = h("tr", {});
+      const mostrar = () => tr.replaceChildren(...(ehPizza
+        ? [h("td", {}, p.categoria), h("td", {}, p.nome), h("td", { class: "pequeno" }, p.ingredientes || ""), h("td", {}, brl(p.preco_grande)), h("td", {}, brl(p.preco_broto))]
+        : [h("td", {}, rotuloTipo[p.tipo]), h("td", {}, p.nome), h("td", {}, brl(p.preco_unico))]),
+        h("td", {}, p.ativo ? "ativo" : "inativo"),
+        h("td", {}, editar ? [h("button", { class: "sec", onclick: edicao }, "Editar"), " ", h("button", { class: "sec", onclick: async () => {
+          try { await api("PATCH", "/produtos/" + p.id, { ativo: !p.ativo }); desenharSub(); } catch (e) { falha(e); }
+        } }, p.ativo ? "Inativar" : "Reativar"), " ", h("button", { class: "sec", onclick: historico }, "Histórico")] : null));
+      const edicao = () => {
+        const n = h("input", { value: p.nome }), i = h("input", { value: p.ingredientes || "" });
+        const eg = entradaPreco(p.preco_grande), eb = entradaPreco(p.preco_broto), eu = entradaPreco(p.preco_unico);
+        const salvar = h("button", { class: "sec", onclick: async () => {
+          const corpo = { nome: n.value, ingredientes: i.value.trim() || null };
+          if (ehPizza) { if (eg.value.trim() !== String(p.preco_grande).replace(".", ",")) corpo.preco_grande = eg.value.trim(); if (eb.value.trim() !== String(p.preco_broto).replace(".", ",")) corpo.preco_broto = eb.value.trim(); }
+          else if (eu.value.trim() !== String(p.preco_unico).replace(".", ",")) corpo.preco_unico = eu.value.trim();
+          try { await api("PATCH", "/produtos/" + p.id, corpo); ok("Salvo. Preço alterado fica no histórico."); desenharSub(); } catch (e) { falha(e); }
+        } }, "Salvar");
+        tr.replaceChildren(...(ehPizza ? [h("td", {}, p.categoria), h("td", {}, n), h("td", {}, i), h("td", {}, eg), h("td", {}, eb)] : [h("td", {}, rotuloTipo[p.tipo]), h("td", {}, n), h("td", {}, eu)]),
+          h("td", {}, i && !ehPizza ? i : ""), h("td", {}, salvar, " ", h("button", { class: "sec", onclick: mostrar }, "Cancelar")));
+      };
+      const historico = async () => {
+        try {
+          const hist = await api("GET", "/produtos/" + p.id + "/historico-precos");
+          const prox = tr.nextSibling && tr.nextSibling.classList && tr.nextSibling.classList.contains("hist") ? tr.nextSibling : null;
+          if (prox) { prox.remove(); return; }
+          const col = h("td", { colspan: String(cabeca.length), class: "pequeno" }, hist.length ? hist.map((x) => h("div", {}, fmtData(x.vigente_desde) + ": " + x.tamanho + " " + brl(x.valor) + (x.alterado_por ? " (" + x.alterado_por + ")" : ""))) : "Sem histórico.");
+          tr.after(h("tr", { class: "hist" }, col));
+        } catch (e) { falha(e); }
+      };
+      mostrar(); return tr;
+    });
+    return h("div", {}, editar ? form : null, h("div", { class: "cartao tabela" }, h("h2", {}, ehPizza ? "Sabores de pizza" : "Calzones, bebidas e acompanhamentos"),
+      linhas.length ? h("table", {}, h("thead", {}, h("tr", {}, cabeca.map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nada cadastrado ainda.")));
+  }
+
+  async function subAdicionais() {
+    const lista = await api("GET", "/adicionais");
+    const tipo = h("select", {}, [["borda", "Borda"], ["adicional", "Adicional"]].map(([v, t]) => h("option", { value: v }, t)));
+    const nome = h("input", { required: "" }), g = entradaPreco(), b = entradaPreco();
+    const form = h("form", { class: "cartao", onsubmit: async (ev) => {
+      ev.preventDefault();
+      try { await api("POST", "/adicionais", { tipo: tipo.value, nome: nome.value, preco_grande: g.value.trim(), preco_broto: b.value.trim() }); ok("Cadastrado."); desenharSub(); } catch (e) { falha(e); }
+    } }, h("h2", {}, "Nova borda ou adicional"), h("div", { class: "linha" }, campo("Tipo", tipo), campo("Nome", nome), campo("Preço na Grande", g), campo("Preço na Broto", b)),
+    h("button", { class: "principal", type: "submit" }, "Cadastrar"));
+    const linhas = lista.map((a) => {
+      const tr = h("tr", {});
+      const mostrar = () => tr.replaceChildren(h("td", {}, a.tipo === "borda" ? "Borda" : "Adicional"), h("td", {}, a.nome), h("td", {}, brl(a.preco_grande)), h("td", {}, brl(a.preco_broto)), h("td", {}, a.ativo ? "ativo" : "inativo"),
+        h("td", {}, editar ? [h("button", { class: "sec", onclick: edicao }, "Editar"), " ", h("button", { class: "sec", onclick: async () => {
+          try { await api("PATCH", "/adicionais/" + a.id, { ativo: !a.ativo }); desenharSub(); } catch (e) { falha(e); }
+        } }, a.ativo ? "Inativar" : "Reativar")] : null));
+      const edicao = () => {
+        const n = h("input", { value: a.nome }), eg = entradaPreco(a.preco_grande), eb = entradaPreco(a.preco_broto);
+        tr.replaceChildren(h("td", {}, a.tipo === "borda" ? "Borda" : "Adicional"), h("td", {}, n), h("td", {}, eg), h("td", {}, eb), h("td", {}), h("td", {}, h("button", { class: "sec", onclick: async () => {
+          const corpo = { nome: n.value };
+          if (eg.value.trim() !== String(a.preco_grande).replace(".", ",")) corpo.preco_grande = eg.value.trim();
+          if (eb.value.trim() !== String(a.preco_broto).replace(".", ",")) corpo.preco_broto = eb.value.trim();
+          try { await api("PATCH", "/adicionais/" + a.id, corpo); ok("Salvo."); desenharSub(); } catch (e) { falha(e); }
+        } }, "Salvar"), " ", h("button", { class: "sec", onclick: mostrar }, "Cancelar")));
+      };
+      mostrar(); return tr;
+    });
+    return h("div", {}, editar ? form : null, h("div", { class: "cartao tabela" }, h("h2", {}, "Bordas e adicionais"),
+      linhas.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Tipo", "Nome", "Grande", "Broto", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nada cadastrado ainda.")));
+  }
+
+  async function subSimulador() {
+    const [produtos, adicionais] = await Promise.all([api("GET", "/produtos?tipo=pizza&ativo=true"), api("GET", "/adicionais?ativo=true")]);
+    const tam = h("select", {}, [["grande", "Grande"], ["broto", "Broto"]].map(([v, t]) => h("option", { value: v }, t)));
+    const opcoes = (vazio) => [h("option", { value: "" }, vazio)].concat(produtos.map((p) => h("option", { value: p.id }, p.categoria + ": " + p.nome)));
+    const s1 = h("select", {}, opcoes("Escolha o sabor")), s2 = h("select", {}, opcoes("Sem segundo sabor"));
+    const checks = adicionais.map((a) => { const c = h("input", { type: "checkbox", value: a.id }); return [c, h("label", { class: "marca" }, c, " " + a.nome + " (" + (a.tipo === "borda" ? "borda" : "adicional") + ")")]; });
+    const saida = h("div");
+    const ajusta = () => { s2.disabled = tam.value !== "grande"; if (s2.disabled) s2.value = ""; };
+    tam.onchange = ajusta; ajusta();
+    const form = h("form", { class: "cartao", onsubmit: async (ev) => {
+      ev.preventDefault(); saida.replaceChildren();
+      if (!s1.value) { saida.replaceChildren(aviso("erro", "Escolha o sabor.")); return; }
+      const corpo = { tamanho: tam.value, sabor1_id: Number(s1.value), sabor2_id: s2.value ? Number(s2.value) : null, adicional_ids: checks.filter(([c]) => c.checked).map(([c]) => Number(c.value)) };
+      try {
+        const r = await api("POST", "/precos/pizza", corpo);
+        saida.replaceChildren(h("table", {}, h("tbody", {}, r.itens.map((i) => h("tr", {}, h("td", {}, i.descricao), h("td", {}, brl(i.valor)))),
+          h("tr", {}, h("th", {}, "Total"), h("th", {}, brl(r.total))))));
+      } catch (e) { saida.replaceChildren(aviso("erro", e.message)); }
+    } }, h("h2", {}, "Simulador de preço"), h("p", { class: "pequeno" }, "Confere o preço de uma pizza antes de vender. Grande com dois sabores custa a metade de cada sabor, arredondando para cima cada metade."),
+    h("div", { class: "linha" }, campo("Tamanho", tam), campo("Sabor 1", s1), campo("Sabor 2", s2)),
+    h("div", {}, checks.map(([, l]) => l)), h("button", { class: "principal", type: "submit" }, "Calcular"), saida);
+    return form;
+  }
+  await desenharSub();
+}
+
+async function abaClientes() {
+  const alvo = h("div"); moldura(alvo);
+  const msg = h("div"), q = h("input", { placeholder: "Buscar por nome ou telefone", autocomplete: "off" }), tabela = h("div", { class: "cartao tabela" });
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  let busca = 0;
+  async function listar() {
+    let lista;
+    const minha = ++busca;
+    try { lista = await api("GET", "/clientes?limite=200&q=" + encodeURIComponent(q.value.trim())); } catch (e) { falha(e); return; }
+    if (minha !== busca) return;  // resposta de uma busca antiga
+    const linhas = lista.map((c) => {
+      const tr = h("tr", {});
+      const mostrar = () => tr.replaceChildren(h("td", {}, c.nome), h("td", {}, c.telefone), h("td", { class: "pequeno" }, c.endereco || ""), h("td", {}, c.ativo ? "ativo" : "inativo"),
+        h("td", {}, h("button", { class: "sec", onclick: edicao }, "Editar"), " ", h("button", { class: "sec", onclick: async () => {
+          try { await api("PATCH", "/clientes/" + c.id, { ativo: !c.ativo }); listar(); } catch (e) { falha(e); }
+        } }, c.ativo ? "Inativar" : "Reativar")));
+      const edicao = () => {
+        const n = h("input", { value: c.nome }), t = h("input", { value: c.telefone, inputmode: "tel" }), e = h("input", { value: c.endereco || "" });
+        tr.replaceChildren(h("td", {}, n), h("td", {}, t), h("td", {}, e), h("td", {}), h("td", {}, h("button", { class: "sec", onclick: async () => {
+          try { await api("PATCH", "/clientes/" + c.id, { nome: n.value, telefone: t.value, endereco: e.value.trim() || null }); msg.replaceChildren(aviso("ok", "Cliente salvo.")); listar(); } catch (x) { falha(x); }
+        } }, "Salvar"), " ", h("button", { class: "sec", onclick: mostrar }, "Cancelar")));
+      };
+      mostrar(); return tr;
+    });
+    tabela.replaceChildren(h("h2", {}, lista.length >= 200 ? "Clientes (primeiros 200; refine a busca)" : "Clientes (" + lista.length + ")"),
+      linhas.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Nome", "Telefone", "Endereço", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nenhum cliente encontrado."));
+  }
+  const nome = h("input", { required: "" }), tel = h("input", { required: "", inputmode: "tel" }), end = h("input", { placeholder: "rua, número, bairro, complemento" });
+  const form = h("form", { class: "cartao", onsubmit: async (ev) => {
+    ev.preventDefault();
+    try { await api("POST", "/clientes", { nome: nome.value, telefone: tel.value, endereco: end.value.trim() || null });
+      msg.replaceChildren(aviso("ok", "Cliente cadastrado.")); nome.value = tel.value = end.value = ""; listar(); } catch (e) { falha(e); }
+  } }, h("h2", {}, "Novo cliente"), h("div", { class: "linha" }, campo("Nome", nome), campo("Telefone (com DDD)", tel)), campo("Endereço", end), h("button", { class: "principal", type: "submit" }, "Cadastrar"));
+  let espera = null;
+  q.oninput = () => { clearTimeout(espera); espera = setTimeout(listar, 300); };
+  alvo.replaceChildren(msg, form, h("div", { class: "cartao" }, q), tabela);
+  await listar();
+}
+
+async function abaEntregadores() {
+  const alvo = h("div"); moldura(alvo);
+  const msg = h("div");
+  const editar = ehGerencia();
+  let lista;
+  try { lista = await api("GET", "/entregadores"); } catch (e) { alvo.replaceChildren(aviso("erro", e.message)); return; }
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  const nome = h("input", { required: "" }), tel = h("input", { inputmode: "tel", placeholder: "opcional" });
+  const form = h("form", { class: "cartao", onsubmit: async (ev) => {
+    ev.preventDefault();
+    try { await api("POST", "/entregadores", { nome: nome.value, telefone: tel.value.trim() || null }); abaEntregadores(); } catch (e) { falha(e); }
+  } }, h("h2", {}, "Novo entregador"), h("p", { class: "pequeno" }, "Entregadores são terceiros: aqui só o cadastro. Valores de entrega e diária entram no fechamento."),
+  h("div", { class: "linha" }, campo("Nome", nome), campo("Telefone", tel)), h("button", { class: "principal", type: "submit" }, "Cadastrar"));
+  const linhas = lista.map((x) => {
+    const tr = h("tr", {});
+    const mostrar = () => tr.replaceChildren(h("td", {}, x.nome), h("td", {}, x.telefone || ""), h("td", {}, x.ativo ? "ativo" : "inativo"),
+      h("td", {}, editar ? [h("button", { class: "sec", onclick: edicao }, "Editar"), " ", h("button", { class: "sec", onclick: async () => {
+        try { await api("PATCH", "/entregadores/" + x.id, { ativo: !x.ativo }); abaEntregadores(); } catch (e) { falha(e); }
+      } }, x.ativo ? "Inativar" : "Reativar")] : null));
+    const edicao = () => {
+      const n = h("input", { value: x.nome }), t = h("input", { value: x.telefone || "", inputmode: "tel" });
+      tr.replaceChildren(h("td", {}, n), h("td", {}, t), h("td", {}), h("td", {}, h("button", { class: "sec", onclick: async () => {
+        try { await api("PATCH", "/entregadores/" + x.id, { nome: n.value, telefone: t.value.trim() }); abaEntregadores(); } catch (e) { falha(e); }
+      } }, "Salvar"), " ", h("button", { class: "sec", onclick: mostrar }, "Cancelar")));
+    };
+    mostrar(); return tr;
+  });
+  alvo.replaceChildren(msg, editar ? form : null, h("div", { class: "cartao tabela" }, h("h2", {}, "Entregadores"),
+    linhas.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Nome", "Telefone", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nenhum entregador cadastrado.")));
+}
+
 async function desenhar() {
   if (!estado.token) return telaLogin();
   if (!estado.eu) {
     try { estado.eu = await api("GET", "/auth/me"); } catch (e) { return telaLogin(); }
   }
   if (estado.eu.deve_trocar_senha) return telaTrocaSenha();
-  const abas = { painel: abaPainel, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
+  const abas = { painel: abaPainel, cardapio: abaCardapio, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
   await (abas[estado.aba] || abaPainel)();
 }
 
