@@ -485,11 +485,16 @@ async function abaFichas() {
     if (estado.fichaSel && opcoes.some((o) => o.id === estado.fichaSel)) sel.value = estado.fichaSel;
     const editor = h("div");
     const ativos = itens.filter((i) => i.ativo);
+    let abertura = 0;
     async function abrir() {
-      estado.fichaSel = sel.value; editor.replaceChildren();
-      if (!sel.value) return;
+      const dono = sel.value, minha = ++abertura;
+      estado.fichaSel = dono; editor.replaceChildren();
+      if (!dono) return;
       let f;
-      try { f = await api("GET", "/fichas/" + sel.value); } catch (e) { falha(e); return; }
+      try { f = await api("GET", "/fichas/" + dono); } catch (e) { falha(e); return; }
+      if (minha !== abertura) return;  // resposta de uma escolha antiga
+      const usados = new Set((f.linhas || []).map((l) => l.item_id));
+      const ativos = itens.filter((i) => i.ativo || usados.has(i.id));
       const corpo = h("tbody");
       const novaLinha = (l) => {
         const item = h("select", {}, ativos.map((i) => h("option", { value: i.id }, i.nome + " (" + i.unidade + ")")));
@@ -507,7 +512,7 @@ async function abaFichas() {
       const salvar = h("button", { class: "principal", type: "button", onclick: async () => {
         try {
           const linhas = [...corpo.children].map((tr) => tr._ler());
-          const r = await api("PUT", "/fichas/" + sel.value, { linhas });
+          const r = await api("PUT", "/fichas/" + dono, { linhas });
           ok("Ficha salva (" + r.linhas.length + " linhas). A versão anterior fica guardada."); abrir();
         } catch (e) { falha(e); }
       } }, "Salvar ficha");
@@ -541,11 +546,10 @@ async function abaFichas() {
     h("table", {}, h("tbody", {}, etapas.map((e) => h("tr", {}, h("td", {}, e.nome), h("td", {}, FUNCOES[e.funcao]), h("td", {}, e.ativo ? "ativa" : "inativa"),
       h("td", {}, h("button", { type: "button", class: "sec", onclick: async () => { try { await api("PATCH", "/etapas/" + e.id, { ativo: !e.ativo }); desenharSub(); } catch (x) { falha(x); } } }, e.ativo ? "Inativar" : "Reativar")))))),
     h("div", { class: "linha" }, campo("Nova etapa (ex.: Batata palha)", nome), campo("Quem faz", fn)), h("button", { class: "principal", type: "submit" }, "Criar etapa")));
-    const ativas = etapas.filter((e) => e.ativo);
     function editorSequencia(titulo, dica, atual, aoSalvar, extra) {
       const corpo = h("tbody");
       const linha = (p) => {
-        const e = h("select", {}, ativas.map((x) => h("option", { value: x.id }, x.nome))); if (p) e.value = p.etapa_id;
+        const e = h("select", {}, etapas.filter((x) => x.ativo || atual.some((a) => a.etapa_id === x.id)).map((x) => h("option", { value: x.id }, x.nome))); if (p) e.value = p.etapa_id;
         const t = h("input", { inputmode: "decimal", placeholder: "minutos", value: p && p.tempo_min != null ? String(p.tempo_min).replace(".", ",") : "" });
         const tr = h("tr", {}, h("td", {}, e), h("td", {}, t),
           h("td", {}, h("button", { type: "button", class: "sec", onclick: () => { if (tr.previousSibling) tr.parentNode.insertBefore(tr, tr.previousSibling); } }, "Subir"), " ",
@@ -582,7 +586,8 @@ async function abaFichas() {
   async function subQualidade() {
     const q = await api("GET", "/fichas/qualidade");
     const lista = (titulo, itens, f) => h("div", { class: "cartao" }, h("h2", {}, titulo + " (" + itens.length + ")"), itens.length ? h("ul", {}, itens.map((x) => h("li", {}, f(x)))) : h("p", { class: "pequeno" }, "Nada pendente."));
-    return h("div", {}, lista("Produtos ativos sem ficha", q.produtos_sem_ficha, (p) => rotuloTipo[p.tipo] + ": " + p.nome),
+    return h("div", {}, lista("Bordas e adicionais sem ficha", q.adicionais_sem_ficha, (a) => (a.tipo === "borda" ? "Borda: " : "Adicional: ") + a.nome + " (" + a.tamanho + ")"),
+      lista("Produtos ativos sem ficha", q.produtos_sem_ficha, (p) => rotuloTipo[p.tipo] + ": " + p.nome),
       lista("Preparos sem ficha", q.preparos_sem_ficha, (p) => p.nome),
       lista("Bases por tamanho sem ficha (massa aberta, caixa)", q.bases_sem_ficha, (t) => t),
       lista("Pizzas e calzones sem etapas", q.produtos_sem_etapas, (p) => rotuloTipo[p.tipo] + ": " + p.nome));

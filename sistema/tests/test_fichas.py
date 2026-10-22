@@ -137,3 +137,39 @@ def test_qualidade_e_permissoes_das_fichas(client, admin):
     assert client.get("/api/itens", headers=hg).status_code == 200
     _, hs = entrar(client, "subgerente")
     assert client.post("/api/itens", json={"nome": novo_login("s"), "classe": "consumo", "unidade": "un"}, headers=hs).status_code == 201
+
+
+def test_qa1b2_quantidade_ida_e_volta_inativo_usado_e_qualidade_de_adicional(client, admin):
+    _, h = admin
+    p = _pizza(client, h, _cat(client, h)["id"])
+    pouco, outro = _item(client, h, unidade="kg"), _item(client, h)
+    r = _ficha(client, h, f"produto/{p['id']}", [{"item_id": pouco["id"], "quantidade": "0,0125"}, {"item_id": outro["id"], "quantidade": "100"}])
+    q = {x["item_id"]: x["quantidade"] for x in r.json()["linhas"]}
+    assert q[pouco["id"]] == "0.0125" and q[outro["id"]] == "100"  # a leitura não arredonda a 2 casas
+    again = _ficha(client, h, f"produto/{p['id']}", [{"item_id": pouco["id"], "quantidade": q[pouco["id"]]}, {"item_id": outro["id"], "quantidade": q[outro["id"]]}])
+    assert {x["quantidade"] for x in again.json()["linhas"]} == {"0.0125", "100"}
+    client.patch(f"/api/itens/{outro['id']}", json={"ativo": False}, headers=h)  # inativado depois de usado
+    assert _ficha(client, h, f"produto/{p['id']}", [{"item_id": outro["id"], "quantidade": "90"}]).status_code == 200
+    novo = _item(client, h)
+    client.patch(f"/api/itens/{novo['id']}", json={"ativo": False}, headers=h)
+    assert _ficha(client, h, f"produto/{p['id']}", [{"item_id": novo["id"], "quantidade": "1"}]).status_code == 400  # inativo e fora da ficha
+    b = _adic(client, h)
+    qual = client.get("/api/fichas/qualidade", headers=h).json()
+    assert {(a["id"], a["tamanho"]) for a in qual["adicionais_sem_ficha"] if a["id"] == b["id"]} == {(b["id"], "grande"), (b["id"], "broto")}
+
+
+def test_qa1b2_etapa_inativada_depois_de_usada_continua_na_lista_e_truncate_recusado(client, admin):
+    import psycopg
+    _, h = admin
+    client.post("/api/etapas/iniciar-padrao", headers=h)
+    e = client.post("/api/etapas", json={"nome": novo_login("Dobrar"), "funcao": "pizzaiolo"}, headers=h).json()
+    p = _pizza(client, h, _cat(client, h)["id"])
+    assert client.put(f"/api/produtos/{p['id']}/etapas", json={"etapas": [{"etapa_id": e["id"]}]}, headers=h).status_code == 200
+    client.patch(f"/api/etapas/{e['id']}", json={"ativo": False}, headers=h)
+    assert client.put(f"/api/produtos/{p['id']}/etapas", json={"etapas": [{"etapa_id": e["id"], "tempo_min": "2"}]}, headers=h).status_code == 200
+    with psycopg.connect(dbname=os.environ["DB_NAME"], host=os.environ["DB_HOST"], port=os.environ["DB_PORT"],
+                         user=os.environ["DB_USER"], password=os.environ["DB_PASS"]) as c:
+        for tabela in ("ficha_linha", "ficha_versao"):
+            with pytest.raises(psycopg.Error):
+                c.execute(f"TRUNCATE {tabela} CASCADE")
+            c.rollback()

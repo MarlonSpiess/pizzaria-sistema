@@ -98,7 +98,8 @@ def _ficha_atual(conn, cond: str, params: list) -> dict:
     linhas = conn.execute("SELECT l.item_id, i.nome AS item, i.unidade, i.classe, l.quantidade, l.perda_pct, l.fase FROM ficha_linha l "
                           "JOIN item i ON i.id = l.item_id WHERE l.versao_id = %s ORDER BY i.nome", (v["id"],)).fetchall()
     for r in linhas:
-        r["quantidade"], r["perda_pct"] = fmt(r["quantidade"]).rstrip("0").rstrip("."), fmt(r["perda_pct"])
+        r["quantidade"] = format(r["quantidade"].normalize(), "f")  # até 4 casas, sem arredondar a 2
+        r["perda_pct"] = fmt(r["perda_pct"])
     return {"versao_id": v["id"], "desde": v["criado_em"], "linhas": linhas}
 
 
@@ -126,8 +127,12 @@ def _ler(conn, tipo, dono_id, tamanho):
 def _salvar(conn, sessao, tipo, dono_id, tamanho, d: FichaIn):
     cond, params, colunas, rotulo = _dono(conn, tipo, dono_id, tamanho)
     ids = [x.item_id for x in d.linhas]
+    if tipo == "preparo":
+        conn.execute("SELECT pg_advisory_xact_lock(4, 1)")  # serializa as checagens de ciclo entre preparos
     if ids:
-        ativos = {r["id"] for r in conn.execute("SELECT id FROM item WHERE loja_id = %s AND ativo = true AND id = ANY(%s)", (LOJA_ID, ids)).fetchall()}
+        atual = {x["item_id"] for x in _ficha_atual(conn, cond, params)["linhas"]}  # item inativado depois de usado pode continuar
+        ativos = {r["id"] for r in conn.execute("SELECT id FROM item WHERE loja_id = %s AND (ativo = true OR id = ANY(%s)) AND id = ANY(%s)",
+                                                (LOJA_ID, list(atual), ids)).fetchall()}
         if set(ids) - ativos:
             raise HTTPException(status_code=400, detail="Há item inexistente ou inativo na ficha.")
     if tipo == "preparo" and _tem_ciclo(conn, dono_id, ids):
@@ -231,7 +236,7 @@ def iniciar_etapas_padrao(sessao=Depends(requer("ficha.editar")), conn=Depends(g
                   (LOJA_ID, n, f, agora(), sessao["usuario_id"]))["id"] for n, f in _ETAPAS_PADRAO]
     for tipo in ("pizza", "calzone"):
         for ordem, eid in enumerate(ids, 1):
-            conn.execute("INSERT INTO etapa_modelo (tipo, etapa_id, ordem) VALUES (%s,%s,%s)", (tipo, eid, ordem))
+            _grava(conn, "INSERT INTO etapa_modelo (tipo, etapa_id, ordem) VALUES (%s,%s,%s) RETURNING tipo", (tipo, eid, ordem))
     auditar(conn, sessao, "criar", "etapa", "padrao", depois={"etapas": len(ids)})
     conn.commit()
     return conn.execute(f"SELECT {_E} FROM etapa WHERE loja_id = %s ORDER BY id", (LOJA_ID,)).fetchall()
@@ -245,10 +250,11 @@ def _passos(conn, tabela_sql: str, chave):
     return rows
 
 
-def _validar_etapas(conn, d: EtapasIn):
+def _validar_etapas(conn, d: EtapasIn, ja_na_lista: list[int]):
     ids = [x.etapa_id for x in d.etapas]
-    if ids:
-        ok = {r["id"] for r in conn.execute("SELECT id FROM etapa WHERE loja_id = %s AND ativo = true AND id = ANY(%s)", (LOJA_ID, ids)).fetchall()}
+    if ids:  # etapa inativada depois de usada pode continuar na lista em que já está
+        ok = {r["id"] for r in conn.execute("SELECT id FROM etapa WHERE loja_id = %s AND (ativo = true OR id = ANY(%s)) AND id = ANY(%s)",
+                                            (LOJA_ID, ja_na_lista, ids)).fetchall()}
         if set(ids) - ok:
             raise HTTPException(status_code=400, detail="Há etapa inexistente ou inativa na lista.")
 
@@ -264,7 +270,7 @@ def ler_modelo(tipo: str, sessao=Depends(requer("ficha.ver")), conn=Depends(get_
 def salvar_modelo(tipo: str, d: EtapasIn, sessao=Depends(requer("ficha.editar")), conn=Depends(get_db)):
     if tipo not in TIPOS_PRODUTO:
         raise HTTPException(status_code=404, detail="Tipo de produto inválido.")
-    _validar_etapas(conn, d)
+    _validar_etapas(conn, d, [r["etapa_id"] for r in conn.execute("SELECT etapa_id FROM etapa_modelo WHERE tipo = %s", (tipo,)).fetchall()])
     conn.execute("DELETE FROM etapa_modelo WHERE tipo = %s AND etapa_id IN (SELECT id FROM etapa WHERE loja_id = %s)", (tipo, LOJA_ID))
     for ordem, x in enumerate(d.etapas, 1):
         _grava(conn, "INSERT INTO etapa_modelo (tipo, etapa_id, ordem, tempo_min) VALUES (%s,%s,%s,%s) RETURNING tipo", (tipo, x.etapa_id, ordem, x.tempo_min))
@@ -291,10 +297,11 @@ def etapas_do_produto(pid: int, sessao=Depends(requer("ficha.ver")), conn=Depend
 
 @router.put("/produtos/{pid}/etapas")
 def salvar_etapas_do_produto(pid: int, d: EtapasIn, sessao=Depends(requer("ficha.editar")), conn=Depends(get_db)):
-    _produto_tipo(conn, pid)
+    tipo = _produto_tipo(conn, pid)
     if not d.etapas:
         raise HTTPException(status_code=400, detail="Informe ao menos uma etapa, ou volte ao modelo do tipo.")
-    _validar_etapas(conn, d)
+    _validar_etapas(conn, d, [r["etapa_id"] for r in conn.execute(
+        "SELECT etapa_id FROM produto_etapa WHERE produto_id = %s UNION SELECT etapa_id FROM etapa_modelo WHERE tipo = %s", (pid, tipo)).fetchall()])
     conn.execute("DELETE FROM produto_etapa WHERE produto_id = %s", (pid,))
     for ordem, x in enumerate(d.etapas, 1):
         _grava(conn, "INSERT INTO produto_etapa (produto_id, etapa_id, ordem, tempo_min) VALUES (%s,%s,%s,%s) RETURNING produto_id", (pid, x.etapa_id, ordem, x.tempo_min))
@@ -329,4 +336,7 @@ def qualidade(sessao=Depends(requer("ficha.ver")), conn=Depends(get_db)):
         "SELECT p.id, p.tipo, p.nome FROM produto p WHERE p.loja_id = %s AND p.ativo = true AND p.tipo IN ('pizza','calzone') "
         "AND NOT EXISTS (SELECT 1 FROM produto_etapa pe WHERE pe.produto_id = p.id) "
         "AND NOT EXISTS (SELECT 1 FROM etapa_modelo m WHERE m.tipo = p.tipo) ORDER BY p.tipo, p.nome", (LOJA_ID,)).fetchall()
-    return {"produtos_sem_ficha": sem_ficha, "preparos_sem_ficha": preparos, "bases_sem_ficha": bases, "produtos_sem_etapas": sem_etapas}
+    adicionais = [{"id": a["id"], "nome": a["nome"], "tipo": a["tipo"], "tamanho": t}
+                  for a in conn.execute("SELECT id, nome, tipo FROM adicional WHERE loja_id = %s AND ativo = true ORDER BY nome", (LOJA_ID,)).fetchall()
+                  for t in _TAMANHOS if not _ficha_atual(conn, "adicional_id = %s AND tamanho = %s", [a["id"], t])["linhas"]]
+    return {"adicionais_sem_ficha": adicionais, "produtos_sem_ficha": sem_ficha, "preparos_sem_ficha": preparos, "bases_sem_ficha": bases, "produtos_sem_etapas": sem_etapas}

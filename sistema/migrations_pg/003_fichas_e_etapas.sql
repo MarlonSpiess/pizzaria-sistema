@@ -52,6 +52,13 @@ DROP TRIGGER IF EXISTS trg_ficha_linha_so_insercao ON ficha_linha;
 CREATE TRIGGER trg_ficha_linha_so_insercao BEFORE UPDATE OR DELETE ON ficha_linha
     FOR EACH ROW EXECUTE FUNCTION recusar_alteracao();
 
+DROP TRIGGER IF EXISTS trg_ficha_versao_so_insercao_trunc ON ficha_versao;
+CREATE TRIGGER trg_ficha_versao_so_insercao_trunc BEFORE TRUNCATE ON ficha_versao
+    FOR EACH STATEMENT EXECUTE FUNCTION recusar_alteracao();
+DROP TRIGGER IF EXISTS trg_ficha_linha_so_insercao_trunc ON ficha_linha;
+CREATE TRIGGER trg_ficha_linha_so_insercao_trunc BEFORE TRUNCATE ON ficha_linha
+    FOR EACH STATEMENT EXECUTE FUNCTION recusar_alteracao();
+
 -- Etapas de produção: cadastro, modelo por tipo de produto e exceção por produto.
 CREATE TABLE IF NOT EXISTS etapa (
     id BIGSERIAL PRIMARY KEY,
