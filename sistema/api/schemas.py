@@ -388,3 +388,118 @@ class PizzaSimular(Base):
         if len(v) > 10 or len(set(v)) != len(v):
             raise ValueError("Até 10 adicionais, sem repetir.")
         return v
+
+
+# ---------------------------------------------------------------- itens, fichas e etapas (fatia 1B2)
+_QTD = re.compile(r"^[0-9]{1,9}([.,][0-9]{1,4})?$")
+_PCT = re.compile(r"^[0-9]{1,3}([.,][0-9]{1,2})?$")
+_MIN = re.compile(r"^[0-9]{1,4}([.,][0-9]{1,2})?$")
+
+
+def _numero(regex, texto, maximo=None, positivo=False, rotulo="Valor"):
+    from decimal import Decimal
+    if not isinstance(texto, str) or not regex.match(texto.strip()):
+        raise ValueError(f"{rotulo} inválido. Use números, com ponto ou vírgula.")
+    n = Decimal(texto.strip().replace(",", "."))
+    if (positivo and n <= 0) or (maximo is not None and n > maximo):
+        raise ValueError(f"{rotulo} fora da faixa permitida.")
+    return str(n)
+
+
+Quantidade = Annotated[str, AfterValidator(lambda v: _numero(_QTD, v, positivo=True, rotulo="Quantidade"))]
+Percentual = Annotated[str, AfterValidator(lambda v: _numero(_PCT, v, maximo=100, rotulo="Percentual"))]
+Minutos = Annotated[str, AfterValidator(lambda v: _numero(_MIN, v, rotulo="Tempo"))]
+
+CLASSES_ITEM = ("insumo", "preparo", "embalagem", "revenda", "consumo")
+UNIDADES_ITEM = ("g", "kg", "ml", "l", "un")
+FUNCOES_ETAPA = ("massa", "pizzaiolo", "acabamento", "automatica")
+
+
+class ItemCreate(Base):
+    nome: str
+    classe: str
+    unidade: str
+    _n = field_validator("nome")(_nome)
+
+    @model_validator(mode="after")
+    def _dominio(self):
+        if self.classe not in CLASSES_ITEM or self.unidade not in UNIDADES_ITEM:
+            raise ValueError("Classe ou unidade inválida.")
+        return self
+
+
+class ItemUpdate(Base):
+    nome: Optional[str] = None
+    ativo: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def _ok(self):
+        for campo in self.model_fields_set:
+            if getattr(self, campo) is None:
+                raise ValueError(f"{campo} não pode ser nulo.")
+        if self.nome is not None:
+            self.nome = _nome(self.nome)
+        return self
+
+
+class FichaLinha(Base):
+    item_id: int
+    quantidade: Quantidade
+    perda_pct: Optional[Percentual] = None
+
+
+class FichaIn(Base):
+    linhas: list[FichaLinha]
+
+    @field_validator("linhas")
+    @classmethod
+    def _l(cls, v):
+        if len(v) > 60 or len({x.item_id for x in v}) != len(v):
+            raise ValueError("Até 60 linhas, sem repetir o item.")
+        return v
+
+
+class EtapaCreate(Base):
+    nome: str
+    funcao: str
+    _n = field_validator("nome")(_nome)
+
+    @field_validator("funcao")
+    @classmethod
+    def _f(cls, v):
+        if v not in FUNCOES_ETAPA:
+            raise ValueError("Função inválida.")
+        return v
+
+
+class EtapaUpdate(Base):
+    nome: Optional[str] = None
+    funcao: Optional[str] = None
+    ativo: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def _ok(self):
+        for campo in self.model_fields_set:
+            if getattr(self, campo) is None:
+                raise ValueError(f"{campo} não pode ser nulo.")
+        if self.nome is not None:
+            self.nome = _nome(self.nome)
+        if self.funcao is not None and self.funcao not in FUNCOES_ETAPA:
+            raise ValueError("Função inválida.")
+        return self
+
+
+class EtapaPasso(Base):
+    etapa_id: int
+    tempo_min: Optional[Minutos] = None
+
+
+class EtapasIn(Base):
+    etapas: list[EtapaPasso]
+
+    @field_validator("etapas")
+    @classmethod
+    def _e(cls, v):
+        if len(v) > 20 or len({x.etapa_id for x in v}) != len(v):
+            raise ValueError("Até 20 etapas, sem repetir.")
+        return v

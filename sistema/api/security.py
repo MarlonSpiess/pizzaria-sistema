@@ -17,9 +17,10 @@ PERFIS = ("administrador", "proprietario", "gerente", "subgerente", "atendente",
 # Permissões por perfil. Perfil ausente ou permissão ausente = negado.
 # administrador e proprietário têm tudo; as demais permissões entram nas fatias seguintes.
 _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar",
-          "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar"}
+          "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar",
+          "ficha.ver", "ficha.editar"}
 _GERENCIA = {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar", "cardapio.ver", "cardapio.editar",
-             "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar"}
+             "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar", "ficha.ver", "ficha.editar"}
 PERMISSOES = {
     "administrador": _TODAS,
     "proprietario": _TODAS,
