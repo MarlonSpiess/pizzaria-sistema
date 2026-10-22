@@ -32,6 +32,11 @@ def _pizza_item(c, **kw):
     return {"tipo": "pizza", "produto_id": c["trad"]["id"], "tamanho": "grande", **kw}
 
 
+def _pizzas_prontas(conn_teste, pid):
+    """A Produção é outra fatia: aqui as pizzas do pedido são dadas como acabadas para testar só a situação do pedido."""
+    conn_teste.execute("UPDATE pizza_producao SET situacao = 'acabada' WHERE pedido_id = %s", (pid,))
+
+
 def _pedido(client, h, itens, pagamentos, **extra):
     return client.post("/api/pedidos", json={"itens": itens, "pagamentos": pagamentos, **extra}, headers=h)
 
@@ -180,13 +185,15 @@ def test_tentativas_de_autorizacao_sao_limitadas(client, cardapio):
     assert _pedido(client, h, it, pag, ajuste=aj, autorizacao={"usuario": gl, "senha": gs}).status_code == 429  # bloqueado mesmo com a senha certa
 
 
-def test_situacao_um_passo_por_vez_e_permissoes(client, cardapio):
+def test_situacao_um_passo_por_vez_e_permissoes(client, cardapio, conn_teste):
     _, ha = entrar(client, "atendente")
     _, hg = entrar(client, "gerente")
     pid = _pedido(client, ha, [_pizza_item(cardapio)], [{"forma": "pix", "valor": "35,00"}]).json()["id"]
     assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "despachado ou retirado"}, headers=ha).status_code == 409  # pulou etapas
     assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "em producao"}, headers=ha).status_code == 403  # é da Produção ou gerência
     assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "em producao"}, headers=hg).status_code == 200
+    assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "acabado"}, headers=hg).status_code == 409  # pizza ainda não acabou
+    _pizzas_prontas(conn_teste, pid)
     assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "acabado"}, headers=hg).status_code == 200
     r = client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "despachado ou retirado"}, headers=ha)
     assert r.status_code == 200 and r.json()["entrega_real"] is not None
@@ -195,7 +202,7 @@ def test_situacao_um_passo_por_vez_e_permissoes(client, cardapio):
     assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "tchau"}, headers=ha).status_code == 422
 
 
-def test_cancelamento_atendente_precisa_de_gerente_e_motivo(client, cardapio):
+def test_cancelamento_atendente_precisa_de_gerente_e_motivo(client, cardapio, conn_teste):
     _, ha = entrar(client, "atendente")
     _, hg = entrar(client, "gerente")
     gl, gs = criar_usuario_direto("subgerente")
@@ -209,6 +216,7 @@ def test_cancelamento_atendente_precisa_de_gerente_e_motivo(client, cardapio):
     b = _pedido(client, ha, it, pag).json()["id"]
     assert client.post(f"/api/pedidos/{b}/cancelar", json={"motivo": "Erro de digitação"}, headers=hg).status_code == 200
     c = _pedido(client, ha, it, pag).json()["id"]
+    _pizzas_prontas(conn_teste, c)
     for s in ("em producao", "acabado", "despachado ou retirado"):
         client.post(f"/api/pedidos/{c}/situacao", json={"situacao": s}, headers=hg)
     assert client.post(f"/api/pedidos/{c}/cancelar", json={"motivo": "Tarde demais"}, headers=hg).status_code == 409
