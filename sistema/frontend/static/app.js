@@ -79,6 +79,7 @@ function telaTrocaSenha() {
 const ABAS = [
   ["painel", "Painel", null],
   ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"]],
+  ["fichas", "Fichas e etapas", ["administrador", "proprietario", "gerente", "subgerente"]],
   ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"]],
   ["entregadores", "Entregadores", ["administrador", "proprietario", "gerente", "subgerente", "atendente"]],
   ["usuarios", "Usuários", ["administrador", "proprietario"]],
@@ -436,13 +437,166 @@ async function abaEntregadores() {
     linhas.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Nome", "Telefone", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nenhum entregador cadastrado.")));
 }
 
+// ---------------------------------------------------------------- Fatia 1B2: fichas e etapas
+const FUNCOES = { massa: "Massa", pizzaiolo: "Pizzaiolo", acabamento: "Acabamento", automatica: "Automática (forno)" };
+const CLASSES = { insumo: "Insumo", preparo: "Preparo", embalagem: "Embalagem", revenda: "Revenda", consumo: "Material de consumo" };
+
+async function abaFichas() {
+  const alvo = h("div"); moldura(alvo);
+  const msg = h("div");
+  if (!estado.subf) estado.subf = "fichas";
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  const ok = (t) => msg.replaceChildren(aviso("ok", t));
+  const subs = [["fichas", "Fichas técnicas"], ["itens", "Itens"], ["etapas", "Etapas de produção"], ["qualidade", "O que falta"]];
+
+  async function desenharSub() {
+    const nav = h("div", { class: "subnav" }, subs.map(([id, nome]) => h("button", { class: id === estado.subf ? "ativo" : "", onclick: () => { estado.subf = id; msg.replaceChildren(); desenharSub(); } }, nome)));
+    let corpo;
+    try { corpo = await ({ fichas: subFichas, itens: subItens, etapas: subEtapas, qualidade: subQualidade }[estado.subf])(); }
+    catch (e) { corpo = aviso("erro", e.message); }
+    alvo.replaceChildren(nav, msg, corpo);
+  }
+
+  async function subItens() {
+    const lista = await api("GET", "/itens");
+    const nome = h("input", { required: "" });
+    const classe = h("select", {}, Object.entries(CLASSES).map(([v, t]) => h("option", { value: v }, t)));
+    const un = h("select", {}, ["g", "kg", "ml", "l", "un", "fatia"].map((u) => h("option", { value: u }, u)));
+    const form = h("form", { class: "cartao", onsubmit: async (ev) => {
+      ev.preventDefault();
+      try { await api("POST", "/itens", { nome: nome.value, classe: classe.value, unidade: un.value }); ok("Item cadastrado."); desenharSub(); } catch (e) { falha(e); }
+    } }, h("h2", {}, "Novo item"), h("p", { class: "pequeno" }, "Insumo, preparo (massa, alho e óleo), embalagem, item de revenda ou material de consumo. Saldo e compra entram com Estoques."),
+    h("div", { class: "linha" }, campo("Nome", nome), campo("Classe", classe), campo("Unidade", un)), h("button", { class: "principal", type: "submit" }, "Cadastrar"));
+    const linhas = lista.map((i) => h("tr", {}, h("td", {}, i.nome), h("td", {}, CLASSES[i.classe]), h("td", {}, i.unidade), h("td", {}, i.ativo ? "ativo" : "inativo"),
+      h("td", {}, h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/itens/" + i.id, { ativo: !i.ativo }); desenharSub(); } catch (e) { falha(e); } } }, i.ativo ? "Inativar" : "Reativar"))));
+    return h("div", {}, form, h("div", { class: "cartao tabela" }, h("h2", {}, "Itens (" + lista.length + ")"),
+      lista.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Nome", "Classe", "Unidade", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nenhum item cadastrado.")));
+  }
+
+  async function subFichas() {
+    const [produtos, adicionais, itens] = await Promise.all([api("GET", "/produtos"), api("GET", "/adicionais"), api("GET", "/itens")]);
+    const preparos = itens.filter((i) => i.classe === "preparo");
+    const opcoes = [];
+    produtos.forEach((p) => opcoes.push({ id: "produto/" + p.id, rotulo: rotuloTipo[p.tipo] + ": " + p.nome + (p.tipo === "pizza" ? " (meia Grande ou Broto)" : "") }));
+    adicionais.forEach((a) => ["grande", "broto"].forEach((t) => opcoes.push({ id: "adicional/" + a.id + "/" + t, rotulo: (a.tipo === "borda" ? "Borda: " : "Adicional: ") + a.nome + " (" + t + ")" })));
+    preparos.forEach((p) => opcoes.push({ id: "preparo/" + p.id, rotulo: "Preparo: " + p.nome }));
+    ["grande", "broto"].forEach((t) => opcoes.push({ id: "base/" + t, rotulo: "Base da pizza " + t + " (massa aberta, caixa: um por pizza)" }));
+    const sel = h("select", {}, [h("option", { value: "" }, "Escolha o que terá ficha")].concat(opcoes.map((o) => h("option", { value: o.id }, o.rotulo))));
+    if (estado.fichaSel && opcoes.some((o) => o.id === estado.fichaSel)) sel.value = estado.fichaSel;
+    const editor = h("div");
+    const ativos = itens.filter((i) => i.ativo);
+    async function abrir() {
+      estado.fichaSel = sel.value; editor.replaceChildren();
+      if (!sel.value) return;
+      let f;
+      try { f = await api("GET", "/fichas/" + sel.value); } catch (e) { falha(e); return; }
+      const corpo = h("tbody");
+      const novaLinha = (l) => {
+        const item = h("select", {}, ativos.map((i) => h("option", { value: i.id }, i.nome + " (" + i.unidade + ")")));
+        if (l) item.value = l.item_id;
+        const q = h("input", { inputmode: "decimal", value: l ? String(l.quantidade).replace(".", ",") : "", placeholder: "0" });
+        const perda = h("input", { inputmode: "decimal", value: l ? String(l.perda_pct).replace(".", ",") : "", placeholder: "padrão" });
+        const fase = h("select", {}, [["montagem", "Antes do forno"], ["pos_forno", "Depois do forno"]].map(([v, t]) => h("option", { value: v }, t)));
+        if (l) fase.value = l.fase;
+        const tr = h("tr", {}, h("td", {}, item), h("td", {}, q), h("td", {}, perda), h("td", {}, fase),
+          h("td", {}, h("button", { type: "button", class: "sec", onclick: () => tr.remove() }, "Tirar")));
+        tr._ler = () => ({ item_id: Number(item.value), quantidade: q.value.trim(), perda_pct: perda.value.trim() || null, fase: fase.value });
+        return tr;
+      };
+      (f.linhas || []).forEach((l) => corpo.append(novaLinha(l)));
+      const salvar = h("button", { class: "principal", type: "button", onclick: async () => {
+        try {
+          const linhas = [...corpo.children].map((tr) => tr._ler());
+          const r = await api("PUT", "/fichas/" + sel.value, { linhas });
+          ok("Ficha salva (" + r.linhas.length + " linhas). A versão anterior fica guardada."); abrir();
+        } catch (e) { falha(e); }
+      } }, "Salvar ficha");
+      editor.replaceChildren(h("div", { class: "cartao tabela" }, h("h2", {}, "Ficha"),
+        h("p", { class: "pequeno" }, f.desde ? "Versão salva em " + fmtData(f.desde) + "." : "Ainda sem ficha: o produto aparece em 'O que falta', não como custo zero."),
+        ativos.length ? null : aviso("alerta", "Cadastre primeiro os itens (aba Itens)."),
+        h("table", {}, h("thead", {}, h("tr", {}, ["Item", "Quantidade", "Perda %", "Quando entra", ""].map((t) => h("th", {}, t)))), corpo),
+        h("button", { type: "button", class: "sec", onclick: () => { if (ativos.length) corpo.append(novaLinha(null)); } }, "Adicionar ingrediente"), " ", salvar));
+    }
+    sel.onchange = abrir;
+    const topo = h("div", { class: "cartao" }, h("h2", {}, "Ficha técnica"),
+      h("p", { class: "pequeno" }, "Quantidades da pizza: meia Grande ou uma Broto. A Grande de um sabor usa o dobro; a de dois sabores soma a ficha de cada um. Perda em branco usa o padrão da loja."), sel);
+    await abrir();
+    return h("div", {}, topo, editor);
+  }
+
+  async function subEtapas() {
+    const etapas = await api("GET", "/etapas");
+    const produtos = await api("GET", "/produtos");
+    const blocos = [];
+    if (!etapas.length) {
+      blocos.push(h("div", { class: "cartao" }, h("h2", {}, "Etapas de produção"), h("p", {}, "Ainda não há etapas. Posso criar as cinco: preparo da massa, massa aberta, montagem, forno e acabamento."),
+        h("button", { class: "principal", onclick: async () => { try { await api("POST", "/etapas/iniciar-padrao"); ok("Etapas criadas."); desenharSub(); } catch (e) { falha(e); } } }, "Criar as etapas padrão")));
+      return h("div", {}, ...blocos);
+    }
+    const nome = h("input", { required: "" }), fn = h("select", {}, Object.entries(FUNCOES).map(([v, t]) => h("option", { value: v }, t)));
+    blocos.push(h("form", { class: "cartao", onsubmit: async (ev) => {
+      ev.preventDefault();
+      try { await api("POST", "/etapas", { nome: nome.value, funcao: fn.value }); ok("Etapa criada."); desenharSub(); } catch (e) { falha(e); }
+    } }, h("h2", {}, "Etapas cadastradas"),
+    h("table", {}, h("tbody", {}, etapas.map((e) => h("tr", {}, h("td", {}, e.nome), h("td", {}, FUNCOES[e.funcao]), h("td", {}, e.ativo ? "ativa" : "inativa"),
+      h("td", {}, h("button", { type: "button", class: "sec", onclick: async () => { try { await api("PATCH", "/etapas/" + e.id, { ativo: !e.ativo }); desenharSub(); } catch (x) { falha(x); } } }, e.ativo ? "Inativar" : "Reativar")))))),
+    h("div", { class: "linha" }, campo("Nova etapa (ex.: Batata palha)", nome), campo("Quem faz", fn)), h("button", { class: "principal", type: "submit" }, "Criar etapa")));
+    const ativas = etapas.filter((e) => e.ativo);
+    function editorSequencia(titulo, dica, atual, aoSalvar, extra) {
+      const corpo = h("tbody");
+      const linha = (p) => {
+        const e = h("select", {}, ativas.map((x) => h("option", { value: x.id }, x.nome))); if (p) e.value = p.etapa_id;
+        const t = h("input", { inputmode: "decimal", placeholder: "minutos", value: p && p.tempo_min != null ? String(p.tempo_min).replace(".", ",") : "" });
+        const tr = h("tr", {}, h("td", {}, e), h("td", {}, t),
+          h("td", {}, h("button", { type: "button", class: "sec", onclick: () => { if (tr.previousSibling) tr.parentNode.insertBefore(tr, tr.previousSibling); } }, "Subir"), " ",
+            h("button", { type: "button", class: "sec", onclick: () => tr.remove() }, "Tirar")));
+        tr._ler = () => ({ etapa_id: Number(e.value), tempo_min: t.value.trim() || null });
+        return tr;
+      };
+      atual.forEach((p) => corpo.append(linha(p)));
+      return h("div", { class: "cartao tabela" }, h("h2", {}, titulo), h("p", { class: "pequeno" }, dica),
+        h("table", {}, h("thead", {}, h("tr", {}, ["Etapa", "Tempo (min)", ""].map((x) => h("th", {}, x)))), corpo),
+        h("button", { type: "button", class: "sec", onclick: () => corpo.append(linha(null)) }, "Adicionar etapa"), " ",
+        h("button", { type: "button", class: "principal", onclick: () => aoSalvar([...corpo.children].map((tr) => tr._ler())) }, "Salvar"), extra || null);
+    }
+    for (const tipo of ["pizza", "calzone"]) {
+      const m = await api("GET", "/modelo-etapas/" + tipo);
+      blocos.push(editorSequencia("Modelo de " + rotuloTipo[tipo].toLowerCase(), "Etapas que todo produto deste tipo percorre, a menos que tenha exceção. Tempo em branco até ser medido.", m.etapas,
+        async (etapasNovas) => { try { await api("PUT", "/modelo-etapas/" + tipo, { etapas: etapasNovas }); ok("Modelo salvo."); desenharSub(); } catch (e) { falha(e); } }));
+    }
+    const selp = h("select", {}, [h("option", { value: "" }, "Escolha o produto")].concat(produtos.filter((p) => p.tipo === "pizza" || p.tipo === "calzone").map((p) => h("option", { value: p.id }, rotuloTipo[p.tipo] + ": " + p.nome))));
+    const exc = h("div");
+    selp.onchange = async () => {
+      exc.replaceChildren(); if (!selp.value) return;
+      try {
+        const r = await api("GET", "/produtos/" + selp.value + "/etapas");
+        const volta = r.personalizado ? h("button", { type: "button", class: "sec", onclick: async () => { try { await api("DELETE", "/produtos/" + selp.value + "/etapas"); ok("Voltou ao modelo do tipo."); selp.onchange(); } catch (e) { falha(e); } } }, "Voltar ao modelo") : null;
+        exc.replaceChildren(editorSequencia(r.personalizado ? "Etapas deste produto (exceção)" : "Etapas deste produto (seguem o modelo)", "Para um sabor com etapa a mais ou a menos, como a cobertura depois do forno. Salvar cria a exceção.", r.etapas,
+          async (etapasNovas) => { try { await api("PUT", "/produtos/" + selp.value + "/etapas", { etapas: etapasNovas }); ok("Etapas do produto salvas."); selp.onchange(); } catch (e) { falha(e); } }, volta ? h("span", {}, " ", volta) : null));
+      } catch (e) { falha(e); }
+    };
+    blocos.push(h("div", { class: "cartao" }, h("h2", {}, "Exceção por produto"), selp), exc);
+    return h("div", {}, ...blocos);
+  }
+
+  async function subQualidade() {
+    const q = await api("GET", "/fichas/qualidade");
+    const lista = (titulo, itens, f) => h("div", { class: "cartao" }, h("h2", {}, titulo + " (" + itens.length + ")"), itens.length ? h("ul", {}, itens.map((x) => h("li", {}, f(x)))) : h("p", { class: "pequeno" }, "Nada pendente."));
+    return h("div", {}, lista("Produtos ativos sem ficha", q.produtos_sem_ficha, (p) => rotuloTipo[p.tipo] + ": " + p.nome),
+      lista("Preparos sem ficha", q.preparos_sem_ficha, (p) => p.nome),
+      lista("Bases por tamanho sem ficha (massa aberta, caixa)", q.bases_sem_ficha, (t) => t),
+      lista("Pizzas e calzones sem etapas", q.produtos_sem_etapas, (p) => rotuloTipo[p.tipo] + ": " + p.nome));
+  }
+  await desenharSub();
+}
+
 async function desenhar() {
   if (!estado.token) return telaLogin();
   if (!estado.eu) {
     try { estado.eu = await api("GET", "/auth/me"); } catch (e) { return telaLogin(); }
   }
   if (estado.eu.deve_trocar_senha) return telaTrocaSenha();
-  const abas = { painel: abaPainel, cardapio: abaCardapio, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
+  const abas = { painel: abaPainel, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
   await (abas[estado.aba] || abaPainel)();
 }
 

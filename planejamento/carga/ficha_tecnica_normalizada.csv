@@ -1,311 +1,328 @@
-﻿sabor;tipo;ingrediente_na_planilha;ingrediente_sugerido;unidade;grande_planilha;meia_planilha;observacao
-ALHO E ÓLEO;salgada;Mussarela;Mussarela;g;200;100;
-ALHO E ÓLEO;salgada;Alho e oleo;Alho e óleo;g;50;25;
-ALHO E ÓLEO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-AMERICANA;salgada;Mussarela;Mussarela;g;100;50;
-AMERICANA;salgada;Bacon;Bacon;g;150;75;
-AMERICANA;salgada;Ovos;Ovos;g;150;75;
-AMERICANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-BACON;salgada;Mussarela;Mussarela;g;120;60;
-BACON;salgada;Bacon;Bacon;g;150;75;
-BACON;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-BACON MILHO;salgada;Mussarela;Mussarela;g;100;50;
-BACON MILHO;salgada;Bacon;Bacon;g;100;50;
-BACON MILHO;salgada;Milho;Milho;g;200;100;
-BACON MILHO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-BAIANA;salgada;Mussarela;Mussarela;g;100;50;
-BAIANA;salgada;Calabresa;Calabresa;g;150;75;
-BAIANA;salgada;Ovos;Ovos;g;150;75;
-BAIANA;salgada;Pimenta;Pimenta;g;30;15;
-BAIANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-BRASILEIRA;salgada;Mussarela;Mussarela;g;100;50;
-BRASILEIRA;salgada;Calabresa;Calabresa;g;150;75;
-BRASILEIRA;salgada;Bacon;Bacon;g;50;25;
-BRASILEIRA;salgada;Catupiry;Catupiry;g;100;50;
-BRASILEIRA;salgada;Cebola;Cebola;g;150;75;
-BRASILEIRA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-BRÓC BACON;salgada;Mussarela;Mussarela;g;100;50;
-BRÓC BACON;salgada;Brócolis;Brócolis;g;225;112;
-BRÓC BACON;salgada;Bacon;Bacon;g;150;75;
-BRÓC BACON;salgada;Catupiry;Catupiry;g;160;80;
-BRÓC BACON;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-BRÓCOLIS;salgada;Mussarela;Mussarela;g;100;50;
-BRÓCOLIS;salgada;Brócolis;Brócolis;g;225;112;
-BRÓCOLIS;salgada;Catupiry;Catupiry;g;160;80;
-BRÓCOLIS;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CALABRESA;salgada;Mussarela;Mussarela;g;120;60;
-CALABRESA;salgada;Calabresa;Calabresa;g;200;100;
-CALABRESA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CALABRESA ACE;salgada;Mussarela;Mussarela;g;100;50;
-CALABRESA ACE;salgada;Calabresa;Calabresa;g;200;100;
-CALABRESA ACE;salgada;Cebola;Cebola;g;150;75;
-CALABRESA ACE;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CANADENSE;salgada;Mussarela;Mussarela;g;100;50;
-CANADENSE;salgada;Lombinho;Lombinho;fatia;24;12;
-CANADENSE;salgada;Cebola;Cebola;g;150;75;
-CANADENSE;salgada;Catupiry;Catupiry;g;160;80;
-CANADENSE;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CARIOCA;salgada;Mussarela;Mussarela;g;100;50;
-CARIOCA;salgada;Presunto;Presunto;g;200;100;
-CARIOCA;salgada;Provolone;Provolone;g;60;30;
-CARIOCA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CHAMPGNON;salgada;Mussarela;Mussarela;g;150;75;
-CHAMPGNON;salgada;Champignon;Champignon;g;150;75;
-CHAMPGNON;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CHEDDAR;salgada;Mussarela;Mussarela;g;150;75;
-CHEDDAR;salgada;Cheddar;Cheddar;g;150;75;
-CHEDDAR;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CHESTER;salgada;Mussarela;Mussarela;g;100;50;
-CHESTER;salgada;Chester;Chester;g;150;75;
-CHESTER;salgada;Catupiry;Catupiry;g;160;80;
-CHESTER;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CORAÇÃO;salgada;Mussarela;Mussarela;g;100;50;
-CORAÇÃO;salgada;Coração;Coração;g;200;100;
-CORAÇÃO;salgada;Alho e óleo;Alho e óleo;g;50;25;
-CORAÇÃO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-COREANA;salgada;Mussarela;Mussarela;g;100;50;
-COREANA;salgada;Frango desfiado;Frango desfiado;g;150;75;
-COREANA;salgada;Champignon;Champignon;g;60;30;
-COREANA;salgada;Cheddar;Cheddar;g;160;80;
-COREANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CROCANTE;salgada;Mussarela;Mussarela;g;100;50;
-CROCANTE;salgada;Bacon;Bacon;g;60;30;
-CROCANTE;salgada;Catupiry;Catupiry;g;200;100;
-CROCANTE;salgada;Batata Palha;Batata palha;g;120;60;
-CROCANTE;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-DON RUAN;salgada;Mussarela;Mussarela;g;100;50;
-DON RUAN;salgada;Lombinho;Lombinho;g;175;87;
-DON RUAN;salgada;Cheddar;Cheddar;g;160;80;
-DON RUAN;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-ESPANHOLA;salgada;Mussarela;Mussarela;g;100;50;
-ESPANHOLA;salgada;Presunto;Presunto;g;150;75;
-ESPANHOLA;salgada;Provolone;Provolone;g;50;25;
-ESPANHOLA;salgada;Manjericão;Manjericão;g;10;5;
-ESPANHOLA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-FLORENTINA;salgada;Mussarela;Mussarela;g;100;50;
-FLORENTINA;salgada;Calabres ralada;Calabresa ralada;g;200;100;
-FLORENTINA;salgada;Milho;Milho;g;100;50;
-FLORENTINA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-FOGAÇA;salgada;Mussarela;Mussarela;g;100;50;
-FOGAÇA;salgada;Cebola;Cebola;g;250;125;
-FOGAÇA;salgada;Alho e óleo;Alho e óleo;g;50;25;
-FOGAÇA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-FRANCESA;salgada;Mussarela;Mussarela;g;100;50;
-FRANCESA;salgada;Salame ital;Salame italiano;fatia;20;10;
-FRANCESA;salgada;Palmito;Palmito;g;150;75;
-FRANCESA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-FRANGO;salgada;Mussarela;Mussarela;g;100;50;
-FRANGO;salgada;Frango;Frango;g;150;75;
-FRANGO;salgada;Catupiry;Catupiry;g;160;80;
-FRANGO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-ITALIANA;salgada;Mussarela;Mussarela;g;100;50;
-ITALIANA;salgada;Lombinho;Lombinho;g;175;87;
-ITALIANA;salgada;Provoloe;Provolone;g;50;25;
-ITALIANA;salgada;Cebola;Cebola;g;150;75;
-ITALIANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-LOMBINHO;salgada;Mussarela;Mussarela;g;100;50;
-LOMBINHO;salgada;Lombinho;Lombinho;fatia;24;12;
-LOMBINHO;salgada;Catupiry;Catupiry;g;160;80;
-LOMBINHO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-MARGUERITA;salgada;Mussarela;Mussarela;g;120;60;
-MARGUERITA;salgada;Tomate;Tomate;g;200;100;
-MARGUERITA;salgada;Manjericão;Manjericão;g;10;5;
-MARGUERITA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-MARIANA;salgada;Mussarela;Mussarela;g;120;60;
-MARIANA;salgada;Alho e oleo;Alho e óleo;g;50;25;
-MARIANA;salgada;Manjericão;Manjericão;g;10;5;
-MARIANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-MEXICANA;salgada;Mussarela;Mussarela;g;100;50;
-MEXICANA;salgada;Bacon;Bacon;g;150;75;
-MEXICANA;salgada;Vinagrete;Vinagrete;g;150;75;
-MEXICANA;salgada;Pimenta;Pimenta;g;30;15;
-MEXICANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-MILÃO;salgada;Mussarela;Mussarela;g;100;50;
-MILÃO;salgada;Calab ralada;Calabresa ralada;g;150;75;
-MILÃO;salgada;Tomate;Tomate;g;100;50;
-MILÃO;salgada;Parmesão;Parmesão;g;30;15;
-MILÃO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-MILHO;salgada;Mussarela;Mussarela;g;100;50;
-MILHO;salgada;Milho;Milho;g;200;100;
-MILHO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-MUSSARELA;salgada;Mussarela;Mussarela;g;120;60;
-MUSSARELA;salgada;Tomate;Tomate;g;200;100;
-MUSSARELA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-NAPOLITANA;salgada;Mussarela;Mussarela;g;120;60;
-NAPOLITANA;salgada;Tomate;Tomate;g;200;100;
-NAPOLITANA;salgada;Parmesão;Parmesão;g;30;15;
-NAPOLITANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-PALMITO;salgada;Mussarela;Mussarela;g;150;75;
-PALMITO;salgada;Palmito;Palmito;g;300;150;
-PALMITO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-PAULISTA;salgada;Mussarela;Mussarela;g;100;50;
-PAULISTA;salgada;Presunto;Presunto;g;120;60;
-PAULISTA;salgada;Ovos;Ovos;g;150;75;
-PAULISTA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-PEPPERONI;salgada;Mussarela;Mussarela;g;100;50;
-PEPPERONI;salgada;Pepperoni;Pepperoni;fatia;34;17;
-PEPPERONI;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-PORTUGUESA;salgada;Mussarela;Mussarela;g;100;50;
-PORTUGUESA;salgada;Presunto;Presunto;g;120;60;
-PORTUGUESA;salgada;Ovos;Ovos;g;150;75;
-PORTUGUESA;salgada;Cebola;Cebola;g;200;100;
-PORTUGUESA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-PROVOLITO;salgada;Mussarela;Mussarela;g;120;60;
-PROVOLITO;salgada;Palmito;Palmito;g;300;150;
-PROVOLITO;salgada;Provolone;Provolone;g;60;30;
-PROVOLITO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-PROVOLONE;salgada;Mussarela;Mussarela;g;150;75;
-PROVOLONE;salgada;Provolone;Provolone;g;100;50;
-PROVOLONE;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-ROMANA;salgada;Mussarela;Mussarela;g;100;50;
-ROMANA;salgada;Presunto;Presunto;g;120;60;
-ROMANA;salgada;Palmito;Palmito;g;150;75;
-ROMANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-SALAME ITALIANO;salgada;Mussarela;Mussarela;g;120;60;
-SALAME ITALIANO;salgada;Salame itali;Salame italiano;g;110;55;
-SALAME ITALIANO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-SADIA;salgada;Mussarela;Mussarela;g;100;50;
-SADIA;salgada;Chester;Chester;g;150;75;
-SADIA;salgada;Brócolis;Brócolis;g;100;50;
-SADIA;salgada;Parmesão;Parmesão;g;30;15;
-SADIA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-SICILIANA;salgada;Mussarela;Mussarela;g;100;50;
-SICILIANA;salgada;Bacon;Bacon;g;100;50;
-SICILIANA;salgada;Champignon;Champignon;g;60;30;
-SICILIANA;salgada;Catupiry;Catupiry;g;150;75;
-SICILIANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-VEGETARIANA;salgada;Mussarela;Mussarela;g;100;50;
-VEGETARIANA;salgada;Brócolis;Brócolis;g;100;50;
-VEGETARIANA;salgada;Palmito;Palmito;g;60;30;
-VEGETARIANA;salgada;Milho;Milho;g;60;30;
-VEGETARIANA;salgada;Champignon;Champignon;g;60;30;
-VEGETARIANA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-TRÊS QUEIJOS;salgada;Mussarela;Mussarela;g;150;75;
-TRÊS QUEIJOS;salgada;Provolone;Provolone;g;50;25;
-TRÊS QUEIJOS;salgada;Parmesão;Parmesão;g;30;15;
-TRÊS QUEIJOS;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-QUATRO QUEIJOS;salgada;Mussarela;Mussarela;g;150;75;
-QUATRO QUEIJOS;salgada;Provolone;Provolone;g;40;20;
-QUATRO QUEIJOS;salgada;Gorgonzola;Gorgonzola;g;30;15;
-QUATRO QUEIJOS;salgada;Catupiry;Catupiry;g;160;80;
-QUATRO QUEIJOS;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CINCO QUEIJOS;salgada;Mussarela;Mussarela;g;150;75;
-CINCO QUEIJOS;salgada;Provolone;Provolone;g;40;20;
-CINCO QUEIJOS;salgada;Gorgonzola;Gorgonzola;g;30;15;
-CINCO QUEIJOS;salgada;Parmesão;Parmesão;g;30;15;
-CINCO QUEIJOS;salgada;Cheddar;Cheddar;g;160;80;
-CINCO QUEIJOS;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-SEIS QUEIJOS;salgada;Mussarela;Mussarela;g;150;75;
-SEIS QUEIJOS;salgada;Provolone;Provolone;g;40;20;
-SEIS QUEIJOS;salgada;Gorgonzola;Gorgonzola;g;30;15;
-SEIS QUEIJOS;salgada;Parmesão;Parmesão;g;30;15;
-SEIS QUEIJOS;salgada;Catupiry/Cheddar;Catupiry/Cheddar;g;100;50;
-SEIS QUEIJOS;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-COLONIAL;salgada;Mussarela;Mussarela;g;100;50;
-COLONIAL;salgada;Linguiça Blu.;Linguiça Blumenau;g;150;75;
-COLONIAL;salgada;Provolone;Provolone;g;60;30;
-COLONIAL;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-DA CASA;salgada;Mussarela;Mussarela;g;100;50;
-DA CASA;salgada;Filé;Filé;g;200;100;
-DA CASA;salgada;Cebola;Cebola;g;150;75;
-DA CASA;salgada;Molho BBQ;Molho barbecue;g;50;25;
-DA CASA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-BURGUESA;salgada;Mussarela;Mussarela;g;100;50;
-BURGUESA;salgada;Pepperoni;Pepperoni;fatia;34;17;
-BURGUESA;salgada;Cebola;Cebola;g;150;75;
-BURGUESA;salgada;Champignon;Champignon;g;50;25;
-BURGUESA;salgada;Parmesão;Parmesão;g;30;15;
-BURGUESA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-STROG FRANGO;salgada;Mussarela;Mussarela;g;100;50;
-STROG FRANGO;salgada;Stro Carne;Strogonoff de carne;g;200;100;
-STROG FRANGO;salgada;Champignon;Champignon;g;50;25;
-STROG FRANGO;salgada;Batata Palha;Batata palha;g;120;60;
-STROG FRANGO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-STROG CARNE;salgada;Mussarela;Mussarela;g;100;50;
-STROG CARNE;salgada;Stro Frango;Strogonoff de frango;g;200;100;
-STROG CARNE;salgada;Champignon;Champignon;g;50;25;
-STROG CARNE;salgada;Batata Palha;Batata palha;g;120;60;
-STROG CARNE;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-FILÉ 4 QUEIJOS;salgada;Mussarela;Mussarela;g;100;50;
-FILÉ 4 QUEIJOS;salgada;Provolone;Provolone;g;60;30;
-FILÉ 4 QUEIJOS;salgada;Gorgonzola;Gorgonzola;g;30;15;
-FILÉ 4 QUEIJOS;salgada;Catupiry;Catupiry;g;100;50;
-FILÉ 4 QUEIJOS;salgada;Filé;Filé;g;100;50;
-FILÉ 4 QUEIJOS;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CALAB 4 QUEIJOS;salgada;Mussarela;Mussarela;g;100;50;
-CALAB 4 QUEIJOS;salgada;Provolone;Provolone;g;60;30;
-CALAB 4 QUEIJOS;salgada;Gorgonzola;Gorgonzola;g;30;15;
-CALAB 4 QUEIJOS;salgada;Catupiry;Catupiry;g;100;50;
-CALAB 4 QUEIJOS;salgada;Calabresa;Calabresa;g;100;50;
-CALAB 4 QUEIJOS;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-AGENTINA;salgada;Mussarela;Mussarela;g;100;50;
-AGENTINA;salgada;Filé;Filé;g;100;50;
-AGENTINA;salgada;Bacon;Bacon;g;60;30;
-AGENTINA;salgada;Creme de leite;Creme de leite;g;50;25;
-AGENTINA;salgada;Batata Palha;Batata palha;g;120;60;
-AGENTINA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-FILÉ;salgada;Mussarela;Mussarela;g;100;50;
-FILÉ;salgada;Fié;Filé;g;200;100;
-FILÉ;salgada;Alho e óleo;Alho e óleo;g;50;25;
-FILÉ;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-GAÚCHA;salgada;Mussarela;Mussarela;g;100;50;
-GAÚCHA;salgada;Filé;Filé;g;200;100;
-GAÚCHA;salgada;Tomate;Tomate;g;200;100;
-GAÚCHA;salgada;Alho e óleo;Alho e óleo;g;50;25;
-GAÚCHA;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-FILÉ BARBECUE;salgada;Mussarela;Mussarela;g;100;50;
-FILÉ BARBECUE;salgada;Filé;Filé;g;200;100;
-FILÉ BARBECUE;salgada;Molho Barbecue;Molho barbecue;g;50;25;
-FILÉ BARBECUE;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-CHURRASCO;salgada;Mussarela;Mussarela;g;100;50;
-CHURRASCO;salgada;Filé;Filé;g;200;100;
-CHURRASCO;salgada;Vinagrete;Vinagrete;g;150;75;
-CHURRASCO;salgada;MOLHO;Molho de tomate;colher;1;;1 COLHER na planilha, sem gramas
-ABACAXI;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;150;75;
-ABACAXI;doce;Abacaxi;Abacaxi;g;175;87;
-ABACAXI;doce;leite condensado;Leite condensado;g;40;20;
-ARCO-ÍRIS;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-ARCO-ÍRIS;doce;Granulado colo.;Granulado colorido;g;80;40;
-ARCO-ÍRIS;doce;leite condensado;Leite condensado;g;40;20;
-CHARGE BRANCO;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-CHARGE BRANCO;doce;Amendoim;Amendoim;g;80;40;
-CHARGE BRANCO;doce;leite condensado;Leite condensado;g;40;20;
-CHARGE;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-CHARGE;doce;Amendoim;Amendoim;g;80;40;
-CHARGE;doce;leite condensado;Leite condensado;g;40;20;
-CONFETE BRANCO;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-CONFETE BRANCO;doce;Confete;Confete;g;80;40;
-CONFETE BRANCO;doce;leite condensado;Leite condensado;g;40;20;
-CONFETE;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-CONFETE;doce;Confete;Confete;g;80;40;
-CONFETE;doce;leite condensado;Leite condensado;g;40;20;
-BANANA NEVADA;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;150;75;
-BANANA NEVADA;doce;Banana;Banana;g;250;125;
-BANANA NEVADA;doce;leite condensado;Leite condensado;g;40;15;
-BRIGADEIRO;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-BRIGADEIRO;doce;Granulado Preto;Granulado preto;g;80;40;
-BRIGADEIRO;doce;leite condensado;Leite condensado;g;40;20;
-CHOC BRANCO;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-CHOC BRANCO;doce;Leite conden;Leite condensado;g;40;20;
-CHOC BRANCO;doce;leite condensado;Leite condensado;g;40;20;
-CHOC PRETO;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-CHOC PRETO;doce;Lete conden;Leite condensado;g;40;20;
-CHOC PRETO;doce;leite condensado;Leite condensado;g;40;20;
-FORMIGUINHA;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-FORMIGUINHA;doce;Granulado Preto;Granulado preto;g;80;40;
-FORMIGUINHA;doce;leite condensado;Leite condensado;g;40;20;
-MOCINHA;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-MOCINHA;doce;Coco ralado;Coco ralado;g;40;20;
-MOCINHA;doce;leite condensado;Leite condensado;g;40;20;
-PRESTÍGIO;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;200;100;
-PRESTÍGIO;doce;Coco ralado;Coco ralado;g;40;20;
-PRESTÍGIO;doce;leite condensado;Leite condensado;g;40;20;
-TROVOADA;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;150;75;
-TROVOADA;doce;Banana;Banana;g;250;125;
-TROVOADA;doce;leite condensado;Leite condensado;g;40;15;
-SENSAÇÃO;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;150;75;
-SENSAÇÃO;doce;Morango;Morango;g;150;75;
-SENSAÇÃO;doce;leite condensado;Leite condensado;g;40;15;
-TENTAÇÃO;doce;Base doce (creme de leite ou chocolate);Base doce (creme de leite ou chocolate);g;150;75;
-TENTAÇÃO;doce;Morango;Morango;g;150;75;
-TENTAÇÃO;doce;leite condensado;Leite condensado;g;40;15;
+﻿sabor;tipo;ingrediente;unidade;grande_planilha;meia_base;fase;observacao
+ALHO E ÓLEO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+ALHO E ÓLEO;salgada;Mussarela;g;200;100;montagem;
+ALHO E ÓLEO;salgada;Alho e óleo;g;50;25;montagem;
+AMERICANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+AMERICANA;salgada;Mussarela;g;100;50;montagem;
+AMERICANA;salgada;Bacon;g;150;75;montagem;
+AMERICANA;salgada;Ovos;g;150;75;montagem;
+BACON;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+BACON;salgada;Mussarela;g;120;60;montagem;
+BACON;salgada;Bacon;g;150;75;montagem;
+BACON MILHO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+BACON MILHO;salgada;Mussarela;g;100;50;montagem;
+BACON MILHO;salgada;Bacon;g;100;50;montagem;
+BACON MILHO;salgada;Milho;g;200;100;montagem;
+BAIANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+BAIANA;salgada;Mussarela;g;100;50;montagem;
+BAIANA;salgada;Calabresa;g;150;75;montagem;
+BAIANA;salgada;Ovos;g;150;75;montagem;
+BAIANA;salgada;Pimenta;g;30;15;montagem;
+BRASILEIRA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+BRASILEIRA;salgada;Mussarela;g;100;50;montagem;
+BRASILEIRA;salgada;Calabresa;g;150;75;montagem;
+BRASILEIRA;salgada;Bacon;g;50;25;montagem;
+BRASILEIRA;salgada;Catupiry;g;100;50;montagem;
+BRASILEIRA;salgada;Cebola;g;150;75;montagem;
+BRÓC BACON;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+BRÓC BACON;salgada;Mussarela;g;100;50;montagem;
+BRÓC BACON;salgada;Brócolis;g;225;112;montagem;
+BRÓC BACON;salgada;Bacon;g;150;75;montagem;
+BRÓC BACON;salgada;Catupiry;g;160;80;montagem;
+BRÓCOLIS;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+BRÓCOLIS;salgada;Mussarela;g;100;50;montagem;
+BRÓCOLIS;salgada;Brócolis;g;225;112;montagem;
+BRÓCOLIS;salgada;Catupiry;g;160;80;montagem;
+CALABRESA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CALABRESA;salgada;Mussarela;g;120;60;montagem;
+CALABRESA;salgada;Calabresa;g;200;100;montagem;
+CALABRESA ACE;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CALABRESA ACE;salgada;Mussarela;g;100;50;montagem;
+CALABRESA ACE;salgada;Calabresa;g;200;100;montagem;
+CALABRESA ACE;salgada;Cebola;g;150;75;montagem;
+CANADENSE;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CANADENSE;salgada;Mussarela;g;100;50;montagem;
+CANADENSE;salgada;Lombinho;fatia;24;12;montagem;em fatias
+CANADENSE;salgada;Cebola;g;150;75;montagem;
+CANADENSE;salgada;Catupiry;g;160;80;montagem;
+CARIOCA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CARIOCA;salgada;Mussarela;g;100;50;montagem;
+CARIOCA;salgada;Presunto;g;200;100;montagem;
+CARIOCA;salgada;Provolone;g;60;30;montagem;
+CHAMPGNON;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CHAMPGNON;salgada;Mussarela;g;150;75;montagem;
+CHAMPGNON;salgada;Champignon;g;150;75;montagem;
+CHEDDAR;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CHEDDAR;salgada;Mussarela;g;150;75;montagem;
+CHEDDAR;salgada;Cheddar;g;150;75;montagem;
+CHESTER;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CHESTER;salgada;Mussarela;g;100;50;montagem;
+CHESTER;salgada;Chester;g;150;75;montagem;
+CHESTER;salgada;Catupiry;g;160;80;montagem;
+CORAÇÃO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CORAÇÃO;salgada;Mussarela;g;100;50;montagem;
+CORAÇÃO;salgada;Coração;g;200;100;montagem;
+CORAÇÃO;salgada;Alho e óleo;g;50;25;montagem;
+COREANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+COREANA;salgada;Mussarela;g;100;50;montagem;
+COREANA;salgada;Frango;g;150;75;montagem;
+COREANA;salgada;Champignon;g;60;30;montagem;
+COREANA;salgada;Cheddar;g;160;80;montagem;
+CROCANTE;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CROCANTE;salgada;Mussarela;g;100;50;montagem;
+CROCANTE;salgada;Bacon;g;60;30;montagem;
+CROCANTE;salgada;Catupiry;g;200;100;montagem;
+CROCANTE;salgada;Batata palha;g;120;60;pos_forno;
+DON RUAN;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+DON RUAN;salgada;Mussarela;g;100;50;montagem;
+DON RUAN;salgada;Lombinho;g;175;87;montagem;
+DON RUAN;salgada;Cheddar;g;160;80;montagem;
+ESPANHOLA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+ESPANHOLA;salgada;Mussarela;g;100;50;montagem;
+ESPANHOLA;salgada;Presunto;g;150;75;montagem;
+ESPANHOLA;salgada;Provolone;g;50;25;montagem;
+ESPANHOLA;salgada;Manjericão;g;10;5;montagem;
+FLORENTINA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+FLORENTINA;salgada;Mussarela;g;100;50;montagem;
+FLORENTINA;salgada;Calabresa;g;200;100;montagem;
+FLORENTINA;salgada;Milho;g;100;50;montagem;
+FOGAÇA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+FOGAÇA;salgada;Mussarela;g;100;50;montagem;
+FOGAÇA;salgada;Cebola;g;250;125;montagem;
+FOGAÇA;salgada;Alho e óleo;g;50;25;montagem;
+FRANCESA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+FRANCESA;salgada;Mussarela;g;100;50;montagem;
+FRANCESA;salgada;Salame italiano;fatia;20;10;montagem;em fatias
+FRANCESA;salgada;Palmito;g;150;75;montagem;
+FRANGO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+FRANGO;salgada;Mussarela;g;100;50;montagem;
+FRANGO;salgada;Frango;g;150;75;montagem;
+FRANGO;salgada;Catupiry;g;160;80;montagem;
+ITALIANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+ITALIANA;salgada;Mussarela;g;100;50;montagem;
+ITALIANA;salgada;Lombinho;g;175;87;montagem;
+ITALIANA;salgada;Provolone;g;50;25;montagem;
+ITALIANA;salgada;Cebola;g;150;75;montagem;
+LOMBINHO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+LOMBINHO;salgada;Mussarela;g;100;50;montagem;
+LOMBINHO;salgada;Lombinho;fatia;24;12;montagem;em fatias
+LOMBINHO;salgada;Catupiry;g;160;80;montagem;
+MARGUERITA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+MARGUERITA;salgada;Mussarela;g;120;60;montagem;
+MARGUERITA;salgada;Tomate;g;200;100;montagem;
+MARGUERITA;salgada;Manjericão;g;10;5;montagem;
+MARIANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+MARIANA;salgada;Mussarela;g;120;60;montagem;
+MARIANA;salgada;Alho e óleo;g;50;25;montagem;
+MARIANA;salgada;Manjericão;g;10;5;montagem;
+MEXICANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+MEXICANA;salgada;Mussarela;g;100;50;montagem;
+MEXICANA;salgada;Bacon;g;150;75;montagem;
+MEXICANA;salgada;Vinagrete;g;150;75;montagem;
+MEXICANA;salgada;Pimenta;g;30;15;montagem;
+MILÃO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+MILÃO;salgada;Mussarela;g;100;50;montagem;
+MILÃO;salgada;Calabresa;g;150;75;montagem;
+MILÃO;salgada;Tomate;g;100;50;montagem;
+MILÃO;salgada;Parmesão;g;30;15;montagem;
+MILHO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+MILHO;salgada;Mussarela;g;100;50;montagem;
+MILHO;salgada;Milho;g;200;100;montagem;
+MUSSARELA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+MUSSARELA;salgada;Mussarela;g;120;60;montagem;
+MUSSARELA;salgada;Tomate;g;200;100;montagem;
+NAPOLITANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+NAPOLITANA;salgada;Mussarela;g;120;60;montagem;
+NAPOLITANA;salgada;Tomate;g;200;100;montagem;
+NAPOLITANA;salgada;Parmesão;g;30;15;montagem;
+PALMITO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+PALMITO;salgada;Mussarela;g;150;75;montagem;
+PALMITO;salgada;Palmito;g;300;150;montagem;
+PAULISTA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+PAULISTA;salgada;Mussarela;g;100;50;montagem;
+PAULISTA;salgada;Presunto;g;120;60;montagem;
+PAULISTA;salgada;Ovos;g;150;75;montagem;
+PEPPERONI;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+PEPPERONI;salgada;Mussarela;g;100;50;montagem;
+PEPPERONI;salgada;Pepperoni;fatia;34;17;montagem;em fatias
+PORTUGUESA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+PORTUGUESA;salgada;Mussarela;g;100;50;montagem;
+PORTUGUESA;salgada;Presunto;g;120;60;montagem;
+PORTUGUESA;salgada;Ovos;g;150;75;montagem;
+PORTUGUESA;salgada;Cebola;g;200;100;montagem;
+PROVOLITO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+PROVOLITO;salgada;Mussarela;g;120;60;montagem;
+PROVOLITO;salgada;Palmito;g;300;150;montagem;
+PROVOLITO;salgada;Provolone;g;60;30;montagem;
+PROVOLONE;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+PROVOLONE;salgada;Mussarela;g;150;75;montagem;
+PROVOLONE;salgada;Provolone;g;100;50;montagem;
+ROMANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+ROMANA;salgada;Mussarela;g;100;50;montagem;
+ROMANA;salgada;Presunto;g;120;60;montagem;
+ROMANA;salgada;Palmito;g;150;75;montagem;
+SALAME ITALIANO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+SALAME ITALIANO;salgada;Mussarela;g;120;60;montagem;
+SALAME ITALIANO;salgada;Salame italiano;g;110;55;montagem;
+SADIA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+SADIA;salgada;Mussarela;g;100;50;montagem;
+SADIA;salgada;Chester;g;150;75;montagem;
+SADIA;salgada;Brócolis;g;100;50;montagem;
+SADIA;salgada;Parmesão;g;30;15;montagem;
+SICILIANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+SICILIANA;salgada;Mussarela;g;100;50;montagem;
+SICILIANA;salgada;Bacon;g;100;50;montagem;
+SICILIANA;salgada;Champignon;g;60;30;montagem;
+SICILIANA;salgada;Catupiry;g;150;75;montagem;
+VEGETARIANA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+VEGETARIANA;salgada;Mussarela;g;100;50;montagem;
+VEGETARIANA;salgada;Brócolis;g;100;50;montagem;
+VEGETARIANA;salgada;Palmito;g;60;30;montagem;
+VEGETARIANA;salgada;Milho;g;60;30;montagem;
+VEGETARIANA;salgada;Champignon;g;60;30;montagem;
+TRÊS QUEIJOS;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+TRÊS QUEIJOS;salgada;Mussarela;g;150;75;montagem;
+TRÊS QUEIJOS;salgada;Provolone;g;50;25;montagem;
+TRÊS QUEIJOS;salgada;Parmesão;g;30;15;montagem;
+QUATRO QUEIJOS;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+QUATRO QUEIJOS;salgada;Mussarela;g;150;75;montagem;
+QUATRO QUEIJOS;salgada;Provolone;g;40;20;montagem;
+QUATRO QUEIJOS;salgada;Gorgonzola;g;30;15;montagem;
+QUATRO QUEIJOS;salgada;Catupiry;g;160;80;montagem;
+CINCO QUEIJOS;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CINCO QUEIJOS;salgada;Mussarela;g;150;75;montagem;
+CINCO QUEIJOS;salgada;Provolone;g;40;20;montagem;
+CINCO QUEIJOS;salgada;Gorgonzola;g;30;15;montagem;
+CINCO QUEIJOS;salgada;Parmesão;g;30;15;montagem;
+CINCO QUEIJOS;salgada;Cheddar;g;160;80;montagem;
+SEIS QUEIJOS;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+SEIS QUEIJOS;salgada;Mussarela;g;150;75;montagem;
+SEIS QUEIJOS;salgada;Provolone;g;40;20;montagem;
+SEIS QUEIJOS;salgada;Gorgonzola;g;30;15;montagem;
+SEIS QUEIJOS;salgada;Parmesão;g;30;15;montagem;
+SEIS QUEIJOS;salgada;Catupiry;g;100;50;montagem;"PENDENTE: usa ambos; quantidade de cada a confirmar"
+SEIS QUEIJOS;salgada;Cheddar;g;100;50;montagem;"PENDENTE: usa ambos; quantidade de cada a confirmar"
+COLONIAL;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+COLONIAL;salgada;Mussarela;g;100;50;montagem;
+COLONIAL;salgada;Linguiça Blumenau;g;150;75;montagem;
+COLONIAL;salgada;Provolone;g;60;30;montagem;
+DA CASA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+DA CASA;salgada;Mussarela;g;100;50;montagem;
+DA CASA;salgada;Filé;g;200;100;montagem;
+DA CASA;salgada;Cebola;g;150;75;montagem;
+DA CASA;salgada;Molho barbecue;g;50;25;montagem;
+BURGUESA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+BURGUESA;salgada;Mussarela;g;100;50;montagem;
+BURGUESA;salgada;Pepperoni;fatia;34;17;montagem;em fatias
+BURGUESA;salgada;Cebola;g;150;75;montagem;
+BURGUESA;salgada;Champignon;g;50;25;montagem;
+BURGUESA;salgada;Parmesão;g;30;15;montagem;
+STROG FRANGO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+STROG FRANGO;salgada;Mussarela;g;100;50;montagem;
+STROG FRANGO;salgada;Frango;g;200;100;montagem;planilha trazia Stro Carne (trocado)
+STROG FRANGO;salgada;Champignon;g;50;25;montagem;
+STROG FRANGO;salgada;Batata palha;g;120;60;pos_forno;
+STROG CARNE;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+STROG CARNE;salgada;Mussarela;g;100;50;montagem;
+STROG CARNE;salgada;Filé;g;200;100;montagem;planilha trazia Stro Frango (trocado)
+STROG CARNE;salgada;Champignon;g;50;25;montagem;
+STROG CARNE;salgada;Batata palha;g;120;60;pos_forno;
+FILÉ 4 QUEIJOS;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+FILÉ 4 QUEIJOS;salgada;Mussarela;g;100;50;montagem;
+FILÉ 4 QUEIJOS;salgada;Provolone;g;60;30;montagem;
+FILÉ 4 QUEIJOS;salgada;Gorgonzola;g;30;15;montagem;
+FILÉ 4 QUEIJOS;salgada;Catupiry;g;100;50;montagem;
+FILÉ 4 QUEIJOS;salgada;Filé;g;100;50;montagem;
+CALAB 4 QUEIJOS;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CALAB 4 QUEIJOS;salgada;Mussarela;g;100;50;montagem;
+CALAB 4 QUEIJOS;salgada;Provolone;g;60;30;montagem;
+CALAB 4 QUEIJOS;salgada;Gorgonzola;g;30;15;montagem;
+CALAB 4 QUEIJOS;salgada;Catupiry;g;100;50;montagem;
+CALAB 4 QUEIJOS;salgada;Calabresa;g;100;50;montagem;
+AGENTINA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+AGENTINA;salgada;Mussarela;g;100;50;montagem;
+AGENTINA;salgada;Filé;g;100;50;montagem;
+AGENTINA;salgada;Bacon;g;60;30;montagem;
+AGENTINA;salgada;Creme de leite;g;50;25;montagem;
+AGENTINA;salgada;Batata palha;g;120;60;pos_forno;
+FILÉ;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+FILÉ;salgada;Mussarela;g;100;50;montagem;
+FILÉ;salgada;Filé;g;200;100;montagem;
+FILÉ;salgada;Alho e óleo;g;50;25;montagem;
+GAÚCHA;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+GAÚCHA;salgada;Mussarela;g;100;50;montagem;
+GAÚCHA;salgada;Filé;g;200;100;montagem;
+GAÚCHA;salgada;Tomate;g;200;100;montagem;
+GAÚCHA;salgada;Alho e óleo;g;50;25;montagem;
+FILÉ BARBECUE;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+FILÉ BARBECUE;salgada;Mussarela;g;100;50;montagem;
+FILÉ BARBECUE;salgada;Filé;g;200;100;montagem;
+FILÉ BARBECUE;salgada;Molho barbecue;g;50;25;montagem;
+CHURRASCO;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
+CHURRASCO;salgada;Mussarela;g;100;50;montagem;
+CHURRASCO;salgada;Filé;g;200;100;montagem;
+CHURRASCO;salgada;Vinagrete;g;150;75;montagem;
+ABACAXI;doce;Creme de leite;g;150;75;montagem;antes do forno
+ABACAXI;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+ABACAXI;doce;Abacaxi;g;175;87;montagem;fruta antes do forno
+ABACAXI;doce;Leite condensado;g;40;20;pos_forno;
+ARCO-ÍRIS;doce;Creme de leite;g;200;100;montagem;antes do forno
+ARCO-ÍRIS;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+ARCO-ÍRIS;doce;Granulado colorido;g;80;40;pos_forno;
+ARCO-ÍRIS;doce;Leite condensado;g;40;20;pos_forno;
+CHARGE BRANCO;doce;Creme de leite;g;200;100;montagem;antes do forno
+CHARGE BRANCO;doce;Chocolate branco;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CHARGE BRANCO;doce;Amendoim;g;80;40;pos_forno;
+CHARGE BRANCO;doce;Leite condensado;g;40;20;pos_forno;
+CHARGE;doce;Creme de leite;g;200;100;montagem;antes do forno
+CHARGE;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CHARGE;doce;Amendoim;g;80;40;pos_forno;
+CHARGE;doce;Leite condensado;g;40;20;pos_forno;
+CONFETE BRANCO;doce;Creme de leite;g;200;100;montagem;antes do forno
+CONFETE BRANCO;doce;Chocolate branco;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CONFETE BRANCO;doce;Confete;g;80;40;pos_forno;
+CONFETE BRANCO;doce;Leite condensado;g;40;20;pos_forno;
+CONFETE;doce;Creme de leite;g;200;100;montagem;antes do forno
+CONFETE;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CONFETE;doce;Confete;g;80;40;pos_forno;
+CONFETE;doce;Leite condensado;g;40;20;pos_forno;
+BANANA NEVADA;doce;Creme de leite;g;150;75;montagem;antes do forno
+BANANA NEVADA;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+BANANA NEVADA;doce;Banana;g;250;125;montagem;fruta antes do forno
+BANANA NEVADA;doce;Leite condensado;g;40;15;pos_forno;planilha: 40g ou 15g, meia 15g mantida
+BRIGADEIRO;doce;Creme de leite;g;200;100;montagem;antes do forno
+BRIGADEIRO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+BRIGADEIRO;doce;Granulado preto;g;80;40;pos_forno;
+BRIGADEIRO;doce;Leite condensado;g;40;20;pos_forno;
+CHOC BRANCO;doce;Creme de leite;g;200;100;montagem;antes do forno
+CHOC BRANCO;doce;Chocolate branco;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CHOC BRANCO;doce;Leite condensado;g;40;20;pos_forno;"PENDENTE: planilha repete leite condensado aqui; Marlon ajusta"
+CHOC BRANCO;doce;Leite condensado;g;40;20;pos_forno;
+CHOC PRETO;doce;Creme de leite;g;200;100;montagem;antes do forno
+CHOC PRETO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CHOC PRETO;doce;Leite condensado;g;40;20;pos_forno;"PENDENTE: planilha repete leite condensado aqui; Marlon ajusta"
+CHOC PRETO;doce;Leite condensado;g;40;20;pos_forno;
+FORMIGUINHA;doce;Creme de leite;g;200;100;montagem;antes do forno
+FORMIGUINHA;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+FORMIGUINHA;doce;Granulado preto;g;80;40;pos_forno;
+FORMIGUINHA;doce;Leite condensado;g;40;20;pos_forno;
+MOCINHA;doce;Creme de leite;g;200;100;montagem;antes do forno
+MOCINHA;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+MOCINHA;doce;Coco ralado;g;40;20;pos_forno;
+MOCINHA;doce;Leite condensado;g;40;20;pos_forno;
+PRESTÍGIO;doce;Creme de leite;g;200;100;montagem;antes do forno
+PRESTÍGIO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+PRESTÍGIO;doce;Coco ralado;g;40;20;pos_forno;
+PRESTÍGIO;doce;Leite condensado;g;40;20;pos_forno;
+TROVOADA;doce;Creme de leite;g;150;75;montagem;antes do forno
+TROVOADA;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+TROVOADA;doce;Banana;g;250;125;montagem;fruta antes do forno
+TROVOADA;doce;Leite condensado;g;40;15;pos_forno;planilha: 40g ou 15g, meia 15g mantida
+SENSAÇÃO;doce;Creme de leite;g;150;75;montagem;antes do forno
+SENSAÇÃO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+SENSAÇÃO;doce;Morango;g;150;75;montagem;fruta antes do forno
+SENSAÇÃO;doce;Leite condensado;g;40;15;pos_forno;planilha: 40g ou 15g, meia 15g mantida
+TENTAÇÃO;doce;Creme de leite;g;150;75;montagem;antes do forno
+TENTAÇÃO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+TENTAÇÃO;doce;Morango;g;150;75;montagem;fruta antes do forno
+TENTAÇÃO;doce;Leite condensado;g;40;15;pos_forno;planilha: 40g ou 15g, meia 15g mantida

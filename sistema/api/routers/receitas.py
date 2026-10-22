@@ -95,7 +95,7 @@ def _ficha_atual(conn, cond: str, params: list) -> dict:
                      (LOJA_ID, *params)).fetchone()
     if not v:
         return {"versao_id": None, "desde": None, "linhas": []}
-    linhas = conn.execute("SELECT l.item_id, i.nome AS item, i.unidade, i.classe, l.quantidade, l.perda_pct FROM ficha_linha l "
+    linhas = conn.execute("SELECT l.item_id, i.nome AS item, i.unidade, i.classe, l.quantidade, l.perda_pct, l.fase FROM ficha_linha l "
                           "JOIN item i ON i.id = l.item_id WHERE l.versao_id = %s ORDER BY i.nome", (v["id"],)).fetchall()
     for r in linhas:
         r["quantidade"], r["perda_pct"] = fmt(r["quantidade"]).rstrip("0").rstrip("."), fmt(r["perda_pct"])
@@ -138,8 +138,8 @@ def _salvar(conn, sessao, tipo, dono_id, tamanho, d: FichaIn):
     v = _grava(conn, f"INSERT INTO ficha_versao (loja_id, {nomes}, criado_em, criado_por) VALUES (%s, {marcas}, %s, %s) RETURNING id",
                (LOJA_ID, *colunas.values(), agora(), sessao["usuario_id"]))
     for x in d.linhas:
-        _grava(conn, "INSERT INTO ficha_linha (versao_id, item_id, quantidade, perda_pct) VALUES (%s,%s,%s,%s) RETURNING id",
-               (v["id"], x.item_id, x.quantidade, x.perda_pct if x.perda_pct is not None else perda_padrao))
+        _grava(conn, "INSERT INTO ficha_linha (versao_id, item_id, quantidade, perda_pct, fase) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+               (v["id"], x.item_id, x.quantidade, x.perda_pct if x.perda_pct is not None else perda_padrao, x.fase))
     auditar(conn, sessao, "salvar_ficha", "ficha", rotulo, depois={"versao_id": v["id"], "linhas": len(d.linhas)})
     conn.commit()
     return _ficha_atual(conn, cond, params)

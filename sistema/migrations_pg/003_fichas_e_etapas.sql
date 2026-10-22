@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS item (
     loja_id INTEGER NOT NULL REFERENCES loja(id),
     nome TEXT NOT NULL,
     classe TEXT NOT NULL CHECK (classe IN ('insumo','preparo','embalagem','revenda','consumo')),
-    unidade TEXT NOT NULL CHECK (unidade IN ('g','kg','ml','l','un')),
+    unidade TEXT NOT NULL CHECK (unidade IN ('g','kg','ml','l','un','fatia')),
     ativo BOOLEAN NOT NULL DEFAULT true,
     criado_em TIMESTAMPTZ NOT NULL,
     criado_por BIGINT REFERENCES usuario(id)
@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS ficha_linha (
     item_id BIGINT NOT NULL REFERENCES item(id),
     quantidade NUMERIC(14,4) NOT NULL CHECK (quantidade > 0),
     perda_pct NUMERIC(5,2) NOT NULL DEFAULT 0 CHECK (perda_pct >= 0 AND perda_pct <= 100),
+    -- Quando o ingrediente entra: na montagem (antes do forno) ou depois do forno (batata palha, cobertura doce).
+    fase TEXT NOT NULL DEFAULT 'montagem' CHECK (fase IN ('montagem','pos_forno')),
     UNIQUE (versao_id, item_id)
 );
 

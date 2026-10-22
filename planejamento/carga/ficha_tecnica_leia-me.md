@@ -1,32 +1,28 @@
-# Carga da ficha técnica: o que a planilha traz e o que falta
+# Carga da ficha técnica: situação
 
-22/10/2026. Fonte: FICHA_TECNICA_PIZZARIA.pdf (Pizzaria Maria Gabriela), enviada por Marlon. Leitura feita por script e conferida contra o texto do PDF; o resultado está em [ficha_tecnica_normalizada.csv](ficha_tecnica_normalizada.csv) (abre no Excel). Nada foi carregado no sistema ainda.
+Versão 2, 22/10/2026. Fonte: FICHA_TECNICA_PIZZARIA.pdf (modelo e incompleto, segundo Marlon). Resultado da leitura, já com as respostas dele: [ficha_tecnica_normalizada.csv](ficha_tecnica_normalizada.csv) (abre no Excel; uma linha por ingrediente, com a fase e as observações). Nada foi carregado no sistema ainda.
 
-## O que a planilha traz
+## Regras aplicadas (respostas de Marlon em 22/10/2026)
 
-- **76 sabores**: 60 salgados e 16 doces (a estimativa anterior era 50).
-- **46 ingredientes** distintos, depois de unir grafias diferentes (por exemplo "Alho e oleo" e "Alho e óleo").
-- Cada ingrediente tem a quantidade da **Grande** e da **meia (1/2)**, no formato "200g ou 100g 1/2". Usei a coluna 1/2 como base da ficha e a Grande como o dobro, o que confere com a regra que você confirmou (U1). Nas quantidades ímpares a planilha arredonda (225g vira 112g na meia); a diferença é de no máximo 1 g.
-- Salgados: molho ("1 COLHER") e mussarela em todos, mais até 4 ingredientes. Doces: uma base (coluna "CREME LEITE CHOCOLATE") mais até 2 ingredientes.
+- Todas as quantidades são **meia Grande ou 1 Broto**; a Grande é o dobro (U1).
+- **Molho:** 1 colher = 100g na meia (200g na Grande).
+- **Doces:** creme de leite é a base **antes do forno**, e frutas também; o resto entra **depois do forno**. Ingrediente 1 é sempre chocolate (branco se o nome tiver "branco" ou "branca", senão preto), ingrediente 2 é o que a planilha mostra no 1, ingrediente 3 é leite condensado. A planilha não traz a quantidade do chocolate.
+- **Strogonoff:** estavam trocados; STROG FRANGO leva frango e STROG CARNE leva filé.
+- **Frango** e "Frango desfiado" viram um item; "Calab ralada" e "Calabres ralada" viram **Calabresa**.
+- **Fatias** passam a ser uma unidade (lombinho, salame, pepperoni).
+- **Alho e óleo** é feito em casa (preparo, com receita a enviar).
+- **Batata palha** entra depois do forno.
+- Nos quatro doces com leite condensado "40g ou 15g", mantive a meia como está na planilha (15g).
 
-## O que a planilha não traz
+## Resultado
 
-1. Categoria (Tradicionais ou Especiais) e preço Grande e Broto de cada sabor (D2).
-2. Ficha do calzone, da borda, dos adicionais e das bebidas.
-3. Massa: insumos do preparo (farinha, água, fermento) e quanto de massa vai em cada tamanho.
-4. Embalagem por tamanho (caixa, etiqueta).
-5. Tempo de cada etapa.
-6. Unidade de compra e custo de cada ingrediente (vem com Estoques e Compras).
+76 sabores (60 salgados e 16 doces), 327 linhas, 43 itens. Ficaram **20 linhas marcadas PENDENTE** no CSV.
 
-## Pontos que parecem erro ou precisam de decisão
+## O que ainda falta
 
-- **W1.** "1 COLHER" de molho: quantos gramas ou ml tem uma colher, e vale por meia ou pela pizza inteira? (recomendo: pesar uma colher uma vez e cadastrar em g)
-- **W2.** Nos doces, a coluna "CREME LEITE CHOCOLATE" é a base: creme de leite em alguns e chocolate em outros? Qual sabor usa qual?
-- **W3.** CHOC BRANCO e CHOC PRETO têm "leite condensado" duas vezes e nenhum chocolate. O primeiro deve ser chocolate branco e chocolate preto? (recomendo: sim)
-- **W4.** STROG FRANGO usa "Stro Carne" e STROG CARNE usa "Stro Frango": estão trocados? (recomendo: sim, corrigir)
-- **W5.** BANANA NEVADA, TROVOADA, SENSAÇÃO e TENTAÇÃO trazem leite condensado "40g ou 15g"; a meia seria 20g. É 20g? (recomendo: 20g)
-- **W6.** "Frango" e "Frango desfiado" são o mesmo item? E "Calab ralada" e "Calabres ralada" são "Calabresa ralada", diferente de "Calabresa"? (recomendo: frango é um item só; calabresa ralada é outro item)
-- **W7.** "Catupiry/Cheddar" no SEIS QUEIJOS: qual dos dois, ou a metade de cada? (recomendo: você me diz qual)
-- **W8.** Lombinho, salame e pepperoni vêm em fatias (24, 20 e 34 fatias na Grande). Posso cadastrar em fatias, como na planilha? (recomendo: sim, e a conversão para kg entra em Estoques)
-- **W9.** "Alho e óleo", "Strogonoff de carne" e "Strogonoff de frango" são feitos na casa (preparo, com ficha própria) ou comprados prontos? (recomendo: se feitos na casa, mandar a receita depois)
-- **W10.** Os nomes dos itens sugeridos na coluna "ingrediente_sugerido" do CSV estão certos? Corrija o que quiser direto no arquivo.
+1. Quantidade do chocolate em cada doce (16 linhas).
+2. SEIS QUEIJOS usa "Catupiry e Cheddar": quanto de cada na meia? Hoje o CSV repete 50g para os dois, só como espaço reservado.
+3. CHOC BRANCO e CHOC PRETO: a planilha repete leite condensado; com a regra, o ingrediente 2 também seria leite condensado. Marlon ajusta.
+4. Quais outros ingredientes entram depois do forno nos salgados (só a batata palha está marcada)?
+5. Categoria e preço Grande e Broto de cada sabor (D2).
+6. Calzone, borda, adicionais, bebidas, massa (farinha etc.), embalagem e o tempo de cada etapa.

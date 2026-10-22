@@ -411,7 +411,7 @@ Percentual = Annotated[str, AfterValidator(lambda v: _numero(_PCT, v, maximo=100
 Minutos = Annotated[str, AfterValidator(lambda v: _numero(_MIN, v, rotulo="Tempo"))]
 
 CLASSES_ITEM = ("insumo", "preparo", "embalagem", "revenda", "consumo")
-UNIDADES_ITEM = ("g", "kg", "ml", "l", "un")
+UNIDADES_ITEM = ("g", "kg", "ml", "l", "un", "fatia")
 FUNCOES_ETAPA = ("massa", "pizzaiolo", "acabamento", "automatica")
 
 
@@ -446,6 +446,14 @@ class FichaLinha(Base):
     item_id: int
     quantidade: Quantidade
     perda_pct: Optional[Percentual] = None
+    fase: str = "montagem"
+
+    @field_validator("fase")
+    @classmethod
+    def _fase(cls, v):
+        if v not in ("montagem", "pos_forno"):
+            raise ValueError("Fase deve ser montagem ou pos_forno.")
+        return v
 
 
 class FichaIn(Base):

@@ -39,7 +39,12 @@ def test_ficha_do_produto_versoes_perda_padrao_e_validacao(client, admin):
     por_item = {x["item_id"]: x for x in r.json()["linhas"]}
     assert por_item[queijo["id"]]["perda_pct"] == "10.00" and por_item[queijo["id"]]["quantidade"] == "75.5"  # perda padrão 10%
     assert por_item[molho["id"]]["perda_pct"] == "5.00"
+    assert all(x["fase"] == "montagem" for x in r.json()["linhas"])
     v1 = r.json()["versao_id"]
+    pos = _ficha(client, h, f"produto/{p['id']}", [{"item_id": queijo["id"], "quantidade": "10", "fase": "pos_forno"}])
+    assert pos.json()["linhas"][0]["fase"] == "pos_forno"
+    assert _ficha(client, h, f"produto/{p['id']}", [{"item_id": queijo["id"], "quantidade": "10", "fase": "antes"}]).status_code == 422
+    assert _item(client, h, unidade="fatia")["unidade"] == "fatia"
     r2 = _ficha(client, h, f"produto/{p['id']}", [{"item_id": queijo["id"], "quantidade": "80"}])
     assert r2.json()["versao_id"] > v1 and len(r2.json()["linhas"]) == 1  # vale a versão mais recente
     for ruim in ([{"item_id": queijo["id"], "quantidade": "0"}], [{"item_id": queijo["id"], "quantidade": "-1"}],

@@ -33,3 +33,4 @@ th{font-size:13px;color:var(--cinza)}
 label.marca{display:inline-block;margin:6px 14px 6px 0;color:var(--tinta)}
 label.marca input{width:auto}
 tr.hist td{background:var(--tan)}
+ul{margin:0;padding-left:20px}
