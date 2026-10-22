@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protótipo 1C: Vendas</title>
+<style>
+:root{--creme:#FAF6EF;--escuro:#1E1A17;--tan:#F1E7D8;--linha:#E6DCCD;--cinza:#5E534A;--tinta:#2B2420;--vermelho:#B5361F;--ouro:#D9A441}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--creme);color:var(--tinta);font-size:16px}
+header{background:var(--escuro);color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{margin:0;font-size:18px;color:var(--ouro);flex:1}
+header span{font-size:13px;color:#d8cfc4}
+.faixa{background:#FFF3D6;color:#6b4a00;padding:8px 16px;font-size:14px}
+nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;background:var(--tan);border-bottom:1px solid var(--linha)}
+nav button{background:transparent;border:1px solid transparent;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:15px;color:var(--tinta)}
+nav button.ativo{background:#fff;border-color:var(--linha);font-weight:600}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.cartao{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px;margin-bottom:16px}
+.cartao h2{margin:0 0 12px;font-size:18px}
+.cartao h3{margin:16px 0 8px;font-size:15px;color:var(--cinza)}
+label{display:block;font-size:14px;color:var(--cinza);margin:10px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid var(--linha);border-radius:8px;font-size:16px;background:#fff}
+button.principal{background:var(--vermelho);color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:16px;cursor:pointer}
+button.sec{background:#fff;border:1px solid var(--linha);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--linha);vertical-align:middle}
+th{font-size:13px;color:var(--cinza)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tabela{overflow-x:auto}
+.linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.linha>*{flex:1;min-width:130px}
+.etq{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:var(--tan)}
+.etq.esp{background:#F6D9D2;color:#8a2412}
+.inativo{opacity:.5}
+.pequeno{font-size:13px;color:var(--cinza)}
+.resultado{background:var(--tan);border-radius:10px;padding:12px;margin-top:12px}
+.resultado .total{font-size:26px;font-weight:700;color:var(--vermelho)}
+.aviso{padding:10px 14px;border-radius:8px;margin:10px 0;background:#E8F3EA;color:#25552f}
+dialog{border:1px solid var(--linha);border-radius:12px;padding:20px;max-width:520px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(30,26,23,.5)}
+.acoes{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+@media (max-width:768px){main{padding:10px}}
+.etq.ok{background:#E8F3EA;color:#25552f}.etq.al{background:#FFF3D6;color:#6b4a00}.erro{color:#8a2412;font-size:14px;margin-top:8px}.grade{display:grid;grid-template-columns:2fr 1fr;gap:16px}@media (max-width:800px){.grade{grid-template-columns:1fr}}.sel{display:flex;gap:6px;flex-wrap:wrap}.sel button{padding:8px 12px;border:1px solid var(--linha);background:#fff;border-radius:8px;cursor:pointer;font-size:15px}.sel button.on{background:var(--escuro);color:#fff}
+</style>
+</head>
+<body>
+<header><h1>Sistema da Pizzaria · Protótipo da fatia 1C (Vendas)</h1><span>Perfil simulado:</span>
+<select id="perfil" style="width:auto"><option value="atendente">Atendente</option><option value="gerente">Gerente</option></select></header>
+<div class="faixa">Protótipo para aprovação: sabores, preços e clientes são de exemplo. As regras (limites, motivos, divisão de pagamento, Id do dia) são as do desenho. Nada é gravado.</div>
+<nav id="abas"></nav>
+<main id="tela"></main>
+<script>
+"use strict";
+const P = { limiteAtendente: 5, limiteGerente: 20, taxaEntrega: 600, formas: ["dinheiro","pix","credito","debito"] };
+const cat = { sabores: [
+ {n:"Mussarela",c:"Tradicional",G:3500,B:2500},{n:"Calabresa",c:"Tradicional",G:3500,B:2500},{n:"Portuguesa",c:"Tradicional",G:3500,B:2500},
+ {n:"Frango com Catupiry",c:"Especial",G:5000,B:2500},{n:"Quatro Queijos",c:"Especial",G:5000,B:2500}],
+ bordas:[{n:"Catupiry",G:1000,B:1000},{n:"Cheddar",G:1000,B:1000}],
+ adic:[{n:"Bacon extra",G:600,B:400}],
+ outros:[{n:"Calzone de Calabresa",p:5000,t:"Calzone"},{n:"Refrigerante lata",p:600,t:"Bebida"}] };
+const clientes = [{n:"Cliente Exemplo Um",t:"00900000001",e:"Rua Exemplo, 100, Centro"}];
+let pedidos = [], idDia = 0, aba = "novo", rascunho = novo();
+function novo(){ return { tipo:"retirada", cliente:null, itens:[], desc:{tipo:"desconto",valor:0,motivo:""}, pag:[] }; }
+const R = (c) => (c/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const cent = (t) => { const n = Math.round(parseFloat(String(t).replace(",","."))*100); return Number.isFinite(n)&&n>=0?n:null; };
+function h(tag, a, ...f){ const e=document.createElement(tag); for(const [k,v] of Object.entries(a||{})){ if(k.startsWith("on")) e[k]=v; else if(k==="class") e.className=v; else if(v!==false&&v!=null) e.setAttribute(k,v);} for(const x of f.flat()) if(x!=null&&x!==false) e.append(x instanceof Node?x:document.createTextNode(String(x))); return e; }
+const tela=document.getElementById("tela"), abas=document.getElementById("abas"), perfil=document.getElementById("perfil");
+perfil.onchange=()=>desenhar();
+const ABAS=[["novo","Novo pedido"],["lista","Pedidos do dia"],["param","Parâmetros de venda"]];
+// preço de uma pizza: Grande com 2 sabores = metade de cada, cada metade arredondada para cima
+function precoPizza(it){ const t=it.tam, sab=it.sabores.map(n=>cat.sabores.find(s=>s.n===n)); if(t==="Broto"||sab.length===1) return sab[0][t==="Broto"?"B":"G"];
+  return sab.reduce((s,x)=>s+Math.ceil(x.G/2),0); }
+function precoItem(it){ let u = it.kind==="pizza" ? precoPizza(it) + (it.borda?cat.bordas.find(b=>b.n===it.borda)[it.tam[0]]:0) + it.adic.reduce((s,n)=>s+cat.adic.find(a=>a.n===n)[it.tam[0]],0) : cat.outros.find(o=>o.n===it.nome).p; return u*it.qtd; }
+function sub(r){ return r.itens.reduce((s,i)=>s+precoItem(i),0); }
+function taxa(r){ return r.tipo==="entrega"?P.taxaEntrega:0; }
+function ajuste(r){ const b=sub(r); const v=r.desc.valor; return r.desc.tipo==="desconto"?-Math.min(v,b):v; }
+function total(r){ return sub(r)+taxa(r)+ajuste(r); }
+function pctDesc(r){ const b=sub(r); return r.desc.tipo==="desconto"&&b>0?r.desc.valor*100/b:0; }
+function limite(){ return perfil.value==="gerente"?P.limiteGerente:P.limiteAtendente; }
+function sel(opcoes, atual, aoMudar){ return h("div",{class:"sel"},opcoes.map(o=>h("button",{type:"button",class:o===atual?"on":"",onclick:()=>aoMudar(o)},o))); }
+function desenhar(){
+  abas.replaceChildren(...ABAS.map(([k,t])=>h("button",{class:k===aba?"ativo":"",onclick:()=>{aba=k;desenhar();}},t)));
+  tela.replaceChildren(aba==="novo"?abaNovo():aba==="lista"?abaLista():abaParam());
+}
+function abaNovo(){
+  const r=rascunho, erro=h("div",{class:"erro"});
+  // item em edição
+  const e = abaNovo.e ||= {kind:"pizza",tam:"Grande",sabores:[cat.sabores[0].n],borda:"",adic:[],qtd:1,nome:cat.outros[0].n};
+  const fm=[];
+  fm.push(h("h3",{},"Tipo do item"), sel(["pizza","calzone ou bebida"], e.kind==="pizza"?"pizza":"calzone ou bebida", v=>{e.kind=v==="pizza"?"pizza":"outro";desenhar();}));
+  if(e.kind==="pizza"){
+    fm.push(h("h3",{},"Tamanho"), sel(["Grande","Broto"],e.tam,v=>{e.tam=v;if(v==="Broto")e.sabores=e.sabores.slice(0,1);desenhar();}));
+    const nSab=e.tam==="Grande"?2:1;
+    for(let i=0;i<nSab;i++){ fm.push(h("label",{},"Sabor "+(i+1)+(i===1?" (opcional)":"")), h("select",{onchange:ev=>{ if(ev.target.value==="") e.sabores=e.sabores.slice(0,i); else e.sabores[i]=ev.target.value; desenhar();}}, i===1?h("option",{value:""},"Sem segundo sabor"):null, cat.sabores.map(s=>h("option",{value:s.n,selected:e.sabores[i]===s.n},s.n+" ("+s.c+")")))); }
+    fm.push(h("label",{},"Borda"), h("select",{onchange:ev=>{e.borda=ev.target.value;desenhar();}},h("option",{value:""},"Sem borda"),cat.bordas.map(b=>h("option",{value:b.n,selected:e.borda===b.n},b.n+" (+"+R(b[e.tam[0]])+")"))));
+    fm.push(h("label",{},"Adicionais"), h("div",{class:"sel"},cat.adic.map(a=>h("button",{type:"button",class:e.adic.includes(a.n)?"on":"",onclick:()=>{e.adic=e.adic.includes(a.n)?e.adic.filter(x=>x!==a.n):[...e.adic,a.n];desenhar();}},a.n+" (+"+R(a[e.tam[0]])+")"))));
+  } else fm.push(h("label",{},"Produto"), h("select",{onchange:ev=>{e.nome=ev.target.value;}},cat.outros.map(o=>h("option",{value:o.n,selected:e.nome===o.n},o.n+" ("+R(o.p)+")"))));
+  const q=h("input",{value:e.qtd,inputmode:"numeric"}); fm.push(h("label",{},"Quantidade"),q);
+  fm.push(h("div",{class:"acoes"},h("button",{class:"principal",onclick:()=>{const n=parseInt(q.value,10); if(!(n>=1&&n<=99)){erro.textContent="Quantidade de 1 a 99.";return;} r.itens.push(JSON.parse(JSON.stringify({...e,qtd:n,kind:e.kind}))); abaNovo.e=null; desenhar();}},"Adicionar ao pedido")),erro);
+  // cliente
+  const tel=h("input",{placeholder:"Telefone, só números",value:r.cliente?r.cliente.t:""}), cl=h("div",{class:"pequeno"},r.cliente?r.cliente.n+" · "+r.cliente.e:"Nenhum cliente (balcão sem cadastro)");
+  const cliente=h("div",{class:"cartao"},h("h2",{},"1. Pedido e cliente"),sel(["retirada","entrega"],r.tipo,v=>{r.tipo=v;desenhar();}),
+    h("label",{},"Telefone do cliente"),tel,
+    h("div",{class:"acoes",style:"justify-content:flex-start"},h("button",{class:"sec",onclick:()=>{const c=clientes.find(x=>x.t===tel.value.replace(/\D/g,""));if(c){r.cliente=c;}else{const n=prompt("Cliente novo. Nome:");if(!n)return;const en=prompt("Endereço:")||"";const c2={n,t:tel.value.replace(/\D/g,""),e:en};clientes.push(c2);r.cliente=c2;}desenhar();}},"Buscar ou cadastrar")),cl);
+  // resumo
+  const linhas=r.itens.map((i,ix)=>h("tr",{},h("td",{},i.qtd+"x "+(i.kind==="pizza"?"Pizza "+i.tam+" "+i.sabores.join(" + ")+(i.borda?" · borda "+i.borda:"")+(i.adic.length?" · "+i.adic.join(", "):""):i.nome)),h("td",{class:"num"},R(precoItem(i))),h("td",{},h("button",{class:"sec",onclick:()=>{r.itens.splice(ix,1);desenhar();}},"Remover"))));
+  const dv=h("input",{value:r.desc.valor?String(r.desc.valor/100).replace(".",","):"",inputmode:"decimal",placeholder:"0,00"}), mt=h("input",{value:r.desc.motivo,placeholder:"Motivo (obrigatório se houver ajuste)"});
+  dv.onchange=()=>{const n=cent(dv.value||"0");r.desc.valor=n??0;desenhar();}; mt.onchange=()=>{r.desc.motivo=mt.value;};
+  const pct=pctDesc(r), exige=pct>limite();
+  const resumo=h("div",{class:"cartao"},h("h2",{},"3. Resumo"),h("div",{class:"tabela"},h("table",{},h("tbody",{},linhas.length?linhas:h("tr",{},h("td",{class:"pequeno"},"Nenhum item ainda"))))),
+    h("h3",{},"Desconto ou acréscimo"),sel(["desconto","acréscimo"],r.desc.tipo==="desconto"?"desconto":"acréscimo",v=>{r.desc.tipo=v==="desconto"?"desconto":"acrescimo";desenhar();}),
+    h("label",{},"Valor (R$)"),dv,h("label",{},"Motivo"),mt,
+    exige?h("div",{class:"aviso",style:"background:#F6D9D2;color:#8a2412"},"Desconto de "+pct.toFixed(1)+"% passa do limite de "+limite()+"% do perfil "+perfil.value+". Precisa de autorização do gerente."):null,
+    h("div",{class:"resultado"},h("div",{class:"pequeno"},"Itens "+R(sub(r))+" · Entrega "+R(taxa(r))+" · Ajuste "+R(ajuste(r))),h("div",{class:"total"},R(total(r)))));
+  // pagamento
+  const forma=h("select",{},P.formas.map(f=>h("option",{value:f},f))), val=h("input",{inputmode:"decimal",placeholder:"Valor recebido"});
+  const pago=r.pag.reduce((s,p)=>s+p.v,0), falta=total(r)-pago;
+  const pg=h("div",{class:"cartao"},h("h2",{},"4. Pagamento"),
+    h("div",{class:"tabela"},h("table",{},h("tbody",{},r.pag.map((p,ix)=>h("tr",{},h("td",{},p.f),h("td",{class:"num"},R(p.v)),h("td",{},h("button",{class:"sec",onclick:()=>{r.pag.splice(ix,1);desenhar();}},"Remover"))))))),
+    h("div",{class:"linha"},forma,val,h("button",{class:"sec",onclick:()=>{const n=cent(val.value);if(!n){erro2.textContent="Valor inválido.";return;}r.pag.push({f:forma.value,v:n});desenhar();}},"Lançar")),
+    h("div",{class:"pequeno",style:"margin-top:8px"},falta>0?"Falta receber "+R(falta):falta<0?"Recebido a mais "+R(-falta)+(r.pag.some(p=>p.f==="dinheiro")?" (troco em dinheiro)":" (só dinheiro gera troco: ajuste os valores)"):"Pago por completo"));
+  const erro2=h("div",{class:"erro"}); pg.append(erro2);
+  const fin=h("div",{class:"cartao"},h("button",{class:"principal",onclick:()=>{
+    if(!r.itens.length){erro2.textContent="Inclua ao menos um item.";return;}
+    if(r.tipo==="entrega"&&!r.cliente){erro2.textContent="Entrega exige cliente com endereço.";return;}
+    if((r.desc.valor>0)&&!r.desc.motivo.trim()){erro2.textContent="Motivo obrigatório para desconto ou acréscimo.";return;}
+    if(exige&&perfil.value==="atendente"){erro2.textContent="Peça ao gerente: ele entra com a senha dele na confirmação.";return;}
+    if(falta>0){erro2.textContent="Pagamento incompleto.";return;}
+    if(falta<0){const din=r.pag.filter(p=>p.f==="dinheiro").reduce((s,p)=>s+p.v,0); if(din<-falta){erro2.textContent="Troco só pode sair do dinheiro recebido.";return;}}
+    idDia++; pedidos.push({...r,id:idDia,sit:"recebido",total:total(r)}); rascunho=novo(); aba="lista"; desenhar();}},"Confirmar pedido"),
+    h("div",{class:"pequeno",style:"margin-top:8px"},"Ao confirmar nasce o Id do dia (reinicia a cada dia) e o pedido vai para a Produção."));
+  return h("div",{},cliente,h("div",{class:"grade"},h("div",{class:"cartao"},h("h2",{},"2. Itens"),fm),h("div",{},resumo,pg,fin)));
+}
+const SIT=["recebido","em produção","acabado","despachado ou retirado"];
+function abaLista(){
+  if(!pedidos.length) return h("div",{class:"cartao"},h("p",{},"Nenhum pedido hoje."));
+  return h("div",{class:"cartao"},h("h2",{},"Pedidos do dia"),h("div",{class:"tabela"},h("table",{},h("thead",{},h("tr",{},["Id","Tipo","Cliente","Total","Situação",""].map(x=>h("th",{},x)))),
+   h("tbody",{},pedidos.map(p=>h("tr",{class:p.sit==="cancelado"?"inativo":""},h("td",{},"#"+p.id),h("td",{},p.tipo),h("td",{},p.cliente?p.cliente.n:"Balcão"),h("td",{class:"num"},R(p.total)),h("td",{},h("span",{class:"etq "+(p.sit==="cancelado"?"esp":"ok")},p.sit)),
+    h("td",{},p.sit!=="cancelado"&&p.sit!==SIT[3]?[h("button",{class:"sec",onclick:()=>{p.sit=SIT[SIT.indexOf(p.sit)+1];desenhar();}},"Avançar"),h("button",{class:"sec",onclick:()=>{const m=prompt("Motivo do cancelamento (obrigatório):");if(!m||!m.trim())return;if(perfil.value==="atendente"&&p.sit!=="recebido"){alert("Pedido já em produção: só gerente cancela.");return;}p.sit="cancelado";p.motivo=m;desenhar();}},"Cancelar")]:null)))))));
+}
+function abaParam(){
+  const a=h("input",{value:P.limiteAtendente}),g=h("input",{value:P.limiteGerente}),t=h("input",{value:String(P.taxaEntrega/100).replace(".",",")});
+  return h("div",{class:"cartao"},h("h2",{},"Parâmetros de venda (só gerente e administrador)"),
+   h("p",{class:"pequeno"},"Nada disto é fixo no código: cada valor é um parâmetro da loja, com histórico. Os números abaixo são exemplo."),
+   h("label",{},"Limite de desconto do atendente (%)"),a,h("label",{},"Limite de desconto do gerente (%)"),g,h("label",{},"Taxa de entrega padrão (R$)"),t,
+   h("label",{},"Formas de pagamento aceitas"),h("div",{class:"pequeno"},"Dinheiro, Pix, crédito e débito (lista ligada e desligada por loja)"),
+   h("div",{class:"acoes"},h("button",{class:"principal",onclick:()=>{P.limiteAtendente=parseFloat(a.value.replace(",","."))||0;P.limiteGerente=parseFloat(g.value.replace(",","."))||0;P.taxaEntrega=cent(t.value)??P.taxaEntrega;desenhar();}},"Salvar")));
+}
+desenhar();
+</script>
+</body>
+</html>
