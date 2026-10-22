@@ -3,7 +3,8 @@ from datetime import date
 from typing import Optional
 
 import psycopg
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+import psycopg.errors
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, hoje, traduzir_erro
@@ -11,7 +12,7 @@ from api.schemas import PedidoCalcular, PedidoCancelar, PedidoCreate, PedidoSitu
 from api.security import PERMISSOES, requer
 from api.services import parametros as svc_parametros
 from api.services.dinheiro import fmt
-from api.services.vendas import SITUACOES, autorizar, limite_desconto, repartir_pagamentos, totais
+from api.services.vendas import SITUACOES, autorizar, excede_limite, limite_desconto, repartir_pagamentos, totais
 
 router = APIRouter(prefix="/pedidos", tags=["vendas"])
 _COLS = ("id, data, id_dia, canal, id_canal, cliente_id, tipo, situacao, urgente, subtotal, desconto, acrescimo, taxa_entrega, "
@@ -35,6 +36,15 @@ def _resumo_calculo(t: dict) -> dict:
             "desconto_pct": fmt(t["desconto_pct"])}
 
 
+def _gerencia(sessao) -> bool:
+    return "vendas.gerir" in PERMISSOES.get(sessao["perfil"], set())
+
+
+def _precisa_autorizacao(sessao, t, lim) -> bool:
+    """Desconto acima do limite do perfil, ou taxa de entrega abaixo do padrão (que é desconto disfarçado), sem ser gerência."""
+    return excede_limite(t["desconto"], t["subtotal"], lim) or (t["tipo"] == "entrega" and t["taxa"] < t["taxa_padrao"] and not _gerencia(sessao))
+
+
 @router.post("/calcular")
 def calcular(d: PedidoCalcular, sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
     """Simulação: mesmos preços e regras do pedido, sem gravar."""
@@ -42,12 +52,17 @@ def calcular(d: PedidoCalcular, sessao=Depends(requer("vendas.criar")), conn=Dep
     lim = limite_desconto(conn, LOJA_ID, sessao["perfil"])
     r = _resumo_calculo(t)
     r["limite_desconto_pct"] = None if lim is None else fmt(lim)
-    r["precisa_autorizacao"] = lim is not None and t["desconto_pct"] > lim
+    r["precisa_autorizacao"] = _precisa_autorizacao(sessao, t, lim)
     return r
 
 
 @router.post("", status_code=201)
-def criar(d: PedidoCreate, request: Request, sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
+def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
+    if d.chave:  # reenvio do mesmo pedido (duplo clique, rede lenta): devolve o que já existe
+        antigo = _por_chave(conn, d.chave)
+        if antigo:
+            response.status_code = 200
+            return antigo
     t = totais(conn, LOJA_ID, d)
     if t["total"] <= 0:
         raise HTTPException(status_code=400, detail="O total do pedido deve ser maior que zero.")
@@ -66,16 +81,15 @@ def criar(d: PedidoCreate, request: Request, sessao=Depends(requer("vendas.criar
             raise HTTPException(status_code=400, detail="O cliente não tem endereço cadastrado.")
     formas = svc_parametros.vigentes(conn, LOJA_ID)["formas_pagamento_aceitas"]["valor"]
     pagamentos = repartir_pagamentos(t["total"], d.pagamentos, formas)
-    # Desconto acima do limite do perfil: gerente (ou acima) confirma com login e senha, antes de gravar qualquer coisa.
+    # Acima do limite do perfil: gerente (ou acima) confirma com login e senha, antes de gravar qualquer coisa.
     autorizador = None
     lim = limite_desconto(conn, LOJA_ID, sessao["perfil"])
-    if lim is not None and t["desconto_pct"] > lim:
+    if _precisa_autorizacao(sessao, t, lim):
         if not d.autorizacao:
-            raise HTTPException(status_code=403, detail=f"Desconto de {t['desconto_pct']}% passa do seu limite de {lim}%. "
+            raise HTTPException(status_code=403, detail="Esta operação passa do seu limite (desconto ou taxa de entrega menor que a padrão). "
                                                          "Peça a autorização de um gerente.")
-        autorizador = autorizar(conn, request, d.autorizacao, sessao["usuario_id"], t["desconto_pct"])
-    if d.urgente and "vendas.criar" not in PERMISSOES.get(sessao["perfil"], set()):
-        raise HTTPException(status_code=403, detail="Perfil insuficiente para marcar pedido urgente.")
+        autorizador = autorizar(conn, request, d.autorizacao, sessao["usuario_id"],
+                                t["desconto"] if excede_limite(t["desconto"], t["subtotal"], lim) else None, t["subtotal"])
     quando, dia = agora(), hoje()
     try:
         id_dia = conn.execute(
@@ -84,10 +98,10 @@ def criar(d: PedidoCreate, request: Request, sessao=Depends(requer("vendas.criar
             (LOJA_ID, dia)).fetchone()["ultimo"]
         ped = conn.execute(
             f"INSERT INTO pedido (loja_id, data, id_dia, canal, cliente_id, tipo, urgente, subtotal, desconto, acrescimo, "
-            f"taxa_entrega, taxa_motivo, total, observacoes, criado_em, criado_por) "
-            f"VALUES (%s,%s,%s,'balcao',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING {_COLS}",
+            f"taxa_entrega, taxa_motivo, total, observacoes, chave, criado_em, criado_por) "
+            f"VALUES (%s,%s,%s,'balcao',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING {_COLS}",
             (LOJA_ID, dia, id_dia, d.cliente_id, d.tipo, d.urgente, t["subtotal"], t["desconto"], t["acrescimo"], t["taxa"],
-             d.taxa_motivo, t["total"], d.observacoes, quando, sessao["usuario_id"])).fetchone()
+             d.taxa_motivo, t["total"], d.observacoes, d.chave, quando, sessao["usuario_id"])).fetchone()
         for seq, (it, calc) in enumerate(zip(d.itens, t["itens"]), start=1):
             item = conn.execute(
                 "INSERT INTO item_pedido (pedido_id, seq, tipo, produto_id, sabor2_id, tamanho, descricao, preco_unit, quantidade, observacoes) "
@@ -110,10 +124,25 @@ def criar(d: PedidoCreate, request: Request, sessao=Depends(requer("vendas.criar
         auditar(conn, sessao, "criar", "pedido", ped["id"],
                 depois={"id_dia": id_dia, "total": fmt(t["total"]), "tipo": d.tipo, "autorizado_por": autorizador})
         conn.commit()
+    except psycopg.errors.UniqueViolation as e:
+        conn.rollback()
+        antigo = _por_chave(conn, d.chave) if d.chave else None
+        if antigo:  # dois envios simultâneos com a mesma chave: vale o que ganhou a corrida
+            response.status_code = 200
+            return antigo
+        raise traduzir_erro(e) from e
     except psycopg.Error as e:
         conn.rollback()
         raise traduzir_erro(e) from e
     return _out(ped) | {"troco": fmt(sum(l["troco"] for l in pagamentos))}
+
+
+def _por_chave(conn, chave: str):
+    p = conn.execute(f"SELECT {_COLS} FROM pedido WHERE loja_id = %s AND chave = %s", (LOJA_ID, chave)).fetchone()
+    if not p:
+        return None
+    troco = conn.execute("SELECT COALESCE(sum(troco), 0) AS t FROM pagamento WHERE pedido_id = %s", (p["id"],)).fetchone()["t"]
+    return _out(p) | {"troco": fmt(troco)}
 
 
 @router.get("")
@@ -195,7 +224,7 @@ def cancelar(pid: int, d: PedidoCancelar, request: Request, sessao=Depends(reque
     if p["situacao"] in ("cancelado", "despachado ou retirado"):
         raise HTTPException(status_code=409, detail=f"Pedido {p['situacao']} não pode ser cancelado.")
     autorizador = None
-    if "vendas.gerir" not in PERMISSOES.get(sessao["perfil"], set()):  # atendente: o pedido está pago, então gerente confirma
+    if not _gerencia(sessao):  # atendente: o pedido está pago, então gerente confirma
         if not d.autorizacao:
             raise HTTPException(status_code=403, detail="Cancelar pedido pago exige a autorização de um gerente.")
         autorizador = autorizar(conn, request, d.autorizacao, sessao["usuario_id"])

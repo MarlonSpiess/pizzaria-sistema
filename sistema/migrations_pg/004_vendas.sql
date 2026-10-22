@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS pedido (
     entrega_calculada TIMESTAMPTZ,
     entrega_real TIMESTAMPTZ,
     numero_cf TEXT,
+    chave TEXT,
     criado_em TIMESTAMPTZ NOT NULL,
     criado_por BIGINT REFERENCES usuario(id),
     CONSTRAINT ck_pedido_entrega_cliente CHECK (tipo = 'retirada' OR cliente_id IS NOT NULL),
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS pedido (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_pedido_id_dia ON pedido (loja_id, data, id_dia);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_pedido_canal ON pedido (loja_id, canal, id_canal) WHERE id_canal IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_pedido_chave ON pedido (loja_id, chave) WHERE chave IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_pedido_data ON pedido (loja_id, data, situacao);
 
 CREATE TABLE IF NOT EXISTS item_pedido (
@@ -115,17 +117,27 @@ BEGIN
     END LOOP;
 END $$;
 
--- Do pedido, só a situação (e dados de entrega, CF e urgência) pode mudar; o dinheiro e o cliente não.
+-- Do pedido, só situação, urgência, entrega real e número do CF mudam; o resto é fixo. Cancelado é final e a situação anda um passo.
 CREATE OR REPLACE FUNCTION pedido_so_situacao() RETURNS trigger AS $$
+DECLARE ordem TEXT[] := ARRAY['recebido','em producao','acabado','despachado ou retirado'];
 BEGIN
     IF TG_OP = 'DELETE' THEN
         RAISE EXCEPTION 'Pedido não pode ser apagado.';
     END IF;
-    IF (NEW.loja_id, NEW.data, NEW.id_dia, NEW.canal, NEW.cliente_id, NEW.tipo, NEW.subtotal, NEW.desconto, NEW.acrescimo,
-        NEW.taxa_entrega, NEW.total, NEW.criado_em) IS DISTINCT FROM
-       (OLD.loja_id, OLD.data, OLD.id_dia, OLD.canal, OLD.cliente_id, OLD.tipo, OLD.subtotal, OLD.desconto, OLD.acrescimo,
-        OLD.taxa_entrega, OLD.total, OLD.criado_em) THEN
+    IF (NEW.loja_id, NEW.data, NEW.id_dia, NEW.canal, NEW.id_canal, NEW.cliente_id, NEW.tipo, NEW.subtotal, NEW.desconto, NEW.acrescimo,
+        NEW.taxa_entrega, NEW.taxa_motivo, NEW.total, NEW.observacoes, NEW.chave, NEW.criado_em, NEW.criado_por) IS DISTINCT FROM
+       (OLD.loja_id, OLD.data, OLD.id_dia, OLD.canal, OLD.id_canal, OLD.cliente_id, OLD.tipo, OLD.subtotal, OLD.desconto, OLD.acrescimo,
+        OLD.taxa_entrega, OLD.taxa_motivo, OLD.total, OLD.observacoes, OLD.chave, OLD.criado_em, OLD.criado_por) THEN
         RAISE EXCEPTION 'Pedido aceita alterar apenas situação, urgência, entrega e número do CF.';
+    END IF;
+    IF NEW.situacao IS DISTINCT FROM OLD.situacao THEN
+        IF OLD.situacao = 'cancelado' OR OLD.situacao = 'despachado ou retirado' THEN
+            RAISE EXCEPTION 'Pedido % é final.', OLD.situacao;
+        ELSIF NEW.situacao = 'cancelado' THEN
+            NULL;
+        ELSIF array_position(ordem, NEW.situacao) IS DISTINCT FROM array_position(ordem, OLD.situacao) + 1 THEN
+            RAISE EXCEPTION 'Situação só avança um passo por vez.';
+        END IF;
     END IF;
     RETURN NEW;
 END;

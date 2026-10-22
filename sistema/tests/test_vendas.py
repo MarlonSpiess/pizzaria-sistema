@@ -103,8 +103,19 @@ def test_entrega_exige_cliente_com_endereco_e_aplica_taxa(client, cardapio, admi
     assert ok.status_code == 201 and ok.json()["taxa_entrega"] == "6.00" and ok.json()["total"] == "41.00"
     # taxa diferente do padrão exige motivo
     assert _pedido(client, h, it, [{"forma": "pix", "valor": "40,00"}], tipo="entrega", cliente_id=cli["id"], taxa_entrega="5,00").status_code == 400
+    # taxa menor que a padrão é desconto: atendente precisa de gerente; gerente pode, inclusive entrega grátis (0,00)
     assert _pedido(client, h, it, [{"forma": "pix", "valor": "40,00"}], tipo="entrega", cliente_id=cli["id"], taxa_entrega="5,00",
-                   taxa_motivo="Vizinho").status_code == 201
+                   taxa_motivo="Vizinho").status_code == 403
+    gl, gs = criar_usuario_direto("gerente")
+    assert _pedido(client, h, it, [{"forma": "pix", "valor": "40,00"}], tipo="entrega", cliente_id=cli["id"], taxa_entrega="5,00",
+                   taxa_motivo="Vizinho", autorizacao={"usuario": gl, "senha": gs}).status_code == 201
+    _, hg = entrar(client, "gerente")
+    gratis = _pedido(client, hg, it, [{"forma": "pix", "valor": "35,00"}], tipo="entrega", cliente_id=cli["id"], taxa_entrega="0,00",
+                     taxa_motivo="Cortesia")
+    assert gratis.status_code == 201 and gratis.json()["total"] == "35.00"
+    # taxa maior que a padrão não precisa de autorização, só de motivo
+    assert _pedido(client, h, it, [{"forma": "pix", "valor": "45,00"}], tipo="entrega", cliente_id=cli["id"], taxa_entrega="10,00",
+                   taxa_motivo="Longe").status_code == 201
     assert _pedido(client, h, it, [{"forma": "pix", "valor": "40,00"}], tipo="retirada", taxa_entrega="5,00").status_code == 400
 
 
@@ -259,3 +270,58 @@ def test_id_do_dia_nao_repete_com_pedidos_simultaneos(client, cardapio):
     assert all(r.status_code == 201 for r in rs), [r.text for r in rs if r.status_code != 201]
     ids = [r.json()["id_dia"] for r in rs]
     assert len(set(ids)) == 8
+
+
+def test_limite_comparado_em_dinheiro_sem_arredondar_percentual(client, cardapio):
+    _, h = entrar(client, "atendente")
+    c = cardapio
+    # 17 pizzas de 35,00 = 595,00; 5% = 29,75. 29,76 passa por 0,01 e deve exigir gerente; 29,75 não.
+    itens = [{"tipo": "pizza", "produto_id": c["trad"]["id"], "tamanho": "grande", "quantidade": 17}]
+    def pedir(valor, pago):
+        return _pedido(client, h, itens, [{"forma": "pix", "valor": pago}], ajuste={"tipo": "desconto", "valor": valor, "motivo": "Teste"})
+    assert pedir("29,75", "565,25").status_code == 201
+    assert pedir("29,76", "565,24").status_code == 403
+
+
+def test_reenvio_com_a_mesma_chave_nao_duplica(client, cardapio):
+    _, h = entrar(client, "atendente")
+    chave = "chave-" + novo_login("k")
+    a = _pedido(client, h, [_pizza_item(cardapio)], [{"forma": "dinheiro", "valor": "40,00"}], chave=chave)
+    b = _pedido(client, h, [_pizza_item(cardapio)], [{"forma": "dinheiro", "valor": "40,00"}], chave=chave)
+    assert a.status_code == 201 and b.status_code == 200
+    assert a.json()["id"] == b.json()["id"] and b.json()["troco"] == "5.00"
+    assert _pedido(client, h, [_pizza_item(cardapio)], [{"forma": "pix", "valor": "35,00"}], chave="curta").status_code == 422
+
+
+def test_trava_de_autorizacao_nao_bloqueia_o_login_do_gerente(client, cardapio):
+    _, h = entrar(client, "atendente")
+    gl, gs = criar_usuario_direto("gerente")
+    it, pag = [_pizza_item(cardapio)], [{"forma": "pix", "valor": "30,00"}]
+    aj = {"tipo": "desconto", "valor": "5,00", "motivo": "Atraso"}
+    for _ in range(6):
+        _pedido(client, h, it, pag, ajuste=aj, autorizacao={"usuario": gl, "senha": "errada-errada"})
+    assert client.post("/api/auth/login", json={"usuario": gl, "senha": gs}).status_code == 200
+
+
+def test_desconto_acima_do_limite_do_autorizador_conta_como_falha(client, cardapio):
+    _, h = entrar(client, "atendente")
+    gl, gs = criar_usuario_direto("gerente")
+    it, pag = [_pizza_item(cardapio)], [{"forma": "pix", "valor": "25,00"}]
+    aj = {"tipo": "desconto", "valor": "10,00", "motivo": "Erro nosso"}  # 28,6% > 20% do gerente
+    r = _pedido(client, h, it, pag, ajuste=aj, autorizacao={"usuario": gl, "senha": gs})
+    r2 = _pedido(client, h, it, pag, ajuste=aj, autorizacao={"usuario": gl, "senha": "errada-errada"})
+    assert r.status_code == r2.status_code == 403 and r.json()["detail"] == r2.json()["detail"]
+
+
+def test_banco_impede_voltar_pedido_cancelado_ou_pular_etapa(client, cardapio, conn_teste):
+    import psycopg
+    _, h = entrar(client, "atendente")
+    _, hg = entrar(client, "gerente")
+    pid = _pedido(client, h, [_pizza_item(cardapio)], [{"forma": "pix", "valor": "35,00"}]).json()["id"]
+    with pytest.raises(psycopg.Error):
+        conn_teste.execute("UPDATE pedido SET situacao = 'acabado' WHERE id = %s", (pid,))
+    with pytest.raises(psycopg.Error):
+        conn_teste.execute("UPDATE pedido SET observacoes = 'x' WHERE id = %s", (pid,))
+    client.post(f"/api/pedidos/{pid}/cancelar", json={"motivo": "Teste"}, headers=hg)
+    with pytest.raises(psycopg.Error):
+        conn_teste.execute("UPDATE pedido SET situacao = 'recebido' WHERE id = %s", (pid,))

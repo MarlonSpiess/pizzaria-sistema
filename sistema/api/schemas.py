@@ -527,6 +527,13 @@ def _motivo(v: str) -> str:
 Motivo = Annotated[str, AfterValidator(_motivo)]
 
 
+def _reais_zero_ok(v: str) -> str:
+    return str(parse_reais(v))
+
+
+ReaisOuZero = Annotated[str, AfterValidator(_reais_zero_ok)]
+
+
 class Autorizacao(Base):
     """Login de gerente, subgerente, proprietário ou administrador, digitado na hora, para passar do limite do perfil."""
     usuario: str
@@ -629,7 +636,7 @@ class PedidoCalcular(Base):
     tipo: str = "retirada"
     itens: list[ItemPedidoIn]
     ajuste: Optional[AjusteIn] = None
-    taxa_entrega: Optional[Reais] = None
+    taxa_entrega: Optional[ReaisOuZero] = None
 
     @field_validator("tipo")
     @classmethod
@@ -653,6 +660,14 @@ class PedidoCreate(PedidoCalcular):
     urgente: bool = False
     observacoes: Optional[str] = None
     autorizacao: Optional[Autorizacao] = None
+    chave: Optional[str] = None  # gerada pela tela por pedido; reenvio com a mesma chave devolve o pedido já criado
+
+    @field_validator("chave")
+    @classmethod
+    def _chave(cls, v):
+        if v is not None and not re.fullmatch(r"[A-Za-z0-9-]{8,64}", v):
+            raise ValueError("Chave inválida.")
+        return v
 
     @field_validator("pagamentos")
     @classmethod

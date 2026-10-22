@@ -31,7 +31,7 @@ async function api(metodo, caminho, corpo) {
 
 function sair(chamarApi = true) {
   if (chamarApi && estado.token) api("POST", "/auth/logout").catch(() => {});
-  estado.token = null; estado.eu = null;
+  estado.token = null; estado.eu = null; estado.rascunho = null;
   try { sessionStorage.removeItem("pz-token"); } catch (e) { /* ok */ }
   desenhar();
 }
@@ -628,6 +628,9 @@ const rotuloSit = { "recebido": "recebido", "em producao": "em produção", "aca
 const proxSit = { "recebido": "em producao", "em producao": "acabado", "acabado": "despachado ou retirado" };
 const virgula = (v) => String(v).replace(".", ",");
 
+// getRandomValues funciona também em http na rede da loja (randomUUID só em contexto seguro)
+const novaChave = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+
 function entradaAutorizacao() {
   const u = h("input", { autocomplete: "off" }), sn = h("input", { type: "password", autocomplete: "off" });
   return { u, sn, caixa: h("div", { class: "linha" }, campo("Usuário do gerente", u), campo("Senha do gerente", sn)),
@@ -655,7 +658,7 @@ async function abaVendas() {
   async function novoPedido() {
     const [produtos, adicionais, param] = await Promise.all([api("GET", "/produtos?ativo=true"), api("GET", "/adicionais?ativo=true"), api("GET", "/parametros")]);
     const formas = ((param.find ? param.find((x) => x.chave === "formas_pagamento_aceitas") : null) || {}).valor || ["dinheiro", "pix", "credito", "debito"];
-    const r = estado.rascunho || (estado.rascunho = { tipo: "retirada", cliente: null, itens: [], ajuste: null, pagamentos: [], taxa: "", taxaMotivo: "", obs: "", urgente: false });
+    const r = estado.rascunho || (estado.rascunho = { chave: novaChave(), tipo: "retirada", cliente: null, itens: [], ajuste: null, pagamentos: [], taxa: "", taxaMotivo: "", obs: "", urgente: false });
     const corpoCalculo = () => ({ tipo: r.tipo, itens: r.itens.map((i) => i.dados), ajuste: r.ajuste, taxa_entrega: r.tipo === "entrega" && r.taxa.trim() ? r.taxa.trim() : null });
     let calc = null;
     if (r.itens.length) { try { calc = await api("POST", "/pedidos/calcular", corpoCalculo()); } catch (e) { falha(e); } }
@@ -752,12 +755,14 @@ async function abaVendas() {
     const urg = h("input", { type: "checkbox" }); urg.checked = r.urgente; urg.onchange = () => { r.urgente = urg.checked; };
     const confirmar = h("button", { class: "principal", onclick: async () => {
       if (!r.itens.length) { falha(new Error("Inclua ao menos um item.")); return; }
+      if (confirmar.disabled) return;
+      confirmar.disabled = true;
       try {
         const criado = await api("POST", "/pedidos", { ...corpoCalculo(), cliente_id: r.cliente ? r.cliente.id : null, taxa_motivo: r.taxaMotivo.trim() || null,
-          pagamentos: r.pagamentos.map((p) => ({ forma: p.forma, valor: p.valor })), urgente: r.urgente, observacoes: r.obs.trim() || null, autorizacao: aut.valor() });
+          pagamentos: r.pagamentos.map((p) => ({ forma: p.forma, valor: p.valor })), urgente: r.urgente, observacoes: r.obs.trim() || null, autorizacao: aut.valor(), chave: r.chave });
         estado.rascunho = null; estado.subv = "dia";
         await desenharSub(); msg.replaceChildren(aviso("ok", "Pedido " + criado.id_dia + " registrado. Total " + brl(criado.total) + (Number(criado.troco) > 0 ? ". Troco " + brl(criado.troco) + "." : ".")));
-      } catch (e) { falha(e); }
+      } catch (e) { confirmar.disabled = false; falha(e); }
     } }, "Confirmar pedido");
     const cartaoFim = h("div", { class: "cartao" }, campo("Observações", obs), h("label", { class: "inline" }, urg, " Pedido urgente"), h("div", {}, confirmar, " ",
       h("button", { class: "sec", onclick: () => { estado.rascunho = null; redesenhar(); } }, "Limpar")));

@@ -17,6 +17,7 @@ SITUACOES = ("recebido", "em producao", "acabado", "despachado ou retirado")
 AUTORIZADORES = ("gerente", "subgerente", "proprietario", "administrador")
 _LIMITE = {"atendente": "limite_desconto_atendente_pct", "subgerente": "limite_desconto_subgerente_pct",
            "gerente": "limite_desconto_gerente_pct"}
+_RECUSADA = "Autorização recusada: confira usuário e senha de gerente e se o desconto cabe no limite dele."
 _ROTULO_TIPO = {"calzone": "Calzone", "bebida": "Bebida", "acompanhamento": "Acompanhamento"}
 
 
@@ -83,7 +84,7 @@ def totais(conn, loja_id: int, d) -> dict:
         taxa = parse_reais(d.taxa_entrega) if d.taxa_entrega is not None else padrao
     total = subtotal - desconto + acrescimo + taxa
     pct = (desconto * 100 / subtotal).quantize(Decimal("0.01")) if subtotal > 0 else Decimal("0.00")
-    return {"itens": itens, "subtotal": subtotal, "desconto": desconto, "acrescimo": acrescimo, "taxa": taxa,
+    return {"tipo": d.tipo, "itens": itens, "subtotal": subtotal, "desconto": desconto, "acrescimo": acrescimo, "taxa": taxa,
             "taxa_padrao": padrao, "total": total, "desconto_pct": pct}
 
 
@@ -109,9 +110,15 @@ def repartir_pagamentos(total: Decimal, pagamentos, formas_aceitas: list[str]) -
     return linhas
 
 
-def autorizar(conn, request: Request, aut, requerente_id: int, pct: Decimal | None = None) -> int:
-    """Confere login e senha de quem autoriza. Mesma trava de tentativas do login. Devolve o id do autorizador."""
-    ip = ip_cliente(request)
+def excede_limite(desconto: Decimal, subtotal: Decimal, limite) -> bool:
+    """Compara em dinheiro, sem arredondar o percentual: desconto/subtotal > limite/100."""
+    return limite is not None and desconto * 100 > subtotal * limite
+
+
+def autorizar(conn, request: Request, aut, requerente_id: int, desconto: Decimal | None = None, subtotal: Decimal | None = None) -> int:
+    """Confere login e senha de quem autoriza. Devolve o id do autorizador.
+    A trava de tentativas é por quem pede e quem autoriza, não pelo IP: o terminal de um atendente não bloqueia o login do gerente."""
+    ip = f"aut:{requerente_id}|{ip_cliente(request)}"
     exigir_login_liberado(conn, ip, aut.usuario)
     u = conn.execute("SELECT id, perfil, senha_hash, ativo, deve_trocar_senha FROM usuario WHERE usuario = %s",
                      (aut.usuario,)).fetchone()
@@ -120,11 +127,9 @@ def autorizar(conn, request: Request, aut, requerente_id: int, pct: Decimal | No
                   and u["id"] != requerente_id)
     if not valido:
         registrar_falha_login(conn, ip, aut.usuario)
-        raise HTTPException(status_code=403, detail="Autorização recusada: confira usuário e senha de gerente.")
-    if pct is not None:
-        lim = limite_desconto(conn, LOJA_ID, u["perfil"])
-        if lim is not None and pct > lim:
-            conn.rollback()
-            raise HTTPException(status_code=403, detail="O desconto passa do limite de quem está autorizando.")
+        raise HTTPException(status_code=403, detail=_RECUSADA)
+    if desconto is not None and excede_limite(desconto, subtotal, limite_desconto(conn, LOJA_ID, u["perfil"])):
+        registrar_falha_login(conn, ip, aut.usuario)  # mesma resposta e mesma contagem: não vira oráculo de senha
+        raise HTTPException(status_code=403, detail=_RECUSADA)
     limpar_falhas_login(conn, ip, aut.usuario)
     return u["id"]
