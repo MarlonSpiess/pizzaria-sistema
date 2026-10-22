@@ -1,7 +1,7 @@
 """Carrega itens e fichas técnicas a partir de planejamento/carga/ficha_tecnica_normalizada.csv, pela API do sistema.
 
 Por padrão só mostra o que faria (simulação). Com --aplicar cadastra os itens que faltam e grava a ficha de cada sabor que já
-existe como produto (pizza, mesmo nome sem considerar maiúsculas e acentos). Sabor sem produto fica no relatório: o produto
+existe como produto (pizza ou calzone, mesmo nome sem considerar maiúsculas e acentos). Sabor sem produto fica no relatório: o produto
 precisa ter categoria e preço antes (cadastro do cardápio). Ficha já salva não é regravada se estiver igual.
 
 Uso:  set PZ_SENHA=...   python scripts/carregar_ficha_tecnica.py --usuario admin [--url http://127.0.0.1:8000] [--aplicar] [arquivo.csv]
@@ -80,7 +80,7 @@ def main():
         if a.aplicar:
             itens[sem_acento(n)] = api.chamar("POST", "/itens", {"nome": n, "classe": classe, "unidade": "fatia" if u == "fatia" else "g"})
         print(f"  item {'cadastrado' if a.aplicar else 'a cadastrar'}: {n} ({classe}, {u})")
-    produtos = {sem_acento(p["nome"]): p for p in api.chamar("GET", "/produtos?tipo=pizza")}
+    produtos = {sem_acento(p["nome"]): p for p in api.chamar("GET", "/produtos")}
     sem_produto, gravadas, iguais = [], 0, 0
     for sabor, linhas in sabores.items():
         prod = produtos.get(sem_acento(sabor))

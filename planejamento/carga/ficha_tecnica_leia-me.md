@@ -23,11 +23,23 @@ Versão 2, 22/10/2026. Fonte: FICHA_TECNICA_PIZZARIA.pdf (modelo e incompleto, s
 
 76 sabores (60 salgados e 16 doces), 325 linhas, 43 itens, sem linhas pendentes. Arquivo: [ficha_tecnica_normalizada.csv](ficha_tecnica_normalizada.csv).
 
+## Cardápio e carga (22/10/2026)
+
+[cardapio.csv](cardapio.csv): 76 pizzas (60 salgadas e 16 doces), 3 calzones e 4 bordas.
+
+- Salgados: os 48 primeiros da planilha são Tradicionais (Grande R$ 35), os 12 de COLONIAL a CHURRASCO são Especiais (Grande R$ 50). **Doces entram como Tradicionais**, e qualquer sabor pode mudar de categoria depois pela tela do Cardápio. Broto R$ 25 em todas as pizzas.
+- Calzones (R$ 50): Calzone Portuguesa, Calzone Calabresa e Calzone Bacon. Estão em formulação; a ficha de cada um é **provisória, copiada da pizza de mesmo sabor**.
+- Bordas: Catupiry, Cheddar, Chocolate preto e Chocolate branco, R$ 10 na Grande e na Broto (suposição minha de que vale nos dois tamanhos). A ficha de insumos de cada borda ainda não existe.
+
 ## Como carregar
 
-O script `sistema/scripts/carregar_ficha_tecnica.py` lê esse CSV e usa a API do sistema: cadastra os itens que faltam (Alho e óleo como preparo, o resto como insumo; fatias onde a planilha usa fatias) e grava a ficha de cada sabor que já existe como produto. Por padrão só simula; `--aplicar` grava. Pode rodar de novo sem duplicar. Testado em banco de teste.
+1. `scripts/carregar_cardapio.py` cria as categorias, as pizzas, os calzones e as bordas.
+2. `scripts/carregar_ficha_tecnica.py` cadastra os 43 itens e grava a ficha de cada produto.
+
+Os dois usam a API, só simulam por padrão, aceitam `--aplicar` e podem rodar de novo sem duplicar. Testados em banco de teste (83 itens de cardápio e 79 fichas). A carga real acontece na instalação na loja.
 
 ## O que ainda falta
 
-1. Os 76 sabores como produtos no cardápio, com categoria e preço Grande e Broto (D2). Sem isso as fichas não têm onde entrar.
-2. Calzone, borda, adicionais, bebidas, massa (farinha etc.), receita do alho e óleo, embalagem e o tempo de cada etapa.
+1. Nomes por extenso das abreviações da planilha (Bróc Bacon, Calabresa Ace, Champgnon, Strog Frango, Strog Carne, Calab 4 Queijos, Agentina); hoje os produtos mantêm o texto da planilha.
+2. Ficha de insumos das bordas, dos adicionais e das bebidas; ficha final dos calzones.
+3. Massa (farinha etc.), receita do alho e óleo, embalagem e o tempo de cada etapa.

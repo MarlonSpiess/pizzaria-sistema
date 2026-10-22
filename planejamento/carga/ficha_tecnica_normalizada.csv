@@ -324,3 +324,14 @@ TENTAÇÃO;doce;Creme de leite;g;150;75;montagem;antes do forno
 TENTAÇÃO;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 TENTAÇÃO;doce;Morango;g;150;75;montagem;fruta antes do forno
 TENTAÇÃO;doce;Leite condensado;g;40;15;pos_forno;planilha: 40g ou 15g, meia 15g mantida
+CALZONE PORTUGUESA;calzone;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon) | provisória: copiada da pizza, calzone em formulação
+CALZONE PORTUGUESA;calzone;Mussarela;g;100;50;montagem;provisória: copiada da pizza, calzone em formulação
+CALZONE PORTUGUESA;calzone;Presunto;g;120;60;montagem;provisória: copiada da pizza, calzone em formulação
+CALZONE PORTUGUESA;calzone;Ovos;g;150;75;montagem;provisória: copiada da pizza, calzone em formulação
+CALZONE PORTUGUESA;calzone;Cebola;g;200;100;montagem;provisória: copiada da pizza, calzone em formulação
+CALZONE CALABRESA;calzone;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon) | provisória: copiada da pizza, calzone em formulação
+CALZONE CALABRESA;calzone;Mussarela;g;120;60;montagem;provisória: copiada da pizza, calzone em formulação
+CALZONE CALABRESA;calzone;Calabresa;g;200;100;montagem;provisória: copiada da pizza, calzone em formulação
+CALZONE BACON;calzone;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon) | provisória: copiada da pizza, calzone em formulação
+CALZONE BACON;calzone;Mussarela;g;120;60;montagem;provisória: copiada da pizza, calzone em formulação
+CALZONE BACON;calzone;Bacon;g;150;75;montagem;provisória: copiada da pizza, calzone em formulação
