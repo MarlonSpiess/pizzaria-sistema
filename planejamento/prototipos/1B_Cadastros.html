@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protótipo 1B: Cadastros</title>
+<style>
+:root{--creme:#FAF6EF;--escuro:#1E1A17;--tan:#F1E7D8;--linha:#E6DCCD;--cinza:#5E534A;--tinta:#2B2420;--vermelho:#B5361F;--ouro:#D9A441}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--creme);color:var(--tinta);font-size:16px}
+header{background:var(--escuro);color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{margin:0;font-size:18px;color:var(--ouro);flex:1}
+header span{font-size:13px;color:#d8cfc4}
+.faixa{background:#FFF3D6;color:#6b4a00;padding:8px 16px;font-size:14px}
+nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;background:var(--tan);border-bottom:1px solid var(--linha)}
+nav button{background:transparent;border:1px solid transparent;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:15px;color:var(--tinta)}
+nav button.ativo{background:#fff;border-color:var(--linha);font-weight:600}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.cartao{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px;margin-bottom:16px}
+.cartao h2{margin:0 0 12px;font-size:18px}
+.cartao h3{margin:16px 0 8px;font-size:15px;color:var(--cinza)}
+label{display:block;font-size:14px;color:var(--cinza);margin:10px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid var(--linha);border-radius:8px;font-size:16px;background:#fff}
+button.principal{background:var(--vermelho);color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:16px;cursor:pointer}
+button.sec{background:#fff;border:1px solid var(--linha);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--linha);vertical-align:middle}
+th{font-size:13px;color:var(--cinza)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tabela{overflow-x:auto}
+.linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.linha>*{flex:1;min-width:130px}
+.etq{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:var(--tan)}
+.etq.esp{background:#F6D9D2;color:#8a2412}
+.inativo{opacity:.5}
+.pequeno{font-size:13px;color:var(--cinza)}
+.resultado{background:var(--tan);border-radius:10px;padding:12px;margin-top:12px}
+.resultado .total{font-size:26px;font-weight:700;color:var(--vermelho)}
+.aviso{padding:10px 14px;border-radius:8px;margin:10px 0;background:#E8F3EA;color:#25552f}
+dialog{border:1px solid var(--linha);border-radius:12px;padding:20px;max-width:520px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(30,26,23,.5)}
+.acoes{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+@media (max-width:768px){main{padding:10px}}
+</style>
+</head>
+<body>
+<header><h1>Sistema da Pizzaria · Protótipo da fatia 1B</h1><span>Gerente: tela de cadastros</span></header>
+<div class="faixa">Protótipo para aprovação: os dados e os preços são de exemplo (só os R$ 35,00, R$ 50,00 e R$ 42,50 vêm do exemplo de Marlon). Nada é gravado; ao recarregar a página tudo volta ao início.</div>
+<nav id="abas"></nav>
+<main id="tela"></main>
+<dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
+<script>
+"use strict";
+// ---------- dados de exemplo ----------
+const dados = {
+  catPreco: { Tradicionais: { Grande: 3500, Broto: 2200 }, Especiais: { Grande: 5000, Broto: 3200 } },
+  sabores: [
+    { id: 1, nome: "Mussarela", cat: "Tradicionais", Grande: 3500, Broto: 2200, ativo: true, ing: "Molho, mussarela, orégano" },
+    { id: 2, nome: "Calabresa", cat: "Tradicionais", Grande: 3500, Broto: 2200, ativo: true, ing: "Molho, mussarela, calabresa, cebola" },
+    { id: 3, nome: "Portuguesa", cat: "Tradicionais", Grande: 3800, Broto: 2400, ativo: true, ing: "Molho, mussarela, presunto, ovo, cebola" },
+    { id: 4, nome: "Quatro queijos", cat: "Especiais", Grande: 5000, Broto: 3200, ativo: true, ing: "Molho, mussarela, provolone, gorgonzola, parmesão" },
+    { id: 5, nome: "Frango com catupiry", cat: "Especiais", Grande: 5200, Broto: 3300, ativo: true, ing: "Molho, mussarela, frango, catupiry" },
+    { id: 6, nome: "Camarão", cat: "Especiais", Grande: 6500, Broto: 4200, ativo: false, ing: "Molho, mussarela, camarão" },
+  ],
+  extras: [
+    { id: 1, nome: "Borda de catupiry", tipo: "Borda", Grande: 800, Broto: 500, ativo: true },
+    { id: 2, nome: "Borda de cheddar", tipo: "Borda", Grande: 800, Broto: 500, ativo: true },
+    { id: 3, nome: "Bacon extra", tipo: "Adicional", Grande: 600, Broto: 400, ativo: true },
+  ],
+  outros: [
+    { id: 1, nome: "Calzone de calabresa", tipo: "Calzone", preco: 2800, ativo: true },
+    { id: 2, nome: "Refrigerante lata", tipo: "Bebida", preco: 600, ativo: true },
+    { id: 3, nome: "Suco 500 ml", tipo: "Bebida", preco: 900, ativo: true },
+  ],
+  clientes: [
+    { id: 1, nome: "Cliente Exemplo Um", tel: "(00) 90000-0001", end: "Rua Exemplo, 100, Centro" },
+    { id: 2, nome: "Cliente Exemplo Dois", tel: "(00) 90000-0002", end: "Av. Modelo, 250, Bairro Novo" },
+  ],
+  entregadores: [
+    { id: 1, nome: "Entregador Exemplo A", tel: "(00) 90000-1001", ativo: true },
+    { id: 2, nome: "Entregador Exemplo B", tel: "(00) 90000-1002", ativo: true },
+  ],
+};
+let prox = 100;
+const R = (c) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const paraCent = (t) => { const n = Math.round(parseFloat(String(t).replace(",", ".")) * 100); return Number.isFinite(n) && n >= 0 ? n : null; };
+
+// ---------- ajudantes de tela (texto sempre como nó de texto) ----------
+function h(tag, attrs, ...filhos) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k.startsWith("on")) el[k] = v; else if (k === "class") el.className = v; else if (v !== false && v != null) el.setAttribute(k, v);
+  }
+  for (const f of filhos.flat()) if (f != null && f !== false) el.append(f instanceof Node ? f : document.createTextNode(String(f)));
+  return el;
+}
+const tela = document.getElementById("tela"), abas = document.getElementById("abas"), dlg = document.getElementById("dlg"), dlgForm = document.getElementById("dlgForm");
+let aba = "cardapio";
+const ABAS = [["cardapio", "Sabores"], ["precos", "Preços por categoria"], ["extras", "Bordas e adicionais"], ["outros", "Calzones e bebidas"], ["simulador", "Simulador de preço"], ["clientes", "Clientes"], ["entregadores", "Entregadores"]];
+
+function modal(titulo, campos, aoSalvar) {
+  const refs = {};
+  const corpo = [h("h2", {}, titulo)];
+  for (const c of campos) {
+    let ctl;
+    if (c.opcoes) ctl = h("select", {}, c.opcoes.map((o) => h("option", { value: o, selected: o === c.valor }, o)));
+    else ctl = h("input", { value: c.valor ?? "", inputmode: c.num ? "decimal" : null });
+    refs[c.chave] = ctl;
+    corpo.push(h("label", {}, c.rotulo), ctl);
+  }
+  const erro = h("div", { class: "pequeno", style: "color:#8a2412;margin-top:8px" });
+  corpo.push(erro, h("div", { class: "acoes" },
+    h("button", { type: "button", class: "sec", onclick: () => dlg.close() }, "Cancelar"),
+    h("button", { type: "button", class: "principal", onclick: () => {
+      const v = {};
+      for (const c of campos) {
+        const bruto = refs[c.chave].value.trim();
+        if (c.num) { const n = paraCent(bruto); if (n === null) { erro.textContent = "Valor inválido em: " + c.rotulo; return; } v[c.chave] = n; }
+        else { if (!bruto && !c.opcional) { erro.textContent = "Preencha: " + c.rotulo; return; } v[c.chave] = bruto; }
+      }
+      aoSalvar(v); dlg.close(); desenhar();
+    } }, "Salvar")));
+  dlgForm.replaceChildren(...corpo); dlg.showModal();
+}
+
+// ---------- telas ----------
+function telaSabores() {
+  const filtro = h("select", { onchange: () => desenhar() }, ["Todas", "Tradicionais", "Especiais"].map((o) => h("option", { value: o, selected: o === (telaSabores.f || "Todas") }, o)));
+  filtro.onchange = () => { telaSabores.f = filtro.value; desenhar(); };
+  const lista = dados.sabores.filter((s) => (telaSabores.f || "Todas") === "Todas" || s.cat === telaSabores.f);
+  const campos = (s) => [
+    { chave: "nome", rotulo: "Nome do sabor", valor: s.nome }, { chave: "cat", rotulo: "Categoria", opcoes: ["Tradicionais", "Especiais"], valor: s.cat },
+    { chave: "Grande", rotulo: "Preço Grande (R$)", valor: (s.Grande / 100).toFixed(2).replace(".", ","), num: true },
+    { chave: "Broto", rotulo: "Preço Broto (R$)", valor: (s.Broto / 100).toFixed(2).replace(".", ","), num: true },
+    { chave: "ing", rotulo: "Ingredientes (opcional, texto livre; a ficha técnica com quantidades vem na etapa de Estoques)", valor: s.ing, opcional: true }];
+  return h("div", {},
+    h("div", { class: "cartao" }, h("div", { class: "linha" }, h("div", {}, h("label", {}, "Categoria"), filtro),
+      h("div", {}, h("button", { class: "principal", onclick: () => {
+        const base = dados.catPreco.Tradicionais;
+        modal("Novo sabor", campos({ nome: "", cat: "Tradicionais", Grande: base.Grande, Broto: base.Broto, ing: "" }),
+          (v) => dados.sabores.push({ id: prox++, ...v, ativo: true }));
+      } }, "Novo sabor"))), h("p", { class: "pequeno" }, "Cada sabor tem o seu próprio preço por tamanho. Ao escolher a categoria de um sabor novo, os preços partem do padrão da categoria e podem ser ajustados.")),
+    h("div", { class: "cartao tabela" }, h("h2", {}, "Sabores de pizza (" + lista.length + ")"),
+      h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Sabor"), h("th", {}, "Categoria"), h("th", { class: "num" }, "Grande"), h("th", { class: "num" }, "Broto"), h("th", {}, "Situação"), h("th", {}, ""))),
+        h("tbody", {}, lista.map((s) => h("tr", { class: s.ativo ? "" : "inativo" },
+          h("td", {}, s.nome, h("div", { class: "pequeno" }, s.ing)), h("td", {}, h("span", { class: "etq" + (s.cat === "Especiais" ? " esp" : "") }, s.cat)),
+          h("td", { class: "num" }, R(s.Grande)), h("td", { class: "num" }, R(s.Broto)), h("td", {}, s.ativo ? "no cardápio" : "fora do cardápio"),
+          h("td", {}, h("button", { class: "sec", onclick: () => modal("Editar sabor", campos(s), (v) => Object.assign(s, v)) }, "Editar"), " ",
+            h("button", { class: "sec", onclick: () => { s.ativo = !s.ativo; desenhar(); } }, s.ativo ? "Tirar do cardápio" : "Voltar ao cardápio")))))),
+      h("p", { class: "pequeno" }, "Sabor tirado do cardápio não aparece no pedido, mas continua nos pedidos antigos (nada é apagado).")));
+}
+
+function telaPrecos() {
+  const linhas = [];
+  for (const [cat, p] of Object.entries(dados.catPreco)) {
+    linhas.push(h("tr", {}, h("td", {}, cat), h("td", { class: "num" }, R(p.Grande)), h("td", { class: "num" }, R(p.Broto)),
+      h("td", {}, h("button", { class: "sec", onclick: () => modal("Preço padrão: " + cat, [
+        { chave: "Grande", rotulo: "Grande (R$)", valor: (p.Grande / 100).toFixed(2).replace(".", ","), num: true },
+        { chave: "Broto", rotulo: "Broto (R$)", valor: (p.Broto / 100).toFixed(2).replace(".", ","), num: true }], (v) => Object.assign(p, v)) }, "Editar"))));
+  }
+  return h("div", { class: "cartao tabela" }, h("h2", {}, "Preço padrão por categoria e tamanho"),
+    h("p", { class: "pequeno" }, "É o ponto de partida de um sabor novo. Mudar aqui não altera os sabores já cadastrados."),
+    h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Categoria"), h("th", { class: "num" }, "Grande"), h("th", { class: "num" }, "Broto"), h("th", {}, ""))), h("tbody", {}, linhas)));
+}
+
+function telaExtras() {
+  const campos = (e) => [{ chave: "nome", rotulo: "Nome", valor: e.nome }, { chave: "tipo", rotulo: "Tipo", opcoes: ["Borda", "Adicional"], valor: e.tipo },
+    { chave: "Grande", rotulo: "Preço na Grande (R$)", valor: (e.Grande / 100).toFixed(2).replace(".", ","), num: true },
+    { chave: "Broto", rotulo: "Preço na Broto (R$)", valor: (e.Broto / 100).toFixed(2).replace(".", ","), num: true }];
+  return h("div", { class: "cartao tabela" }, h("h2", {}, "Bordas e adicionais"),
+    h("div", { class: "linha" }, h("div", {}, h("button", { class: "principal", onclick: () => modal("Novo item", campos({ nome: "", tipo: "Borda", Grande: 0, Broto: 0 }), (v) => dados.extras.push({ id: prox++, ...v, ativo: true })) }, "Novo item"))),
+    h("p", { class: "pequeno" }, "Borda e adicional são cobrados à parte e somam ao preço da pizza. O preço pode mudar por tamanho."),
+    h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Nome"), h("th", {}, "Tipo"), h("th", { class: "num" }, "Grande"), h("th", { class: "num" }, "Broto"), h("th", {}, ""))),
+      h("tbody", {}, dados.extras.map((e) => h("tr", { class: e.ativo ? "" : "inativo" }, h("td", {}, e.nome), h("td", {}, e.tipo), h("td", { class: "num" }, R(e.Grande)), h("td", { class: "num" }, R(e.Broto)),
+        h("td", {}, h("button", { class: "sec", onclick: () => modal("Editar item", campos(e), (v) => Object.assign(e, v)) }, "Editar"), " ", h("button", { class: "sec", onclick: () => { e.ativo = !e.ativo; desenhar(); } }, e.ativo ? "Desativar" : "Reativar")))))));
+}
+
+function telaOutros() {
+  const campos = (o) => [{ chave: "nome", rotulo: "Nome", valor: o.nome }, { chave: "tipo", rotulo: "Tipo", opcoes: ["Calzone", "Bebida", "Acompanhamento"], valor: o.tipo },
+    { chave: "preco", rotulo: "Preço (R$)", valor: (o.preco / 100).toFixed(2).replace(".", ","), num: true }];
+  return h("div", { class: "cartao tabela" }, h("h2", {}, "Calzones, bebidas e acompanhamentos"),
+    h("div", { class: "linha" }, h("div", {}, h("button", { class: "principal", onclick: () => modal("Novo produto", campos({ nome: "", tipo: "Bebida", preco: 0 }), (v) => dados.outros.push({ id: prox++, ...v, ativo: true })) }, "Novo produto"))),
+    h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Nome"), h("th", {}, "Tipo"), h("th", { class: "num" }, "Preço"), h("th", {}, ""))),
+      h("tbody", {}, dados.outros.map((o) => h("tr", { class: o.ativo ? "" : "inativo" }, h("td", {}, o.nome), h("td", {}, o.tipo), h("td", { class: "num" }, R(o.preco)),
+        h("td", {}, h("button", { class: "sec", onclick: () => modal("Editar produto", campos(o), (v) => Object.assign(o, v)) }, "Editar"), " ", h("button", { class: "sec", onclick: () => { o.ativo = !o.ativo; desenhar(); } }, o.ativo ? "Desativar" : "Reativar")))))));
+}
+
+function telaSimulador() {
+  const ativos = dados.sabores.filter((s) => s.ativo);
+  const tam = h("select", {}, ["Grande", "Broto"].map((t) => h("option", { value: t }, t)));
+  const s1 = h("select", {}, ativos.map((s) => h("option", { value: s.id }, s.nome)));
+  const s2 = h("select", {}, [h("option", { value: "" }, "(só um sabor)"), ...ativos.map((s) => h("option", { value: s.id }, s.nome))]);
+  const ext = h("select", {}, [h("option", { value: "" }, "(sem borda nem adicional)"), ...dados.extras.filter((e) => e.ativo).map((e) => h("option", { value: e.id }, e.nome))]);
+  const saida = h("div", { class: "resultado" });
+  function calcular() {
+    const t = tam.value, a = dados.sabores.find((s) => s.id == s1.value), b = dados.sabores.find((s) => s.id == s2.value);
+    s2.disabled = t === "Broto"; if (t === "Broto") s2.value = "";
+    const linhas = []; let total;
+    if (b && t === "Grande") {
+      const ma = Math.ceil(a[t] / 2), mb = Math.ceil(b[t] / 2); total = ma + mb;
+      linhas.push(h("div", {}, "Metade " + a.nome + ": " + R(a[t]) + " ÷ 2 = " + R(ma)), h("div", {}, "Metade " + b.nome + ": " + R(b[t]) + " ÷ 2 = " + R(mb)));
+    } else { total = a[t]; linhas.push(h("div", {}, a.nome + " " + t + ": " + R(a[t]))); }
+    const e = dados.extras.find((x) => x.id == ext.value);
+    if (e) { total += e[t]; linhas.push(h("div", {}, e.nome + ": " + R(e[t]))); }
+    saida.replaceChildren(...linhas, h("div", { class: "total" }, R(total)), h("div", { class: "pequeno" }, "Metade com centavo ímpar arredonda para cima, por sabor (regra proposta, pergunta T4)."));
+  }
+  for (const c of [tam, s1, s2, ext]) c.onchange = calcular;
+  setTimeout(calcular, 0);
+  return h("div", { class: "cartao" }, h("h2", {}, "Simulador de preço da pizza"),
+    h("p", { class: "pequeno" }, "Mostra como o pedido calcula o preço, incluindo a Grande de dois sabores (exemplo de Marlon: 35,00 e 50,00 resultam em 42,50)."),
+    h("div", { class: "linha" }, h("div", {}, h("label", {}, "Tamanho"), tam), h("div", {}, h("label", {}, "Sabor 1"), s1), h("div", {}, h("label", {}, "Sabor 2 (só Grande)"), s2), h("div", {}, h("label", {}, "Borda ou adicional"), ext)), saida);
+}
+
+function telaClientes() {
+  const busca = h("input", { placeholder: "Buscar por telefone ou nome", value: telaClientes.q || "" });
+  busca.oninput = () => { telaClientes.q = busca.value; desenharLista(); };
+  const campos = (c) => [{ chave: "nome", rotulo: "Nome", valor: c.nome }, { chave: "tel", rotulo: "Telefone (WhatsApp)", valor: c.tel }, { chave: "end", rotulo: "Endereço de entrega", valor: c.end }];
+  const corpo = h("tbody");
+  function desenharLista() {
+    const q = (telaClientes.q || "").toLowerCase();
+    corpo.replaceChildren(...dados.clientes.filter((c) => !q || c.nome.toLowerCase().includes(q) || c.tel.replace(/\D/g, "").includes(q.replace(/\D/g, "") || "§")).map((c) =>
+      h("tr", {}, h("td", {}, c.nome), h("td", {}, c.tel), h("td", {}, c.end), h("td", {}, h("button", { class: "sec", onclick: () => modal("Editar cliente", campos(c), (v) => Object.assign(c, v)) }, "Editar")))));
+  }
+  const cart = h("div", { class: "cartao tabela" }, h("h2", {}, "Clientes"),
+    h("div", { class: "linha" }, h("div", {}, busca), h("div", {}, h("button", { class: "principal", onclick: () => modal("Novo cliente", campos({ nome: "", tel: "", end: "" }), (v) => dados.clientes.push({ id: prox++, ...v })) }, "Novo cliente"))),
+    h("p", { class: "pequeno" }, "No pedido, o atendente busca pelo telefone; se não achar, cadastra na hora (nome, telefone e endereço)."),
+    h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Nome"), h("th", {}, "Telefone"), h("th", {}, "Endereço"), h("th", {}, ""))), corpo));
+  desenharLista();
+  return cart;
+}
+
+function telaEntregadores() {
+  const campos = (e) => [{ chave: "nome", rotulo: "Nome", valor: e.nome }, { chave: "tel", rotulo: "Telefone", valor: e.tel }];
+  return h("div", { class: "cartao tabela" }, h("h2", {}, "Entregadores (terceiros)"),
+    h("div", { class: "linha" }, h("div", {}, h("button", { class: "principal", onclick: () => modal("Novo entregador", campos({ nome: "", tel: "" }), (v) => dados.entregadores.push({ id: prox++, ...v, ativo: true })) }, "Novo entregador"))),
+    h("p", { class: "pequeno" }, "Os valores por entrega e da diária ficam em Parâmetros e podem ser alterados no fechamento das entregas."),
+    h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Nome"), h("th", {}, "Telefone"), h("th", {}, "Situação"), h("th", {}, ""))),
+      h("tbody", {}, dados.entregadores.map((e) => h("tr", { class: e.ativo ? "" : "inativo" }, h("td", {}, e.nome), h("td", {}, e.tel), h("td", {}, e.ativo ? "ativo" : "inativo"),
+        h("td", {}, h("button", { class: "sec", onclick: () => modal("Editar entregador", campos(e), (v) => Object.assign(e, v)) }, "Editar"), " ", h("button", { class: "sec", onclick: () => { e.ativo = !e.ativo; desenhar(); } }, e.ativo ? "Desativar" : "Reativar")))))));
+}
+
+const TELAS = { cardapio: telaSabores, precos: telaPrecos, extras: telaExtras, outros: telaOutros, simulador: telaSimulador, clientes: telaClientes, entregadores: telaEntregadores };
+function desenhar() {
+  abas.replaceChildren(...ABAS.map(([id, nome]) => h("button", { class: id === aba ? "ativo" : "", onclick: () => { aba = id; desenhar(); } }, nome)));
+  tela.replaceChildren(TELAS[aba]());
+}
+desenhar();
+</script>
+</body>
+</html>
