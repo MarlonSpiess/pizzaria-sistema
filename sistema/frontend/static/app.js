@@ -55,7 +55,7 @@ function telaLogin(msg) {
   h("h2", {}, "Entrar"), msg ? aviso("ok", msg) : null, erro,
   h("label", { for: "u" }, "Usuário"), u, h("label", { for: "s" }, "Senha"), s,
   h("button", { class: "principal", type: "submit" }, "Entrar"));
-  raiz.replaceChildren(h("div", { class: "login" }, h("h1", {}, "Sistema da Pizzaria"), form));
+  raiz.replaceChildren(h("div", { class: "login" }, h("img", { class: "login-logo", src: "/static/logo.svg", alt: "Pizza" }), h("h1", {}, "Sistema da Pizzaria"), form));
 }
 
 function telaTrocaSenha() {
@@ -77,23 +77,50 @@ function telaTrocaSenha() {
 }
 
 const ABAS = [
-  ["painel", "Painel", null],
-  ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"]],
-  ["fichas", "Fichas e etapas", ["administrador", "proprietario", "gerente", "subgerente"]],
-  ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"]],
-  ["entregadores", "Entregadores", ["administrador", "proprietario", "gerente", "subgerente", "atendente"]],
-  ["usuarios", "Usuários", ["administrador", "proprietario"]],
-  ["parametros", "Parâmetros", ["administrador", "proprietario", "gerente", "subgerente"]],
-  ["auditoria", "Auditoria", ["administrador", "proprietario", "gerente", "subgerente"]],
+  ["painel", "Painel", null, "Visão geral", "📊"],
+  ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "🍕"],
+  ["fichas", "Fichas e etapas", ["administrador", "proprietario", "gerente", "subgerente"], "Cadastros", "📋"],
+  ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "👥"],
+  ["entregadores", "Entregadores", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "🛵"],
+  ["usuarios", "Usuários", ["administrador", "proprietario"], "Sistema", "🔑"],
+  ["parametros", "Parâmetros", ["administrador", "proprietario", "gerente", "subgerente"], "Sistema", "⚙️"],
+  ["auditoria", "Auditoria", ["administrador", "proprietario", "gerente", "subgerente"], "Sistema", "🧾"],
 ];
+
+function alternarTema() {
+  const dia = document.documentElement.getAttribute("data-theme") === "light";
+  if (dia) document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", "light");
+  try { localStorage.setItem("pz-tema", dia ? "noite" : "dia"); } catch (e) { /* sem armazenamento */ }
+}
 
 function moldura(conteudo) {
   const abas = ABAS.filter(([, , perfis]) => !perfis || perfis.includes(estado.eu.perfil));
-  raiz.replaceChildren(
-    h("header", {}, h("h1", {}, "Sistema da Pizzaria"), h("span", {}, estado.eu.nome + " (" + estado.eu.perfil + ")"),
-      h("button", { class: "sec", onclick: () => sair() }, "Sair")),
-    h("nav", {}, abas.map(([id, nome]) => h("button", { class: id === estado.aba ? "ativo" : "", onclick: () => { estado.aba = id; desenhar(); } }, nome))),
-    h("main", {}, conteudo));
+  const itens = [];
+  let grupo = null;
+  for (const [id, nome, , g, icone] of abas) {
+    if (g !== grupo) { itens.push(h("div", { class: "menu-sec" }, g)); grupo = g; }
+    itens.push(h("button", { class: "menu-item" + (id === estado.aba ? " ativo" : ""), title: nome, onclick: () => { estado.aba = id; desenhar(); } },
+      h("span", { class: "ic" }, icone), h("span", { class: "rot" }, nome)));
+  }
+  const menu = h("aside", { id: "menu" },
+    h("div", { class: "marca" }, h("img", { src: "/static/logo.svg", alt: "Pizza" }),
+      h("div", { class: "txt" }, h("div", { class: "t1" }, "Sistema da Pizzaria"), h("div", { class: "t2" }, "Gestão integrada"))),
+    h("nav", { class: "menu" }, itens));
+  const fundo = h("div", { id: "fundo-menu", onclick: () => { menu.classList.remove("aberto"); fundo.classList.remove("aberto"); } });
+  const titulo = (abas.find(([id]) => id === estado.aba) || abas[0])[1];
+  const topo = h("div", { class: "topo" },
+    h("button", { class: "sanduiche", title: "Menu", onclick: () => {
+      if (window.matchMedia("(max-width:760px)").matches) { const a = menu.classList.toggle("aberto"); fundo.classList.toggle("aberto", a); }
+      else menu.classList.toggle("recolhido");
+    } }, "☰"),
+    h("div", { class: "titulo-pagina" }, titulo),
+    h("div", { class: "topo-dir" },
+      h("button", { class: "tema", title: "Alternar noite e dia", onclick: alternarTema },
+        h("span", {}, "🌙"), h("span", { class: "tema-trilho" }, h("span", { class: "tema-bola" })), h("span", {}, "☀️")),
+      h("div", { class: "chip" }, "👤 ", h("b", {}, estado.eu.nome), h("span", { class: "nome-completo" }, " (" + estado.eu.perfil + ")")),
+      h("button", { class: "sec", onclick: () => sair() }, "Sair")));
+  raiz.replaceChildren(h("div", { id: "quadro" }, menu, fundo,
+    h("div", { id: "principal" }, topo, h("main", { class: "conteudo" }, h("div", { class: "conteudo-miolo" }, conteudo)))));
 }
 
 async function abaPainel() {
