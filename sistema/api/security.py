@@ -20,12 +20,12 @@ _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ve
           "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar",
           "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir",
           "producao.ver", "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
-          "producao.refazer", "producao.gerir"}
+          "producao.refazer", "producao.gerir", "producao.perda_massa"}
 _GERENCIA = {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar", "cardapio.ver", "cardapio.editar",
              "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar", "ficha.ver", "ficha.editar",
              "vendas.ver", "vendas.criar", "vendas.gerir",
              "producao.ver", "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
-             "producao.refazer", "producao.gerir"}
+             "producao.refazer", "producao.gerir", "producao.perda_massa"}
 PERMISSOES = {
     "administrador": _TODAS,
     "proprietario": _TODAS,
@@ -36,7 +36,7 @@ PERMISSOES = {
     "atendente": {"cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver",
                   "vendas.ver", "vendas.criar", "producao.ver"},
     # Funções de produção: cada tablet só enxerga e faz o que é da sua função (login pessoal).
-    "massa": {"producao.ver", "producao.massa", "producao.perda"},
+    "massa": {"producao.ver", "producao.massa", "producao.perda_massa"},
     "pizzaiolo": {"producao.ver", "producao.montagem", "producao.forno", "producao.perda"},
     "acabamento": {"producao.ver", "producao.forno", "producao.acabamento", "producao.perda", "producao.refazer"},
 }

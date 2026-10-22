@@ -68,6 +68,13 @@ def estimativa_entrega(conn, loja_id: int, tipo_pedido: str, quando, novas: int)
     return quando + timedelta(minutes=float(minutos))
 
 
+def pizzas_pendentes(conn, pedido_id: int) -> int:
+    """Pizzas que ainda impedem o pedido de acabar. Perdida com refação não conta (a refação conta no lugar)."""
+    return conn.execute(
+        "SELECT count(*) AS n FROM pizza_producao x WHERE x.pedido_id = %s AND x.situacao NOT IN ('acabada','cancelada') "
+        "AND NOT (x.situacao = 'perdida' AND EXISTS (SELECT 1 FROM pizza_producao r WHERE r.original_id = x.id))", (pedido_id,)).fetchone()["n"]
+
+
 def motivo_perda_cancelamento(conn, loja_id: int) -> int:
     r = conn.execute("SELECT id FROM motivo_perda WHERE loja_id = %s AND lower(nome) = lower(%s)", (loja_id, MOTIVO_CANCELAMENTO)).fetchone()
     if r:
@@ -113,6 +120,12 @@ def saldo_massa(conn, loja_id: int) -> dict:
         usadas = conn.execute(
             "SELECT count(*) AS n FROM evento_producao e JOIN pizza_producao p ON p.id = e.pizza_id WHERE p.loja_id = %s AND e.situacao = 'no forno' "
             "AND ((p.tipo = 'pizza' AND p.tamanho = %s) OR (p.tipo = 'calzone' AND %s::text = %s::text))" + filtro.replace("criado_em", "e.criado_em"),
+            [loja_id, t, calz, t] + args).fetchone()["n"]
+        usadas += conn.execute(
+            "SELECT count(*) AS n FROM evento_producao e JOIN pizza_producao p ON p.id = e.pizza_id WHERE p.loja_id = %s AND e.situacao = 'perdida' "
+            "AND ((p.tipo = 'pizza' AND p.tamanho = %s) OR (p.tipo = 'calzone' AND %s::text = %s::text)) "
+            "AND EXISTS (SELECT 1 FROM evento_producao m WHERE m.pizza_id = p.id AND m.situacao = 'em montagem') "
+            "AND NOT EXISTS (SELECT 1 FROM evento_producao f WHERE f.pizza_id = p.id AND f.situacao = 'no forno')" + filtro.replace("criado_em", "e.criado_em"),
             [loja_id, t, calz, t] + args).fetchone()["n"]
         nec = conn.execute("SELECT count(*) AS n FROM pizza_producao p WHERE p.loja_id = %s AND p.situacao = 'na lista' "
                            "AND ((p.tipo = 'pizza' AND p.tamanho = %s) OR (p.tipo = 'calzone' AND %s::text = %s::text))", (loja_id, t, calz, t)).fetchone()["n"]

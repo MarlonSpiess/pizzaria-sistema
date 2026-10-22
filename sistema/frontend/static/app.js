@@ -820,7 +820,7 @@ const SUBS_PRODUCAO = [
   ["andamento", "Andamento", [...GER, "atendente", "massa", "pizzaiolo", "acabamento"]],
   ["motivos", "Motivos", GER],
 ];
-let relogioProducao = null;
+let relogioProducao = null, etiquetaAberta = null, desenhandoProducao = false;
 
 async function abaProducao() {
   clearInterval(relogioProducao);
@@ -833,16 +833,25 @@ async function abaProducao() {
   const acao = async (metodo, caminho, corpo, textoOk) => {
     try { const r = await api(metodo, caminho, corpo); if (textoOk) ok(textoOk); await desenharSub(); return r; } catch (e) { falha(e); }
   };
-  const seletorMotivo = (lista, rotulo, aoEscolher) => {
+  const seletorMotivo = (lista, rotulo, aoEscolher, confirmar) => {
     const s = h("select", {}, h("option", { value: "" }, rotulo), lista.filter((m) => m.ativo).map((m) => h("option", { value: m.id }, m.nome)));
-    s.onchange = () => { if (s.value) aoEscolher(Number(s.value)); };
+    s.onchange = () => {
+      if (!s.value) return;
+      if (confirmar && !window.confirm(confirmar + " Motivo: " + s.options[s.selectedIndex].text + ".")) { s.value = ""; return; }  // o select age na hora: confirma as ações que não voltam
+      aoEscolher(Number(s.value));
+    };
     return s;
   };
   const linhaPizza = (p) => p.tipo === "pizza" ? (p.tamanho === "grande" ? "Grande" : "Broto") + " · " + p.sabores : "Calzone · " + p.sabores;
   const grande = (t) => h("div", { class: "resultado" }, h("div", { class: "total" }, t));
 
   async function desenharSub() {
-    const nav = h("div", { class: "subnav" }, subs.map(([id, nome]) => h("button", { class: id === estado.subp ? "ativo" : "", onclick: () => { estado.subp = id; msg.replaceChildren(); desenharSub(); } }, nome)),
+    if (desenhandoProducao) return;  // atualizações não se sobrepõem
+    desenhandoProducao = true;
+    try { await desenharSubInterno(); } finally { desenhandoProducao = false; }
+  }
+  async function desenharSubInterno() {
+    const nav = h("div", { class: "subnav" }, subs.map(([id, nome]) => h("button", { class: id === estado.subp ? "ativo" : "", onclick: () => { estado.subp = id; etiquetaAberta = null; msg.replaceChildren(); desenharSub(); } }, nome)),
       h("button", { class: "sec", onclick: () => desenharSub() }, "Atualizar"));
     let corpo;
     try { corpo = await ({ massa: subMassa, montagem: subMontagem, forno: subForno, acabamento: subAcabamento, andamento: subAndamento, motivos: subMotivos }[estado.subp])(); }
@@ -877,7 +886,7 @@ async function abaProducao() {
         h("p", {}, "Pedido #" + minha.id_dia + (minha.urgente ? " · URGENTE" : "")), minha.adicionais ? h("p", {}, "Adicionais: " + minha.adicionais) : null, minha.observacoes ? h("p", {}, "Obs.: " + minha.observacoes) : null,
         h("div", { class: "acoes-linha" }, h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/" + minha.id + "/produzida", undefined, "Pizza foi ao forno.") }, "Produzida (vai ao forno)"), " ",
           seletorMotivo(mot.retrocesso, "Retroceder (motivo obrigatório)", (id) => acao("POST", "/producao/pizzas/" + minha.id + "/retroceder", { motivo_id: id }, "Pizza voltou uma posição.")), " ",
-          seletorMotivo(mot.perda, "Perdeu a pizza (motivo)", (id) => acao("POST", "/producao/pizzas/" + minha.id + "/perder", { motivo_id: id }, "Perda registrada."))));
+          seletorMotivo(mot.perda, "Perdeu a pizza (motivo)", (id) => acao("POST", "/producao/pizzas/" + minha.id + "/perder", { motivo_id: id }, "Perda registrada."), "Registrar a perda desta pizza?")));
     } else {
       topo = h("div", { class: "cartao" }, h("h2", {}, "Montagem"), h("p", {}, espera.length ? espera.length + " pizza(s) na lista." : "Nenhuma pizza na lista."),
         espera.length ? h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/proxima") }, "Pegar a próxima pizza") : null);
@@ -902,10 +911,11 @@ async function abaProducao() {
     const prontas = f.pizzas.filter((p) => p.situacao === "saiu do forno");
     const box = h("div", {});
     const etiqueta = (e) => box.replaceChildren(h("div", { class: "cartao etiqueta" }, h("h2", {}, "Etiqueta"), grande(e.cliente + " · Id " + e.id_dia), h("p", {}, e.sabores + " (" + e.tamanho + ")"),
-      h("button", { class: "sec", onclick: () => window.print() }, "Imprimir")));
+      h("button", { class: "sec", onclick: () => window.print() }, "Imprimir"), " ", h("button", { class: "sec", onclick: () => { etiquetaAberta = null; box.replaceChildren(); } }, "Fechar")));
+    if (etiquetaAberta) etiqueta(etiquetaAberta);  // sobrevive à atualização da lista até ser fechada
     return h("div", {}, box, h("div", { class: "cartao tabela" }, h("h2", {}, "Saíram do forno"), prontas.length ? h("table", {}, h("tbody", {}, prontas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
-      h("td", {}, h("button", { class: "principal", onclick: async () => { const r = await acao("POST", "/producao/pizzas/" + p.id + "/acabada"); if (r) etiqueta(r.etiqueta); } }, "Acabada e etiqueta"), " ",
-        seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."))))))) : h("p", { class: "pequeno" }, "Nenhuma pizza esperando acabamento.")),
+      h("td", {}, h("button", { class: "principal", onclick: async () => { const r = await acao("POST", "/producao/pizzas/" + p.id + "/acabada"); if (r) { etiquetaAberta = r.etiqueta; await desenharSub(); } } }, "Acabada e etiqueta"), " ",
+        seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."), "Refazer esta pizza? A atual vira perda.")))))) : h("p", { class: "pequeno" }, "Nenhuma pizza esperando acabamento.")),
       h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos em aberto"), peds.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Pedido", "Cliente", "Pizzas", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, peds.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")),
         h("td", {}, p.cliente || "Balcão"), h("td", {}, p.acabadas + " de " + p.pizzas), h("td", {}, rotuloSit[p.situacao]),
         h("td", {}, p.situacao !== "acabado" && p.acabadas === p.pizzas ? h("button", { class: "principal", onclick: () => acao("POST", "/producao/pedidos/" + p.id + "/acabado", undefined, "Pedido acabado.") }, "Marcar pedido acabado") : null))))) : h("p", { class: "pequeno" }, "Nenhum pedido em aberto.")),
@@ -935,7 +945,7 @@ async function abaProducao() {
   }
 
   await desenharSub();
-  if (["montagem", "forno", "acabamento"].includes(estado.subp)) {  // tablets: a lista se atualiza sozinha, sem atropelar quem está digitando
+  {  // tablets: a lista se atualiza sozinha, sem atropelar quem está digitando; vale para qualquer sub, pois o menu muda de sub sem recriar a aba
     relogioProducao = setInterval(() => {
       if (estado.aba !== "producao" || !estado.token) { clearInterval(relogioProducao); return; }
       const a = document.activeElement;

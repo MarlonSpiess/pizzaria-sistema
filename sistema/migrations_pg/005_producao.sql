@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS pizza_producao (
 );
 CREATE INDEX IF NOT EXISTS idx_pizza_fila ON pizza_producao (loja_id, situacao, ordem);
 CREATE INDEX IF NOT EXISTS idx_pizza_pedido ON pizza_producao (pedido_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_pizza_refacao ON pizza_producao (original_id) WHERE original_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS evento_producao (
     id BIGSERIAL PRIMARY KEY,
@@ -98,6 +99,8 @@ BEGIN
     FOREACH t IN ARRAY ARRAY['evento_producao','retrocesso','lote_massa','contagem_massa','perda','etiqueta_impressa'] LOOP
         EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_so_insercao ON %I', t, t);
         EXECUTE format('CREATE TRIGGER trg_%s_so_insercao BEFORE UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION recusar_alteracao()', t, t);
+        EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_so_insercao_trunc ON %I', t, t);
+        EXECUTE format('CREATE TRIGGER trg_%s_so_insercao_trunc BEFORE TRUNCATE ON %I FOR EACH STATEMENT EXECUTE FUNCTION recusar_alteracao()', t, t);
     END LOOP;
 END $$;
 

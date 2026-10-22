@@ -195,6 +195,8 @@ def mudar_situacao(conn, sessao, p: dict, nova: str) -> dict:
     atual = p["situacao"]
     if atual not in SITUACOES or nova not in SITUACOES or SITUACOES.index(nova) != SITUACOES.index(atual) + 1:
         raise HTTPException(status_code=409, detail=f"Não é possível ir de '{atual}' para '{nova}'.")
+    if nova == "acabado" and svc_producao.pizzas_pendentes(conn, p["id"]):
+        raise HTTPException(status_code=409, detail="Ainda há pizza para acabar neste pedido.")
     quando = agora()
     conn.execute("UPDATE pedido SET situacao = %s, entrega_real = CASE WHEN %s = 'despachado ou retirado' THEN %s ELSE entrega_real END "
                  "WHERE id = %s", (nova, nova, quando, p["id"]))

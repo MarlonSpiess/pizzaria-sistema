@@ -244,3 +244,92 @@ def test_banco_protege_a_pizza_e_o_historico(client, cardapio, hs, conn_teste):
         conn_teste.execute("UPDATE pizza_producao SET situacao = 'na lista' WHERE id = %s", (pid,))
     eventos = [r[0] for r in conn_teste.execute("SELECT situacao FROM evento_producao WHERE pizza_id = %s ORDER BY id", (pid,)).fetchall()]
     assert eventos[:2] == ["na lista", "em montagem"]
+
+
+def _ate_acabar(client, hs, pid):
+    for rota, h in (("produzida", hs["pizzaiolo"]), ("saiu-do-forno", hs["acabamento"]), ("acabada", hs["acabamento"])):
+        assert client.post(f"/api/producao/pizzas/{pid}/{rota}", headers=h).status_code == 200
+
+
+def test_refacao_so_enquanto_o_pedido_esta_em_producao(client, cardapio, hs):
+    m = _motivos(client, hs["gerente"])
+    ped = _pagar(client, hs["atendente"], [_g(cardapio)])
+    p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    _ate_acabar(client, hs, p["id"])
+    assert client.post(f"/api/producao/pedidos/{ped['id']}/acabado", headers=hs["acabamento"]).status_code == 200
+    assert client.post(f"/api/producao/pizzas/{p['id']}/refazer", json={"motivo_id": m["perda"]}, headers=hs["acabamento"]).status_code == 409
+    assert client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).status_code == 404
+
+
+def test_gerencia_nao_marca_acabado_com_pizza_pendente(client, cardapio, hs):
+    ped = _pagar(client, hs["atendente"], [_g(cardapio)])
+    client.post(f"/api/pedidos/{ped['id']}/situacao", json={"situacao": "em producao"}, headers=hs["gerente"])
+    r = client.post(f"/api/pedidos/{ped['id']}/situacao", json={"situacao": "acabado"}, headers=hs["gerente"])
+    assert r.status_code == 409
+
+
+def test_perfil_massa_nao_perde_pizza_e_perda_antes_do_forno_baixa_a_massa(client, cardapio, hs):
+    m = _motivos(client, hs["gerente"])
+    client.post("/api/producao/massa/contagem", json={"tamanho": "grande", "quantidade": 5}, headers=hs["massa"])
+    _pagar(client, hs["atendente"], [_g(cardapio)])
+    p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    assert client.post(f"/api/producao/pizzas/{p['id']}/perder", json={"motivo_id": m["perda"]}, headers=hs["massa"]).status_code == 403
+    assert client.post(f"/api/producao/pizzas/{p['id']}/perder", json={"motivo_id": m["perda"]}, headers=hs["pizzaiolo"]).status_code == 200
+    assert client.get("/api/producao/massa", headers=hs["massa"]).json()["grande"]["saldo"] == 4  # a massa da pizza perdida já tinha sido usada
+    assert client.post("/api/producao/massa/perda", json={"tamanho": "grande", "quantidade": 1, "motivo_id": m["perda"]}, headers=hs["pizzaiolo"]).status_code == 403
+
+
+def test_retroceder_respeita_o_grupo_de_urgencia(client, cardapio, hs):
+    _pagar(client, hs["atendente"], [_g(cardapio, 2)])
+    b = _pagar(client, hs["atendente"], [_g(cardapio, 3)])
+    client.post(f"/api/pedidos/{b['id']}/urgente", json={"urgente": True}, headers=hs["atendente"])
+    m = _motivos(client, hs["gerente"])
+    a = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    assert a["pedido_id"] == b["id"]
+    client.post(f"/api/producao/pizzas/{a['id']}/retroceder", json={"motivo_id": m["retro"]}, headers=hs["pizzaiolo"])
+    ordem = [x["id"] for x in _fila(client, hs["pizzaiolo"])["pizzas"] if x["pedido_id"] == b["id"]]
+    assert ordem.index(a["id"]) == 1 and len(ordem) == 3
+
+
+def test_muitos_retrocessos_nao_esgotam_a_ordem(client, cardapio, hs):
+    m = _motivos(client, hs["gerente"])
+    _pagar(client, hs["atendente"], [_g(cardapio, 3)])
+    ids = []
+    for _ in range(26):
+        p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+        assert client.post(f"/api/producao/pizzas/{p['id']}/retroceder", json={"motivo_id": m["retro"]}, headers=hs["pizzaiolo"]).status_code == 200
+        ids.append(p["id"])
+    ordens = [x["ordem"] for x in _fila(client, hs["pizzaiolo"])["pizzas"]]
+    assert len(set(ordens)) == len(ordens) == 3
+
+
+def test_pedidos_abertos_contam_a_refacao_no_lugar_da_original(client, cardapio, hs):
+    m = _motivos(client, hs["gerente"])
+    ped = _pagar(client, hs["atendente"], [_g(cardapio)])
+    p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    for rota, h in (("produzida", hs["pizzaiolo"]), ("saiu-do-forno", hs["acabamento"])):
+        client.post(f"/api/producao/pizzas/{p['id']}/{rota}", headers=h)
+    nova = client.post(f"/api/producao/pizzas/{p['id']}/refazer", json={"motivo_id": m["perda"]}, headers=hs["acabamento"]).json()
+    linha = next(x for x in client.get("/api/producao/pedidos", headers=hs["acabamento"]).json() if x["id"] == ped["id"])
+    assert (linha["pizzas"], linha["acabadas"]) == (1, 0)
+    pn = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    assert pn["id"] == nova["id"]
+    _ate_acabar(client, hs, pn["id"])
+    linha = next(x for x in client.get("/api/producao/pedidos", headers=hs["acabamento"]).json() if x["id"] == ped["id"])
+    assert (linha["pizzas"], linha["acabadas"]) == (1, 1)
+    assert client.post(f"/api/producao/pedidos/{ped['id']}/acabado", headers=hs["acabamento"]).status_code == 200
+
+
+def test_pegar_e_cancelar_ao_mesmo_tempo_nao_travam_nem_dao_erro_500(client, cardapio, hs):
+    from concurrent.futures import ThreadPoolExecutor
+    for _ in range(6):
+        ped = _pagar(client, hs["atendente"], [_g(cardapio, 2)])
+        with ThreadPoolExecutor(2) as ex:
+            f1 = ex.submit(lambda: client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).status_code)
+            f2 = ex.submit(lambda: client.post(f"/api/pedidos/{ped['id']}/cancelar", json={"motivo": "Teste de corrida"}, headers=hs["gerente"]).status_code)
+        assert f1.result() in (200, 404) and f2.result() == 200
+        sit = client.get(f"/api/pedidos/{ped['id']}", headers=hs["gerente"]).json()["situacao"]
+        assert sit == "cancelado"
+        restantes = [x for x in _fila(client, hs["pizzaiolo"])["pizzas"] if x["pedido_id"] == ped["id"]]
+        assert restantes == []
+        client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"])  # libera o pizzaiolo para a próxima rodada, se sobrou algo

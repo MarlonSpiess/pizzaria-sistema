@@ -1,4 +1,5 @@
 """Produção: fila de pizzas, montagem, forno, acabamento, massa, perdas e motivos. Cada função tem a sua permissão."""
+from decimal import Decimal
 from typing import Optional
 
 import psycopg
@@ -17,7 +18,7 @@ _COLS = ("p.id, p.pedido_id, ped.id_dia, ped.tipo AS tipo_pedido, ped.urgente, p
          "p.tipo, p.tamanho, p.sabores, p.adicionais, p.observacoes, p.situacao, p.ordem, p.responsavel_id, p.original_id")
 _BASE = ("FROM pizza_producao p JOIN pedido ped ON ped.id = p.pedido_id LEFT JOIN cliente c ON c.id = ped.cliente_id "
          "WHERE p.loja_id = %s")
-_ORDEM = "ORDER BY ped.urgente DESC, p.ordem"
+_ORDEM = "ORDER BY ped.urgente DESC, p.ordem, p.id"
 
 
 def _out(r: dict) -> dict:
@@ -32,6 +33,15 @@ def _pizza(conn, pid: int, travar=False) -> dict:
     if not p:
         raise HTTPException(status_code=404, detail="Pizza não encontrada.")
     return p
+
+
+def _pizza_travada(conn, pid: int):
+    """Trava o pedido e depois a pizza, na mesma ordem do cancelamento, para as duas operações nunca esperarem uma pela outra."""
+    r = conn.execute("SELECT pedido_id FROM pizza_producao WHERE id = %s AND loja_id = %s", (pid, LOJA_ID)).fetchone()
+    if not r:
+        raise HTTPException(status_code=404, detail="Pizza não encontrada.")
+    ped = _pedido(conn, r["pedido_id"], travar=True)
+    return _pizza(conn, pid, travar=True), ped
 
 
 def _exigir(p: dict, *situacoes: str) -> None:
@@ -78,8 +88,10 @@ def pedidos_abertos(sessao=Depends(requer("producao.ver")), conn=Depends(get_db)
     """Todos os pedidos em aberto com o andamento das pizzas (só consulta; o pedido só vira acabado à mão)."""
     rows = conn.execute(
         "SELECT ped.id, ped.id_dia, ped.tipo, ped.urgente, ped.situacao, c.nome AS cliente, ped.entrega_calculada, "
-        "count(p.id) FILTER (WHERE p.situacao NOT IN ('cancelada')) AS pizzas, count(p.id) FILTER (WHERE p.situacao = 'acabada') AS acabadas "
+        "count(p.id) FILTER (WHERE p.situacao <> 'cancelada' AND NOT (p.situacao = 'perdida' AND rf.refeita IS TRUE)) AS pizzas, "
+        "count(p.id) FILTER (WHERE p.situacao = 'acabada') AS acabadas "
         "FROM pedido ped LEFT JOIN cliente c ON c.id = ped.cliente_id LEFT JOIN pizza_producao p ON p.pedido_id = ped.id "
+        "LEFT JOIN LATERAL (SELECT true AS refeita FROM pizza_producao r WHERE r.original_id = p.id LIMIT 1) rf ON true "
         "WHERE ped.loja_id = %s AND ped.situacao IN ('recebido','em producao','acabado') GROUP BY ped.id, c.nome ORDER BY ped.urgente DESC, ped.id",
         (LOJA_ID,)).fetchall()
     return rows
@@ -94,7 +106,7 @@ def pegar_proxima(sessao=Depends(requer("producao.montagem")), conn=Depends(get_
     if atual:
         conn.rollback()
         return _out(atual)
-    alvo = conn.execute(f"SELECT p.id {_BASE} AND p.situacao = 'na lista' AND ped.situacao <> 'cancelado' {_ORDEM} LIMIT 1 FOR UPDATE OF p SKIP LOCKED",
+    alvo = conn.execute(f"SELECT p.id {_BASE} AND p.situacao = 'na lista' AND ped.situacao <> 'cancelado' {_ORDEM} LIMIT 1 FOR UPDATE OF p, ped SKIP LOCKED",
                         (LOJA_ID,)).fetchone()
     if not alvo:
         conn.rollback()
@@ -117,7 +129,7 @@ def _minha(p: dict, sessao) -> None:
 
 @router.post("/pizzas/{pid}/produzida")
 def produzida(pid: int, sessao=Depends(requer("producao.montagem")), conn=Depends(get_db)):
-    p = _pizza(conn, pid, travar=True)
+    p, ped = _pizza_travada(conn, pid)
     _exigir(p, "em montagem")
     _minha(p, sessao)
     svc.mover(conn, pid, "no forno", sessao["usuario_id"], agora())
@@ -128,13 +140,20 @@ def produzida(pid: int, sessao=Depends(requer("producao.montagem")), conn=Depend
 @router.post("/pizzas/{pid}/retroceder")
 def retroceder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.montagem")), conn=Depends(get_db)):
     """Volta a pizza atual uma posição na fila, com motivo obrigatório da tabela."""
-    p = _pizza(conn, pid, travar=True)
+    p, ped = _pizza_travada(conn, pid)
     _exigir(p, "em montagem")
     _minha(p, sessao)
     m = _motivo(conn, "motivo_retrocesso", d.motivo_id)
     quando = agora()
-    prox = conn.execute(f"SELECT p.ordem {_BASE} AND p.situacao = 'na lista' AND p.id <> %s AND ped.situacao <> 'cancelado' {_ORDEM} LIMIT 2",
-                        (LOJA_ID, pid)).fetchall()
+    conn.execute("SELECT pg_advisory_xact_lock(5, %s)", (LOJA_ID,))  # mesma trava da criação: ordens nunca se repetem
+    def _proximas():  # dentro do mesmo grupo de urgência da pizza
+        return conn.execute(f"SELECT p.ordem {_BASE} AND p.situacao = 'na lista' AND p.id <> %s AND ped.urgente = %s AND ped.situacao <> 'cancelado' "
+                            "ORDER BY p.ordem, p.id LIMIT 2", (LOJA_ID, pid, ped["urgente"])).fetchall()
+    prox = _proximas()
+    if len(prox) == 2 and prox[1]["ordem"] - prox[0]["ordem"] < Decimal("0.001"):  # espaço esgotado: renumera a fila e recalcula
+        conn.execute("UPDATE pizza_producao SET ordem = n.n FROM (SELECT id, row_number() OVER (ORDER BY ordem, id) AS n FROM pizza_producao "
+                     "WHERE loja_id = %s AND situacao = 'na lista') n WHERE pizza_producao.id = n.id", (LOJA_ID,))
+        prox = _proximas()
     if len(prox) == 2:
         nova = (prox[0]["ordem"] + prox[1]["ordem"]) / 2
     elif len(prox) == 1:
@@ -156,7 +175,7 @@ def retroceder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.montagem"
 # ---------------------------------------------------------------- forno e acabamento
 @router.post("/pizzas/{pid}/saiu-do-forno")
 def saiu_do_forno(pid: int, sessao=Depends(requer("producao.forno")), conn=Depends(get_db)):
-    p = _pizza(conn, pid, travar=True)
+    p, ped = _pizza_travada(conn, pid)
     _exigir(p, "no forno")
     svc.mover(conn, pid, "saiu do forno", sessao["usuario_id"], agora())
     conn.commit()
@@ -166,7 +185,7 @@ def saiu_do_forno(pid: int, sessao=Depends(requer("producao.forno")), conn=Depen
 @router.post("/pizzas/{pid}/acabada")
 def acabada(pid: int, sessao=Depends(requer("producao.acabamento")), conn=Depends(get_db)):
     """Marca a pizza como acabada e devolve os dados da etiqueta (cliente, Id do pedido e sabor)."""
-    p = _pizza(conn, pid, travar=True)
+    p, ped = _pizza_travada(conn, pid)
     _exigir(p, "saiu do forno")
     quando = agora()
     svc.mover(conn, pid, "acabada", sessao["usuario_id"], quando)
@@ -182,9 +201,8 @@ def pedido_acabado(ped_id: int, sessao=Depends(requer("producao.acabamento")), c
     p = _pedido(conn, ped_id, travar=True)
     if p["situacao"] not in ("recebido", "em producao"):
         raise HTTPException(status_code=409, detail=f"Pedido {p['situacao']}: não pode ser marcado como acabado.")
-    pend = conn.execute(
-        "SELECT count(*) AS n FROM pizza_producao x WHERE x.pedido_id = %s AND x.situacao NOT IN ('acabada','cancelada') "
-        "AND NOT (x.situacao = 'perdida' AND EXISTS (SELECT 1 FROM pizza_producao r WHERE r.original_id = x.id))", (ped_id,)).fetchone()["n"]
+    conn.execute("SELECT 1 FROM pizza_producao WHERE pedido_id = %s FOR UPDATE", (ped_id,)).fetchall()
+    pend = svc.pizzas_pendentes(conn, ped_id)
     if pend:
         raise HTTPException(status_code=409, detail=f"Faltam {pend} pizza(s) para acabar.")
     if p["situacao"] == "recebido":
@@ -197,8 +215,13 @@ def pedido_acabado(ped_id: int, sessao=Depends(requer("producao.acabamento")), c
 # ---------------------------------------------------------------- perdas e refação
 @router.post("/pizzas/{pid}/perder")
 def perder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.perda")), conn=Depends(get_db)):
-    p = _pizza(conn, pid, travar=True)
+    p, ped = _pizza_travada(conn, pid)
     _exigir(p, "em montagem", "no forno", "saiu do forno", "acabada")
+    if ped["situacao"] in ("cancelado", "despachado ou retirado"):
+        raise HTTPException(status_code=409, detail=f"Pedido {ped['situacao']}: não há mais o que perder aqui.")
+    if p["situacao"] == "em montagem" and p["responsavel_id"] != sessao["usuario_id"] and not _gerencia(sessao) \
+            and "producao.acabamento" not in PERMISSOES.get(sessao["perfil"], set()):
+        raise HTTPException(status_code=403, detail="Esta pizza está com outro pizzaiolo.")
     m = _motivo(conn, "motivo_perda", d.motivo_id)
     quando = agora()
     svc.mover(conn, pid, "perdida", sessao["usuario_id"], quando)
@@ -211,13 +234,12 @@ def perder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.perda")), con
 @router.post("/pizzas/{pid}/refazer", status_code=201)
 def refazer(pid: int, d: MotivoRef, sessao=Depends(requer("producao.refazer")), conn=Depends(get_db)):
     """Nova pizza ligada à original, na frente da fila; a original vira perda, com o motivo."""
-    p = _pizza(conn, pid, travar=True)
+    p, ped = _pizza_travada(conn, pid)
     _exigir(p, "em montagem", "no forno", "saiu do forno", "acabada", "perdida")
     if conn.execute("SELECT 1 FROM pizza_producao WHERE original_id = %s", (pid,)).fetchone():
         raise HTTPException(status_code=409, detail="Esta pizza já foi refeita.")
-    ped = _pedido(conn, p["pedido_id"])
-    if ped["situacao"] == "cancelado":
-        raise HTTPException(status_code=409, detail="Pedido cancelado não tem refação.")
+    if ped["situacao"] not in ("recebido", "em producao"):
+        raise HTTPException(status_code=409, detail=f"Pedido {ped['situacao']}: refação só enquanto o pedido está em produção. Para reclamação depois, faça um novo pedido.")
     m = _motivo(conn, "motivo_perda", d.motivo_id)
     quando = agora()
     if p["situacao"] != "perdida":
@@ -261,7 +283,7 @@ def contagem(d: ContagemMassaIn, sessao=Depends(requer("producao.massa")), conn=
 
 
 @router.post("/massa/perda", status_code=201)
-def perda_massa(d: PerdaMassaIn, sessao=Depends(requer("producao.perda")), conn=Depends(get_db)):
+def perda_massa(d: PerdaMassaIn, sessao=Depends(requer("producao.perda_massa")), conn=Depends(get_db)):
     m = _motivo(conn, "motivo_perda", d.motivo_id)
     conn.execute("INSERT INTO perda (loja_id, tipo, tamanho, quantidade, motivo_id, usuario_id, criado_em) VALUES (%s,'massa',%s,%s,%s,%s,%s)",
                  (LOJA_ID, d.tamanho, d.quantidade, m["id"], sessao["usuario_id"], agora()))
@@ -280,6 +302,7 @@ def motivos(sessao=Depends(requer("producao.ver")), conn=Depends(get_db)):
 @router.post("/motivos/iniciar-padrao", status_code=201)
 def iniciar_padrao(sessao=Depends(requer("producao.gerir")), conn=Depends(get_db)):
     """Cria as listas iniciais combinadas (retrocesso e perda). Só roda se as duas estiverem vazias; depois é cadastro livre."""
+    conn.execute("SELECT pg_advisory_xact_lock(7, %s)", (LOJA_ID,))
     if (conn.execute("SELECT count(*) AS n FROM motivo_retrocesso WHERE loja_id = %s", (LOJA_ID,)).fetchone()["n"]
             or conn.execute("SELECT count(*) AS n FROM motivo_perda WHERE loja_id = %s AND lower(nome) <> lower(%s)", (LOJA_ID, svc.MOTIVO_CANCELAMENTO)).fetchone()["n"]):
         raise HTTPException(status_code=409, detail="Já existem motivos cadastrados.")
