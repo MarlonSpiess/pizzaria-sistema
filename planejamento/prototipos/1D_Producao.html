@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protótipo 1D: Produção</title>
+<style>
+:root{--creme:#FAF6EF;--escuro:#1E1A17;--tan:#F1E7D8;--linha:#E6DCCD;--cinza:#5E534A;--tinta:#2B2420;--vermelho:#B5361F;--ouro:#D9A441}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--creme);color:var(--tinta);font-size:16px}
+header{background:var(--escuro);color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{margin:0;font-size:18px;color:var(--ouro);flex:1}
+header span{font-size:13px;color:#d8cfc4}
+.faixa{background:#FFF3D6;color:#6b4a00;padding:8px 16px;font-size:14px}
+nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;background:var(--tan);border-bottom:1px solid var(--linha)}
+nav button{background:transparent;border:1px solid transparent;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:15px;color:var(--tinta)}
+nav button.ativo{background:#fff;border-color:var(--linha);font-weight:600}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.cartao{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px;margin-bottom:16px}
+.cartao h2{margin:0 0 12px;font-size:18px}
+.cartao h3{margin:16px 0 8px;font-size:15px;color:var(--cinza)}
+label{display:block;font-size:14px;color:var(--cinza);margin:10px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid var(--linha);border-radius:8px;font-size:16px;background:#fff}
+button.principal{background:var(--vermelho);color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:16px;cursor:pointer}
+button.sec{background:#fff;border:1px solid var(--linha);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--linha);vertical-align:middle}
+th{font-size:13px;color:var(--cinza)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tabela{overflow-x:auto}
+.linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.linha>*{flex:1;min-width:130px}
+.etq{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:var(--tan)}
+.etq.esp{background:#F6D9D2;color:#8a2412}
+.inativo{opacity:.5}
+.pequeno{font-size:13px;color:var(--cinza)}
+.resultado{background:var(--tan);border-radius:10px;padding:12px;margin-top:12px}
+.resultado .total{font-size:26px;font-weight:700;color:var(--vermelho)}
+.aviso{padding:10px 14px;border-radius:8px;margin:10px 0;background:#E8F3EA;color:#25552f}
+dialog{border:1px solid var(--linha);border-radius:12px;padding:20px;max-width:520px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(30,26,23,.5)}
+.acoes{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+@media (max-width:768px){main{padding:10px}}
+.etq.ok{background:#E8F3EA;color:#25552f}.etq.al{background:#FFF3D6;color:#6b4a00}.erro{color:#8a2412;font-size:14px;margin-top:8px}.grade{display:grid;grid-template-columns:2fr 1fr;gap:16px}@media (max-width:800px){.grade{grid-template-columns:1fr}}.sel{display:flex;gap:6px;flex-wrap:wrap}.sel button{padding:8px 12px;border:1px solid var(--linha);background:#fff;border-radius:8px;cursor:pointer;font-size:15px}.sel button.on{background:var(--escuro);color:#fff}
+</style>
+</head>
+<body>
+<header><h1>Sistema da Pizzaria · Protótipo da fatia 1D (Produção)</h1><span>Tablet / tela:</span>
+<select id="funcao" style="width:auto"><option value="massa">Massa</option><option value="pizzaiolo">Pizzaiolo</option><option value="forno">Forno</option><option value="acabamento">Acabamento</option><option value="balcao">Balcão</option><option value="param">Parâmetros</option></select></header>
+<div class="faixa">Protótipo para aprovação: pedidos e sabores de exemplo. O seletor no topo troca a tela como se fosse o tablet de cada função (cada uma teria login próprio). Nada é gravado.</div>
+<main id="tela"></main>
+<script>
+"use strict";
+const P={fornoMin:2,fornoVez:4,motivos:["falta de insumo","saída do pizzaiolo","erro na borda","outros"],motivosPerda:["queimou","saiu errada","caiu","outros"]};
+let seq=0;
+const ped=[
+ {id:1,cli:"Cliente Exemplo Um",tipo:"entrega",sit:"recebido",urg:false,pizzas:[["Calabresa","Grande"],["Mussarela","Broto"]]},
+ {id:2,cli:"Cliente Exemplo Dois",tipo:"retirada",sit:"recebido",urg:false,pizzas:[["Portuguesa","Grande"]]},
+ {id:3,cli:"Balcão",tipo:"retirada",sit:"recebido",urg:false,pizzas:[["Frango com Catupiry","Grande"],["Quatro Queijos","Grande"]]}];
+const pizzas=[];
+for(const p of ped) for(const [s,t] of p.pizzas) pizzas.push({id:++seq,ped:p.id,sabor:s,tam:t,sit:"na lista",resp:null});
+const massaAberta={Grande:1,Broto:0}, perdas=[], lotes=[];
+let hist=[];
+const h=(tag,a,...f)=>{const e=document.createElement(tag);for(const[k,v]of Object.entries(a||{})){if(k.startsWith("on"))e[k]=v;else if(k==="class")e.className=v;else if(v!==false&&v!=null)e.setAttribute(k,v);}for(const x of f.flat())if(x!=null&&x!==false)e.append(x instanceof Node?x:document.createTextNode(String(x)));return e;};
+const tela=document.getElementById("tela"),fn=document.getElementById("funcao");fn.onchange=()=>desenhar();
+const P_=(id)=>ped.find(p=>p.id===id);
+const ev=(t)=>hist.unshift(new Date().toLocaleTimeString("pt-BR")+" · "+fn.value+" · "+t);
+function atualizaPedido(p){const ps=pizzas.filter(x=>x.ped===p.id&&x.sit!=="perdida");if(p.sit==="recebido"&&ps.some(x=>x.sit!=="na lista"))p.sit="em produção";}
+function selecionar(opcoes,aoEscolher,rotulo){const s=h("select",{},h("option",{value:""},rotulo),opcoes.map(o=>h("option",{value:o},o)));s.onchange=()=>{if(s.value)aoEscolher(s.value);};return s;}
+function lista(titulo,linhas,vazio){return h("div",{class:"cartao"},h("h2",{},titulo),linhas.length?h("div",{class:"tabela"},h("table",{},h("tbody",{},linhas))):h("p",{class:"pequeno"},vazio));}
+function viewMassa(){
+  const nec=(t)=>pizzas.filter(x=>x.sit==="na lista"&&x.tam===t).length;
+  const lin=["Grande","Broto"].map(t=>{const falta=Math.max(0,nec(t)-massaAberta[t]);const q=h("input",{value:falta||"",inputmode:"numeric",style:"max-width:90px"});
+   return h("tr",{},h("td",{},t),h("td",{class:"num"},nec(t)+" pedidas"),h("td",{class:"num"},massaAberta[t]+" abertas"),h("td",{class:"num"},"falta "+falta),
+    h("td",{},q,h("button",{class:"sec",onclick:()=>{const n=parseInt(q.value,10);if(n>=1){massaAberta[t]+=n;lotes.push({t,n});ev("lote de massa "+t+" x"+n+" (baixa farinha pela ficha)");desenhar();}}},"Lançar lote")));});
+  const cont=["Grande","Broto"].map(t=>{const q=h("input",{value:massaAberta[t],inputmode:"numeric",style:"max-width:90px"});return h("tr",{},h("td",{},"Contar "+t),h("td",{},q),h("td",{},h("button",{class:"sec",onclick:()=>{const n=parseInt(q.value,10);if(n>=0){massaAberta[t]=n;ev("contagem de massa aberta "+t+" = "+n);desenhar();}}},"Informar")));});
+  return h("div",{},lista("Necessidade de massa (pedidos ainda fora de produção menos estoque de massa aberta)",lin,""),lista("Estoque de massa aberta (contado pelo operador)",cont,""),
+   h("div",{class:"cartao"},h("h2",{},"Perda de massa"),selecionar(P.motivosPerda,(m)=>{perdas.push({o:"massa",m});ev("perda de massa: "+m);desenhar();},"Registrar perda com motivo"),h("p",{class:"pequeno"},perdas.length+" perda(s) hoje")));
+}
+function viewPizzaiolo(){
+  const fila=pizzas.filter(x=>x.sit==="na lista"||x.sit==="em montagem");
+  const urg=fila.filter(x=>P_(x.ped).urg), norm=fila.filter(x=>!P_(x.ped).urg), ord=[...urg,...norm];
+  const atual=ord[0];
+  if(!atual) return h("div",{class:"cartao"},h("h2",{},"Sem pizza na lista"));
+  atual.sit="em montagem";
+  return h("div",{},h("div",{class:"cartao"},h("h2",{},"Próxima pizza"),h("div",{class:"resultado"},h("div",{class:"total"},atual.tam+" · "+atual.sabor),h("div",{class:"pequeno"},"Pedido #"+atual.ped+(P_(atual.ped).urg?" · URGENTE":""))),
+   h("div",{class:"acoes",style:"justify-content:flex-start"},h("button",{class:"principal",onclick:()=>{atual.sit="no forno";atual.resp="pizzaiolo";atualizaPedido(P_(atual.ped));ev("pizza #"+atual.id+" produzida, foi ao forno");desenhar();}},"Produzida (vai ao forno)"),
+    selecionar(P.motivos,(m)=>{atual.sit="na lista";const i=pizzas.indexOf(atual);const j=pizzas.findIndex((x,k)=>k>i&&x.sit==="na lista");if(j>=0){pizzas.splice(i,1);pizzas.splice(j,0,atual);}ev("retrocesso da pizza #"+atual.id+": "+m);desenhar();},"Retroceder (motivo obrigatório)"))),
+   lista("Na fila depois desta ("+(ord.length-1)+")",ord.slice(1).map(x=>h("tr",{},h("td",{},"#"+x.ped),h("td",{},x.tam+" "+x.sabor),h("td",{},P_(x.ped).urg?"urgente":""))),"Fila vazia"));
+}
+function viewForno(){
+  const no=pizzas.filter(x=>x.sit==="no forno");
+  return h("div",{},h("div",{class:"cartao"},h("h2",{},"Forno ("+no.length+" de "+P.fornoVez+" pizzas, "+P.fornoMin+" min cada)"),h("p",{class:"pequeno"},no.length>P.fornoVez?"Acima da capacidade parametrizada: o sistema só avisa.":"Dentro da capacidade.")),
+   lista("No forno",no.map(x=>h("tr",{},h("td",{},"#"+x.ped),h("td",{},x.tam+" "+x.sabor),h("td",{},h("button",{class:"sec",onclick:()=>{x.sit="saiu do forno";ev("pizza #"+x.id+" saiu do forno");desenhar();}},"Saiu do forno")))),"Forno vazio"));
+}
+function viewAcab(){
+  const prontas=pizzas.filter(x=>x.sit==="saiu do forno"||x.sit==="no forno");
+  const abertos=ped.filter(p=>!["despachado ou retirado","cancelado"].includes(p.sit));
+  const l1=prontas.map(x=>h("tr",{},h("td",{},"#"+x.ped+" "+P_(x.ped).cli),h("td",{},x.tam+" "+x.sabor),h("td",{},x.sit),h("td",{},x.sit==="saiu do forno"?h("button",{class:"sec",onclick:()=>{x.sit="acabada";ev("pizza #"+x.id+" acabada, etiqueta: "+P_(x.ped).cli+" · Id "+x.ped+" · "+x.sabor);desenhar();}},"Acabada e imprimir etiqueta"):h("span",{class:"pequeno"},"aguardando saída do forno"))));
+  const l2=abertos.map(p=>{const ps=pizzas.filter(x=>x.ped===p.id);const ok=ps.every(x=>x.sit==="acabada");return h("tr",{},h("td",{},"#"+p.id+" "+p.cli),h("td",{},ps.filter(x=>x.sit==="acabada").length+" de "+ps.length+" acabadas"),h("td",{},p.sit),h("td",{},p.sit!=="acabado"&&ok?h("button",{class:"principal",onclick:()=>{p.sit="acabado";ev("pedido #"+p.id+" marcado acabado à mão");desenhar();}},"Marcar pedido acabado"):null));});
+  return h("div",{},lista("Pizzas do forno (acabar e etiquetar)",l1,"Nenhuma pizza no forno"),lista("Todos os pedidos em aberto (consulta; o pedido só vira acabado à mão)",l2,"Sem pedidos"),
+   h("p",{class:"pequeno"},"Bebida e acompanhamento não entram nesta lista."));
+}
+function viewBalcao(){
+  const l=ped.filter(p=>p.sit==="acabado");
+  return h("div",{},lista("Prontos para despacho ou retirada",l.map(p=>h("tr",{},h("td",{},"#"+p.id+" "+p.cli),h("td",{},p.tipo),h("td",{},h("button",{class:"principal",onclick:()=>{p.sit="despachado ou retirado";p.real=new Date().toLocaleTimeString("pt-BR");ev("pedido #"+p.id+" "+(p.tipo==="entrega"?"despachado":"retirado")+" às "+p.real);desenhar();}},p.tipo==="entrega"?"Despachar":"Retirado")))),"Nenhum pedido acabado"),
+   h("div",{class:"cartao"},h("h3",{},"Marcar pedido urgente (atendente ou gerente)"),selecionar(ped.filter(p=>p.sit==="recebido").map(p=>"#"+p.id+" "+p.cli),(v)=>{P_(parseInt(v.slice(1),10)).urg=true;ev("pedido "+v+" urgente: lista refeita sem mexer no que já está em produção");desenhar();},"Escolher pedido recebido")));
+}
+function viewParam(){
+  const t=h("input",{value:P.fornoMin}),v=h("input",{value:P.fornoVez}),m=h("input",{value:P.motivos.join(", ")});
+  return h("div",{class:"cartao"},h("h2",{},"Parâmetros de produção (gerente e administrador)"),h("p",{class:"pequeno"},"Tempos, capacidade e listas de motivos são tabelas da loja, não código. Valores de exemplo."),
+   h("label",{},"Tempo de forno por pizza (min)"),t,h("label",{},"Pizzas por vez no forno"),v,h("label",{},"Motivos de retrocesso (separados por vírgula)"),m,
+   h("div",{class:"acoes"},h("button",{class:"principal",onclick:()=>{P.fornoMin=parseFloat(t.value.replace(",","."))||P.fornoMin;P.fornoVez=parseInt(v.value,10)||P.fornoVez;const l=m.value.split(",").map(x=>x.trim()).filter(Boolean);if(l.length)P.motivos=l;desenhar();}},"Salvar")));
+}
+function desenhar(){
+  const V={massa:viewMassa,pizzaiolo:viewPizzaiolo,forno:viewForno,acabamento:viewAcab,balcao:viewBalcao,param:viewParam}[fn.value];
+  tela.replaceChildren(V(),h("div",{class:"cartao"},h("h3",{},"Registro de eventos (só inserção, com usuário e hora)"),h("div",{class:"pequeno"},hist.length?hist.slice(0,8).map(x=>h("div",{},x)):"Nenhum evento ainda")));
+}
+desenhar();
+</script>
+</body>
+</html>
