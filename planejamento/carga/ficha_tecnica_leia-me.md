@@ -14,15 +14,20 @@ Versão 2, 22/10/2026. Fonte: FICHA_TECNICA_PIZZARIA.pdf (modelo e incompleto, s
 - **Batata palha** entra depois do forno.
 - Nos quatro doces com leite condensado "40g ou 15g", mantive a meia como está na planilha (15g).
 
+## Respostas finais de 22/10/2026
+
+- Chocolate: 50g por meia em todos os doces. SEIS QUEIJOS: 50g de Catupiry e 50g de Cheddar por meia. Nenhum outro item salgado entra depois do forno (só a batata palha).
+- CHOC BRANCO e CHOC PRETO: a planilha trazia leite condensado duas vezes; ficou uma só, marcada na observação para Marlon ajustar.
+
 ## Resultado
 
-76 sabores (60 salgados e 16 doces), 327 linhas, 43 itens. Ficaram **20 linhas marcadas PENDENTE** no CSV.
+76 sabores (60 salgados e 16 doces), 325 linhas, 43 itens, sem linhas pendentes. Arquivo: [ficha_tecnica_normalizada.csv](ficha_tecnica_normalizada.csv).
+
+## Como carregar
+
+O script `sistema/scripts/carregar_ficha_tecnica.py` lê esse CSV e usa a API do sistema: cadastra os itens que faltam (Alho e óleo como preparo, o resto como insumo; fatias onde a planilha usa fatias) e grava a ficha de cada sabor que já existe como produto. Por padrão só simula; `--aplicar` grava. Pode rodar de novo sem duplicar. Testado em banco de teste.
 
 ## O que ainda falta
 
-1. Quantidade do chocolate em cada doce (16 linhas).
-2. SEIS QUEIJOS usa "Catupiry e Cheddar": quanto de cada na meia? Hoje o CSV repete 50g para os dois, só como espaço reservado.
-3. CHOC BRANCO e CHOC PRETO: a planilha repete leite condensado; com a regra, o ingrediente 2 também seria leite condensado. Marlon ajusta.
-4. Quais outros ingredientes entram depois do forno nos salgados (só a batata palha está marcada)?
-5. Categoria e preço Grande e Broto de cada sabor (D2).
-6. Calzone, borda, adicionais, bebidas, massa (farinha etc.), embalagem e o tempo de cada etapa.
+1. Os 76 sabores como produtos no cardápio, com categoria e preço Grande e Broto (D2). Sem isso as fichas não têm onde entrar.
+2. Calzone, borda, adicionais, bebidas, massa (farinha etc.), receita do alho e óleo, embalagem e o tempo de cada etapa.

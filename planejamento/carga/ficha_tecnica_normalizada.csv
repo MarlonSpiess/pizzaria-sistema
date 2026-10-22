@@ -200,8 +200,8 @@ SEIS QUEIJOS;salgada;Mussarela;g;150;75;montagem;
 SEIS QUEIJOS;salgada;Provolone;g;40;20;montagem;
 SEIS QUEIJOS;salgada;Gorgonzola;g;30;15;montagem;
 SEIS QUEIJOS;salgada;Parmesão;g;30;15;montagem;
-SEIS QUEIJOS;salgada;Catupiry;g;100;50;montagem;"PENDENTE: usa ambos; quantidade de cada a confirmar"
-SEIS QUEIJOS;salgada;Cheddar;g;100;50;montagem;"PENDENTE: usa ambos; quantidade de cada a confirmar"
+SEIS QUEIJOS;salgada;Catupiry;g;100;50;montagem;50g de cada por meia (Marlon, 22/10/2026)
+SEIS QUEIJOS;salgada;Cheddar;g;100;50;montagem;50g de cada por meia (Marlon, 22/10/2026)
 COLONIAL;salgada;Molho de tomate;g;200;100;montagem;1 colher = 100g na meia (resposta de Marlon)
 COLONIAL;salgada;Mussarela;g;100;50;montagem;
 COLONIAL;salgada;Linguiça Blumenau;g;150;75;montagem;
@@ -263,66 +263,64 @@ CHURRASCO;salgada;Mussarela;g;100;50;montagem;
 CHURRASCO;salgada;Filé;g;200;100;montagem;
 CHURRASCO;salgada;Vinagrete;g;150;75;montagem;
 ABACAXI;doce;Creme de leite;g;150;75;montagem;antes do forno
-ABACAXI;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+ABACAXI;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 ABACAXI;doce;Abacaxi;g;175;87;montagem;fruta antes do forno
 ABACAXI;doce;Leite condensado;g;40;20;pos_forno;
 ARCO-ÍRIS;doce;Creme de leite;g;200;100;montagem;antes do forno
-ARCO-ÍRIS;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+ARCO-ÍRIS;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 ARCO-ÍRIS;doce;Granulado colorido;g;80;40;pos_forno;
 ARCO-ÍRIS;doce;Leite condensado;g;40;20;pos_forno;
 CHARGE BRANCO;doce;Creme de leite;g;200;100;montagem;antes do forno
-CHARGE BRANCO;doce;Chocolate branco;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CHARGE BRANCO;doce;Chocolate branco;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 CHARGE BRANCO;doce;Amendoim;g;80;40;pos_forno;
 CHARGE BRANCO;doce;Leite condensado;g;40;20;pos_forno;
 CHARGE;doce;Creme de leite;g;200;100;montagem;antes do forno
-CHARGE;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CHARGE;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 CHARGE;doce;Amendoim;g;80;40;pos_forno;
 CHARGE;doce;Leite condensado;g;40;20;pos_forno;
 CONFETE BRANCO;doce;Creme de leite;g;200;100;montagem;antes do forno
-CONFETE BRANCO;doce;Chocolate branco;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CONFETE BRANCO;doce;Chocolate branco;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 CONFETE BRANCO;doce;Confete;g;80;40;pos_forno;
 CONFETE BRANCO;doce;Leite condensado;g;40;20;pos_forno;
 CONFETE;doce;Creme de leite;g;200;100;montagem;antes do forno
-CONFETE;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+CONFETE;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 CONFETE;doce;Confete;g;80;40;pos_forno;
 CONFETE;doce;Leite condensado;g;40;20;pos_forno;
 BANANA NEVADA;doce;Creme de leite;g;150;75;montagem;antes do forno
-BANANA NEVADA;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+BANANA NEVADA;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 BANANA NEVADA;doce;Banana;g;250;125;montagem;fruta antes do forno
 BANANA NEVADA;doce;Leite condensado;g;40;15;pos_forno;planilha: 40g ou 15g, meia 15g mantida
 BRIGADEIRO;doce;Creme de leite;g;200;100;montagem;antes do forno
-BRIGADEIRO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+BRIGADEIRO;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 BRIGADEIRO;doce;Granulado preto;g;80;40;pos_forno;
 BRIGADEIRO;doce;Leite condensado;g;40;20;pos_forno;
 CHOC BRANCO;doce;Creme de leite;g;200;100;montagem;antes do forno
-CHOC BRANCO;doce;Chocolate branco;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
-CHOC BRANCO;doce;Leite condensado;g;40;20;pos_forno;"PENDENTE: planilha repete leite condensado aqui; Marlon ajusta"
-CHOC BRANCO;doce;Leite condensado;g;40;20;pos_forno;
+CHOC BRANCO;doce;Chocolate branco;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
+CHOC BRANCO;doce;Leite condensado;g;40;20;pos_forno;"planilha trazia leite condensado duas vezes; mantida uma (Marlon ajusta depois)"
 CHOC PRETO;doce;Creme de leite;g;200;100;montagem;antes do forno
-CHOC PRETO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
-CHOC PRETO;doce;Leite condensado;g;40;20;pos_forno;"PENDENTE: planilha repete leite condensado aqui; Marlon ajusta"
-CHOC PRETO;doce;Leite condensado;g;40;20;pos_forno;
+CHOC PRETO;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
+CHOC PRETO;doce;Leite condensado;g;40;20;pos_forno;"planilha trazia leite condensado duas vezes; mantida uma (Marlon ajusta depois)"
 FORMIGUINHA;doce;Creme de leite;g;200;100;montagem;antes do forno
-FORMIGUINHA;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+FORMIGUINHA;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 FORMIGUINHA;doce;Granulado preto;g;80;40;pos_forno;
 FORMIGUINHA;doce;Leite condensado;g;40;20;pos_forno;
 MOCINHA;doce;Creme de leite;g;200;100;montagem;antes do forno
-MOCINHA;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+MOCINHA;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 MOCINHA;doce;Coco ralado;g;40;20;pos_forno;
 MOCINHA;doce;Leite condensado;g;40;20;pos_forno;
 PRESTÍGIO;doce;Creme de leite;g;200;100;montagem;antes do forno
-PRESTÍGIO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+PRESTÍGIO;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 PRESTÍGIO;doce;Coco ralado;g;40;20;pos_forno;
 PRESTÍGIO;doce;Leite condensado;g;40;20;pos_forno;
 TROVOADA;doce;Creme de leite;g;150;75;montagem;antes do forno
-TROVOADA;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+TROVOADA;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 TROVOADA;doce;Banana;g;250;125;montagem;fruta antes do forno
 TROVOADA;doce;Leite condensado;g;40;15;pos_forno;planilha: 40g ou 15g, meia 15g mantida
 SENSAÇÃO;doce;Creme de leite;g;150;75;montagem;antes do forno
-SENSAÇÃO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+SENSAÇÃO;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 SENSAÇÃO;doce;Morango;g;150;75;montagem;fruta antes do forno
 SENSAÇÃO;doce;Leite condensado;g;40;15;pos_forno;planilha: 40g ou 15g, meia 15g mantida
 TENTAÇÃO;doce;Creme de leite;g;150;75;montagem;antes do forno
-TENTAÇÃO;doce;Chocolate preto;g;;;pos_forno;PENDENTE: quantidade do chocolate (a planilha não traz)
+TENTAÇÃO;doce;Chocolate preto;g;100;50;pos_forno;50g por meia (Marlon, 22/10/2026)
 TENTAÇÃO;doce;Morango;g;150;75;montagem;fruta antes do forno
 TENTAÇÃO;doce;Leite condensado;g;40;15;pos_forno;planilha: 40g ou 15g, meia 15g mantida
