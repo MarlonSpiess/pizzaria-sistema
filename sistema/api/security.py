@@ -18,10 +18,14 @@ PERFIS = ("administrador", "proprietario", "gerente", "subgerente", "atendente",
 # administrador e proprietário têm tudo; as demais permissões entram nas fatias seguintes.
 _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar",
           "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar",
-          "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir"}
+          "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir",
+          "producao.ver", "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
+          "producao.refazer", "producao.gerir"}
 _GERENCIA = {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar", "cardapio.ver", "cardapio.editar",
              "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar", "ficha.ver", "ficha.editar",
-             "vendas.ver", "vendas.criar", "vendas.gerir"}
+             "vendas.ver", "vendas.criar", "vendas.gerir",
+             "producao.ver", "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
+             "producao.refazer", "producao.gerir"}
 PERMISSOES = {
     "administrador": _TODAS,
     "proprietario": _TODAS,
@@ -30,10 +34,11 @@ PERMISSOES = {
     "subgerente": _GERENCIA,
     # Atendente consulta o cardápio e os entregadores e cadastra cliente na primeira compra.
     "atendente": {"cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver",
-                  "vendas.ver", "vendas.criar"},
-    "massa": set(),
-    "pizzaiolo": set(),
-    "acabamento": set(),
+                  "vendas.ver", "vendas.criar", "producao.ver"},
+    # Funções de produção: cada tablet só enxerga e faz o que é da sua função (login pessoal).
+    "massa": {"producao.ver", "producao.massa", "producao.perda"},
+    "pizzaiolo": {"producao.ver", "producao.montagem", "producao.forno", "producao.perda"},
+    "acabamento": {"producao.ver", "producao.forno", "producao.acabamento", "producao.perda", "producao.refazer"},
 }
 
 

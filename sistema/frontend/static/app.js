@@ -79,6 +79,7 @@ function telaTrocaSenha() {
 const ABAS = [
   ["painel", "Painel", null, "Visão geral", "📊"],
   ["vendas", "Vendas", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Operação", "🧾"],
+  ["producao", "Produção", ["administrador", "proprietario", "gerente", "subgerente", "massa", "pizzaiolo", "acabamento", "atendente"], "Operação", "👨‍🍳"],
   ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "🍕"],
   ["fichas", "Fichas e etapas", ["administrador", "proprietario", "gerente", "subgerente"], "Cadastros", "📋"],
   ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "👥"],
@@ -809,13 +810,149 @@ async function abaVendas() {
   await desenharSub();
 }
 
+// ---------------------------------------------------------------- Fatia 1D: produção
+const GER = ["administrador", "proprietario", "gerente", "subgerente"];
+const SUBS_PRODUCAO = [
+  ["massa", "Massa", [...GER, "massa"]],
+  ["montagem", "Montagem", [...GER, "pizzaiolo"]],
+  ["forno", "Forno", [...GER, "pizzaiolo", "acabamento"]],
+  ["acabamento", "Acabamento", [...GER, "acabamento"]],
+  ["andamento", "Andamento", [...GER, "atendente", "massa", "pizzaiolo", "acabamento"]],
+  ["motivos", "Motivos", GER],
+];
+let relogioProducao = null;
+
+async function abaProducao() {
+  clearInterval(relogioProducao);
+  const alvo = h("div"); moldura(alvo);
+  const msg = h("div");
+  const subs = SUBS_PRODUCAO.filter(([, , perfis]) => perfis.includes(estado.eu.perfil));
+  if (!subs.some(([id]) => id === estado.subp)) estado.subp = subs[0][0];
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  const ok = (t) => msg.replaceChildren(aviso("ok", t));
+  const acao = async (metodo, caminho, corpo, textoOk) => {
+    try { const r = await api(metodo, caminho, corpo); if (textoOk) ok(textoOk); await desenharSub(); return r; } catch (e) { falha(e); }
+  };
+  const seletorMotivo = (lista, rotulo, aoEscolher) => {
+    const s = h("select", {}, h("option", { value: "" }, rotulo), lista.filter((m) => m.ativo).map((m) => h("option", { value: m.id }, m.nome)));
+    s.onchange = () => { if (s.value) aoEscolher(Number(s.value)); };
+    return s;
+  };
+  const linhaPizza = (p) => p.tipo === "pizza" ? (p.tamanho === "grande" ? "Grande" : "Broto") + " · " + p.sabores : "Calzone · " + p.sabores;
+  const grande = (t) => h("div", { class: "resultado" }, h("div", { class: "total" }, t));
+
+  async function desenharSub() {
+    const nav = h("div", { class: "subnav" }, subs.map(([id, nome]) => h("button", { class: id === estado.subp ? "ativo" : "", onclick: () => { estado.subp = id; msg.replaceChildren(); desenharSub(); } }, nome)),
+      h("button", { class: "sec", onclick: () => desenharSub() }, "Atualizar"));
+    let corpo;
+    try { corpo = await ({ massa: subMassa, montagem: subMontagem, forno: subForno, acabamento: subAcabamento, andamento: subAndamento, motivos: subMotivos }[estado.subp])(); }
+    catch (e) { corpo = aviso("erro", e.message); }
+    alvo.replaceChildren(nav, msg, corpo);
+  }
+
+  async function subMassa() {
+    const [m, mot] = await Promise.all([api("GET", "/producao/massa"), api("GET", "/producao/motivos")]);
+    const linhas = ["grande", "broto"].map((t) => h("tr", {}, h("td", {}, t === "grande" ? "Grande" : "Broto"), h("td", {}, String(m[t].necessidade)), h("td", {}, String(m[t].saldo)), h("td", {}, String(m[t].falta))));
+    const tam = h("select", {}, [["grande", "Grande"], ["broto", "Broto"]].map(([v, n]) => h("option", { value: v }, n))), qtd = h("input", { inputmode: "numeric", value: "" });
+    const vai = (caminho, texto, extra) => async () => {
+      const n = parseInt(qtd.value, 10); if (!(n >= 0)) { falha(new Error("Informe a quantidade.")); return; }
+      await acao("POST", caminho, { tamanho: tam.value, quantidade: n, ...(extra || {}) }, texto);
+    };
+    return h("div", {}, h("div", { class: "cartao tabela" }, h("h2", {}, "Massa aberta"),
+      h("table", {}, h("thead", {}, h("tr", {}, ["Tamanho", "Pizzas esperando", "Saldo de massa aberta", "Falta fazer"].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)),
+      h("p", { class: "pequeno" }, "Saldo = última contagem + lotes − massas usadas e perdidas depois dela. Esperando = pizzas ainda na lista.")),
+      h("div", { class: "cartao" }, h("h2", {}, "Lançar"), h("div", { class: "linha" }, campo("Tamanho", tam), campo("Quantidade", qtd)),
+        h("div", { class: "acoes-linha" }, h("button", { class: "principal", onclick: vai("/producao/massa/lote", "Lote lançado.") }, "Lançar lote de massa"), " ",
+          h("button", { class: "sec", onclick: vai("/producao/massa/contagem", "Contagem informada.") }, "Informar contagem de massa aberta"), " ",
+          seletorMotivo(mot.perda, "Perda de massa (escolha o motivo)", (id) => vai("/producao/massa/perda", "Perda registrada.", { motivo_id: id })()))));
+  }
+
+  async function subMontagem() {
+    const [f, mot] = await Promise.all([api("GET", "/producao/fila"), api("GET", "/producao/motivos")]);
+    const minha = f.pizzas.find((p) => p.minha && p.situacao === "em montagem");
+    const espera = f.pizzas.filter((p) => p.situacao === "na lista");
+    let topo;
+    if (minha) {
+      topo = h("div", { class: "cartao" }, h("h2", {}, "Pizza atual"), grande(linhaPizza(minha)),
+        h("p", {}, "Pedido #" + minha.id_dia + (minha.urgente ? " · URGENTE" : "")), minha.adicionais ? h("p", {}, "Adicionais: " + minha.adicionais) : null, minha.observacoes ? h("p", {}, "Obs.: " + minha.observacoes) : null,
+        h("div", { class: "acoes-linha" }, h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/" + minha.id + "/produzida", undefined, "Pizza foi ao forno.") }, "Produzida (vai ao forno)"), " ",
+          seletorMotivo(mot.retrocesso, "Retroceder (motivo obrigatório)", (id) => acao("POST", "/producao/pizzas/" + minha.id + "/retroceder", { motivo_id: id }, "Pizza voltou uma posição.")), " ",
+          seletorMotivo(mot.perda, "Perdeu a pizza (motivo)", (id) => acao("POST", "/producao/pizzas/" + minha.id + "/perder", { motivo_id: id }, "Perda registrada."))));
+    } else {
+      topo = h("div", { class: "cartao" }, h("h2", {}, "Montagem"), h("p", {}, espera.length ? espera.length + " pizza(s) na lista." : "Nenhuma pizza na lista."),
+        espera.length ? h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/proxima") }, "Pegar a próxima pizza") : null);
+    }
+    return h("div", {}, topo, h("div", { class: "cartao tabela" }, h("h2", {}, "Fila"), espera.length ? h("table", {}, h("tbody", {}, espera.slice(0, 8).map((p) =>
+      h("tr", {}, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), h("td", {}, linhaPizza(p)), h("td", { class: "pequeno" }, p.adicionais || ""))))) : h("p", { class: "pequeno" }, "Fila vazia.")));
+  }
+
+  async function subForno() {
+    const f = await api("GET", "/producao/fila");
+    const no = f.pizzas.filter((p) => p.situacao === "no forno");
+    const fo = f.forno;
+    return h("div", {}, h("div", { class: "cartao" }, h("h2", {}, "Forno: " + fo.quantidade + (fo.capacidade ? " de " + fo.capacidade : "") + " pizza(s)"),
+      fo.tempo_min ? h("p", { class: "pequeno" }, "Tempo de forno: " + fo.tempo_min + " min por pizza.") : null,
+      fo.acima_capacidade ? aviso("erro", "Acima da capacidade do forno. O sistema só avisa.") : null),
+      h("div", { class: "cartao tabela" }, h("h2", {}, "No forno"), no.length ? h("table", {}, h("tbody", {}, no.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia), h("td", {}, linhaPizza(p)),
+        h("td", {}, h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/" + p.id + "/saiu-do-forno") }, "Saiu do forno")))))) : h("p", { class: "pequeno" }, "Forno vazio.")));
+  }
+
+  async function subAcabamento() {
+    const [f, peds, mot] = await Promise.all([api("GET", "/producao/fila"), api("GET", "/producao/pedidos"), api("GET", "/producao/motivos")]);
+    const prontas = f.pizzas.filter((p) => p.situacao === "saiu do forno");
+    const box = h("div", {});
+    const etiqueta = (e) => box.replaceChildren(h("div", { class: "cartao etiqueta" }, h("h2", {}, "Etiqueta"), grande(e.cliente + " · Id " + e.id_dia), h("p", {}, e.sabores + " (" + e.tamanho + ")"),
+      h("button", { class: "sec", onclick: () => window.print() }, "Imprimir")));
+    return h("div", {}, box, h("div", { class: "cartao tabela" }, h("h2", {}, "Saíram do forno"), prontas.length ? h("table", {}, h("tbody", {}, prontas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
+      h("td", {}, h("button", { class: "principal", onclick: async () => { const r = await acao("POST", "/producao/pizzas/" + p.id + "/acabada"); if (r) etiqueta(r.etiqueta); } }, "Acabada e etiqueta"), " ",
+        seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."))))))) : h("p", { class: "pequeno" }, "Nenhuma pizza esperando acabamento.")),
+      h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos em aberto"), peds.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Pedido", "Cliente", "Pizzas", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, peds.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")),
+        h("td", {}, p.cliente || "Balcão"), h("td", {}, p.acabadas + " de " + p.pizzas), h("td", {}, rotuloSit[p.situacao]),
+        h("td", {}, p.situacao !== "acabado" && p.acabadas === p.pizzas ? h("button", { class: "principal", onclick: () => acao("POST", "/producao/pedidos/" + p.id + "/acabado", undefined, "Pedido acabado.") }, "Marcar pedido acabado") : null))))) : h("p", { class: "pequeno" }, "Nenhum pedido em aberto.")),
+      h("p", { class: "pequeno" }, "Bebida e acompanhamento não entram nesta lista."));
+  }
+
+  async function subAndamento() {
+    const peds = await api("GET", "/producao/pedidos");
+    return h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos em aberto"), peds.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Pedido", "Cliente", "Tipo", "Pizzas acabadas", "Situação", "Entrega calculada"].map((t) => h("th", {}, t)))),
+      h("tbody", {}, peds.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), h("td", {}, p.cliente || "Balcão"), h("td", {}, p.tipo), h("td", {}, p.acabadas + " de " + p.pizzas),
+        h("td", {}, rotuloSit[p.situacao]), h("td", {}, p.entrega_calculada ? new Date(p.entrega_calculada).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "")))))
+      : h("p", { class: "pequeno" }, "Nenhum pedido em aberto."));
+  }
+
+  async function subMotivos() {
+    const m = await api("GET", "/producao/motivos");
+    const vazio = !m.retrocesso.length && !m.perda.length;
+    const bloco = (tipo, titulo, lista) => {
+      const nome = h("input", { placeholder: "Novo motivo" }), avisa = tipo === "retrocesso" ? h("input", { type: "checkbox" }) : null;
+      return h("div", { class: "cartao tabela" }, h("h2", {}, titulo), h("table", {}, h("tbody", {}, lista.map((x) => h("tr", { class: x.ativo ? "" : "inativo" }, h("td", {}, x.nome), h("td", { class: "pequeno" }, x.avisa_estoque ? "avisa Estoques" : ""),
+        h("td", {}, h("button", { class: "sec", onclick: () => acao("PATCH", "/producao/motivos/" + tipo + "/" + x.id, { ativo: !x.ativo }) }, x.ativo ? "Inativar" : "Reativar")))))),
+        h("div", { class: "linha" }, campo("Motivo", nome), avisa ? h("label", { class: "inline" }, avisa, " Avisa Estoques") : null,
+          h("button", { class: "sec", onclick: () => acao("POST", "/producao/motivos/" + tipo, { nome: nome.value, ...(avisa ? { avisa_estoque: avisa.checked } : {}) }, "Motivo criado.") }, "Adicionar")));
+    };
+    return h("div", {}, vazio ? h("div", { class: "cartao" }, h("p", {}, "Nenhum motivo cadastrado."), h("button", { class: "principal", onclick: () => acao("POST", "/producao/motivos/iniciar-padrao", undefined, "Motivos iniciais criados.") }, "Criar os motivos combinados")) : null,
+      bloco("retrocesso", "Motivos de retrocesso", m.retrocesso), bloco("perda", "Motivos de perda", m.perda));
+  }
+
+  await desenharSub();
+  if (["montagem", "forno", "acabamento"].includes(estado.subp)) {  // tablets: a lista se atualiza sozinha, sem atropelar quem está digitando
+    relogioProducao = setInterval(() => {
+      if (estado.aba !== "producao" || !estado.token) { clearInterval(relogioProducao); return; }
+      const a = document.activeElement;
+      if (a && (a.tagName === "INPUT" || a.tagName === "SELECT")) return;
+      if (!["montagem", "forno", "acabamento"].includes(estado.subp)) return;
+      desenharSub();
+    }, 8000);
+  }
+}
+
 async function desenhar() {
   if (!estado.token) return telaLogin();
   if (!estado.eu) {
     try { estado.eu = await api("GET", "/auth/me"); } catch (e) { return telaLogin(); }
   }
   if (estado.eu.deve_trocar_senha) return telaTrocaSenha();
-  const abas = { painel: abaPainel, vendas: abaVendas, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
+  const abas = { painel: abaPainel, vendas: abaVendas, producao: abaProducao, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
   await (abas[estado.aba] || abaPainel)();
 }
 

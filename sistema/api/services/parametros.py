@@ -26,6 +26,11 @@ CATALOGO = {
     "tolerancia_diferenca_caixa": ("dinheiro", None, "Tolerância de diferença no fechamento do caixa (R$)"),
     "sangria_limite_gerente": ("dinheiro", None, "Valor de sangria ou suprimento acima do qual o gerente autoriza (R$)"),
     "taxa_entrega_padrao": ("dinheiro", None, "Taxa de entrega cobrada do cliente (R$)"),
+    "calzone_massa_tamanho": ("tamanho_massa", None, "Tamanho de massa que o calzone consome (grande ou broto)"),
+    "producao_montagem_min": ("decimal_pos", None, "Minutos para um pizzaiolo montar uma pizza (estimativa de entrega)"),
+    "producao_pizzaiolos_ativos": ("inteiro_pos", None, "Pizzaiolos trabalhando ao mesmo tempo (estimativa de entrega)"),
+    "producao_acabamento_min": ("decimal_pos", None, "Minutos de acabamento e embalagem por pedido (estimativa de entrega)"),
+    "entrega_deslocamento_min": ("decimal_pos", None, "Minutos de deslocamento da entrega (estimativa de entrega)"),
     "perda_padrao_pct": ("pct", "10", "Perda padrão (%) de cada insumo nas fichas técnicas"),
     "forno_tempo_min": ("decimal_pos", "2", "Tempo de forno por pizza (minutos)"),
     "forno_pizzas_por_vez": ("inteiro_pos", None, "Pizzas que o forno comporta por vez"),
@@ -79,6 +84,10 @@ def normalizar(chave: str, valor) -> str | None:
             return str(_dec(valor, Decimal(0), Decimal(100)).quantize(Decimal("0.01")))
         if tipo == "dinheiro":
             return str(_dec(valor, Decimal(0), Decimal("999999.99")).quantize(Decimal("0.01")))
+        if tipo == "tamanho_massa":
+            if valor not in ("grande", "broto"):
+                raise ValueError("Informe grande ou broto.")
+            return valor
         if tipo == "decimal_pos":
             return format(_dec(valor, Decimal("0.1"), Decimal(1000)).normalize(), "f")
         if tipo == "inteiro_pos":

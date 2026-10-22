@@ -104,3 +104,9 @@ p{margin-bottom:8px}
 .resultado .total{font-size:26px;font-weight:700;color:var(--brand)}
 label.inline{display:inline-flex;gap:4px;align-items:center;margin-right:12px}
 label.inline input{width:auto}
+
+/* Fatia 1D: produção (tablets) */
+.acoes-linha{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.acoes-linha button,.acoes-linha select{min-height:44px}
+.etiqueta{border:2px dashed var(--line)}
+@media print{#menu,.topo,.subnav{display:none}}

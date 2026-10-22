@@ -700,3 +700,61 @@ class PedidoSituacao(Base):
 
 class PedidoUrgente(Base):
     urgente: bool
+
+
+# ---------------------------------------------------------------- produção (fatia 1D)
+class MotivoIn(Base):
+    nome: str
+    avisa_estoque: bool = False
+
+    @field_validator("nome")
+    @classmethod
+    def _n(cls, v):
+        return _nome(v)
+
+
+class MotivoUpdate(Base):
+    nome: Optional[str] = None
+    avisa_estoque: Optional[bool] = None
+    ativo: Optional[bool] = None
+
+    @field_validator("nome")
+    @classmethod
+    def _n(cls, v):
+        return None if v is None else _nome(v)
+
+
+class MotivoRef(Base):
+    motivo_id: int
+
+
+class LoteMassaIn(Base):
+    tamanho: str
+    quantidade: int
+
+    @field_validator("tamanho")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("grande", "broto"):
+            raise ValueError("Tamanho deve ser grande ou broto.")
+        return v
+
+    @field_validator("quantidade")
+    @classmethod
+    def _q(cls, v):
+        if not 1 <= v <= 1000:
+            raise ValueError("Quantidade de 1 a 1000.")
+        return v
+
+
+class ContagemMassaIn(LoteMassaIn):
+    @field_validator("quantidade")
+    @classmethod
+    def _q(cls, v):
+        if not 0 <= v <= 1000:
+            raise ValueError("Quantidade de 0 a 1000.")
+        return v
+
+
+class PerdaMassaIn(LoteMassaIn):
+    motivo_id: int

@@ -11,6 +11,7 @@ from api.database import agora, auditar, get_db, hoje, traduzir_erro
 from api.schemas import PedidoCalcular, PedidoCancelar, PedidoCreate, PedidoSituacao, PedidoUrgente
 from api.security import PERMISSOES, requer
 from api.services import parametros as svc_parametros
+from api.services import producao as svc_producao
 from api.services.dinheiro import fmt
 from api.services.vendas import SITUACOES, autorizar, excede_limite, limite_desconto, repartir_pagamentos, totais
 
@@ -121,6 +122,12 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
                           autorizador, quando))
         conn.execute("INSERT INTO evento_pedido (pedido_id, situacao, usuario_id, criado_em) VALUES (%s,'recebido',%s,%s)",
                      (ped["id"], sessao["usuario_id"], quando))
+        novas = svc_producao.gerar_pizzas(conn, LOJA_ID, ped["id"], sessao["usuario_id"], quando)
+        if novas:
+            prev = svc_producao.estimativa_entrega(conn, LOJA_ID, d.tipo, quando, novas)
+            if prev is not None:
+                conn.execute("UPDATE pedido SET entrega_calculada = %s WHERE id = %s", (prev, ped["id"]))
+                ped["entrega_calculada"] = prev
         auditar(conn, sessao, "criar", "pedido", ped["id"],
                 depois={"id_dia": id_dia, "total": fmt(t["total"]), "tipo": d.tipo, "autorizado_por": autorizador})
         conn.commit()
@@ -236,6 +243,7 @@ def cancelar(pid: int, d: PedidoCancelar, request: Request, sessao=Depends(reque
         conn.execute("INSERT INTO cancelamento (pedido_id, motivo, usuario_id, autorizado_por, situacao_anterior, criado_em) "
                      "VALUES (%s,%s,%s,%s,%s,%s)", (pid, d.motivo, sessao["usuario_id"], autorizador, p["situacao"], quando))
         conn.execute("UPDATE pedido SET situacao = 'cancelado' WHERE id = %s", (pid,))
+        svc_producao.cancelar_pizzas(conn, LOJA_ID, pid, sessao["usuario_id"], quando)
         conn.execute("INSERT INTO evento_pedido (pedido_id, situacao, usuario_id, criado_em) VALUES (%s,'cancelado',%s,%s)",
                      (pid, sessao["usuario_id"], quando))
         auditar(conn, sessao, "cancelar", "pedido", pid, antes={"situacao": p["situacao"]},
