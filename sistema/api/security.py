@@ -18,9 +18,10 @@ PERFIS = ("administrador", "proprietario", "gerente", "subgerente", "atendente",
 # administrador e proprietário têm tudo; as demais permissões entram nas fatias seguintes.
 _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar",
           "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar",
-          "ficha.ver", "ficha.editar"}
+          "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir"}
 _GERENCIA = {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar", "cardapio.ver", "cardapio.editar",
-             "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar", "ficha.ver", "ficha.editar"}
+             "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar", "ficha.ver", "ficha.editar",
+             "vendas.ver", "vendas.criar", "vendas.gerir"}
 PERMISSOES = {
     "administrador": _TODAS,
     "proprietario": _TODAS,
@@ -28,7 +29,8 @@ PERMISSOES = {
     # Subgerente: permissões do gerente, exceto aprovar diferença de caixa (decisão de 19/10/2026; entra na fatia 1E).
     "subgerente": _GERENCIA,
     # Atendente consulta o cardápio e os entregadores e cadastra cliente na primeira compra.
-    "atendente": {"cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver"},
+    "atendente": {"cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver",
+                  "vendas.ver", "vendas.criar"},
     "massa": set(),
     "pizzaiolo": set(),
     "acabamento": set(),

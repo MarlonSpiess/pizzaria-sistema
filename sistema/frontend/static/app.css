@@ -96,3 +96,11 @@ p{margin-bottom:8px}
   .conteudo{padding:10px}
   .chip .nome-completo{display:none}
 }
+
+/* Fatia 1C: vendas */
+.grade{display:grid;grid-template-columns:1fr 1.3fr;gap:16px;align-items:start}
+@media (max-width:900px){.grade{grid-template-columns:1fr}}
+.resultado{background:var(--panel2,var(--panel));border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
+.resultado .total{font-size:26px;font-weight:700;color:var(--brand)}
+label.inline{display:inline-flex;gap:4px;align-items:center;margin-right:12px}
+label.inline input{width:auto}

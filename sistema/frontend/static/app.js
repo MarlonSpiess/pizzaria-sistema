@@ -78,6 +78,7 @@ function telaTrocaSenha() {
 
 const ABAS = [
   ["painel", "Painel", null, "Visão geral", "📊"],
+  ["vendas", "Vendas", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Operação", "🧾"],
   ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "🍕"],
   ["fichas", "Fichas e etapas", ["administrador", "proprietario", "gerente", "subgerente"], "Cadastros", "📋"],
   ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "👥"],
@@ -622,13 +623,194 @@ async function abaFichas() {
   await desenharSub();
 }
 
+// ---------------------------------------------------------------- Fatia 1C: vendas de balcão
+const rotuloSit = { "recebido": "recebido", "em producao": "em produção", "acabado": "acabado", "despachado ou retirado": "despachado ou retirado", "cancelado": "cancelado" };
+const proxSit = { "recebido": "em producao", "em producao": "acabado", "acabado": "despachado ou retirado" };
+const virgula = (v) => String(v).replace(".", ",");
+
+function entradaAutorizacao() {
+  const u = h("input", { autocomplete: "off" }), sn = h("input", { type: "password", autocomplete: "off" });
+  return { u, sn, caixa: h("div", { class: "linha" }, campo("Usuário do gerente", u), campo("Senha do gerente", sn)),
+    valor: () => u.value.trim() && sn.value ? { usuario: u.value.trim(), senha: sn.value } : null };
+}
+
+async function abaVendas() {
+  const alvo = h("div"); moldura(alvo);
+  const msg = h("div");
+  const subs = [["novo", "Novo pedido"], ["dia", "Pedidos do dia"]];
+  if (!estado.subv) estado.subv = "novo";
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  const ok = (t) => msg.replaceChildren(aviso("ok", t));
+
+  async function desenharSub() {
+    const nav = h("div", { class: "subnav" }, subs.map(([id, nome]) => h("button", { class: id === estado.subv ? "ativo" : "", onclick: () => { estado.subv = id; msg.replaceChildren(); desenharSub(); } }, nome)));
+    let corpo;
+    try { corpo = await (estado.subv === "dia" ? subPedidosDia() : subNovoPedido())(); } catch (e) { corpo = aviso("erro", e.message); }
+    alvo.replaceChildren(nav, msg, corpo);
+  }
+  const subNovoPedido = () => novoPedido;
+  const subPedidosDia = () => pedidosDia;
+
+  // ---- novo pedido: o servidor calcula preço, limite e troco; a tela só mostra o que ele devolve
+  async function novoPedido() {
+    const [produtos, adicionais, param] = await Promise.all([api("GET", "/produtos?ativo=true"), api("GET", "/adicionais?ativo=true"), api("GET", "/parametros")]);
+    const formas = ((param.find ? param.find((x) => x.chave === "formas_pagamento_aceitas") : null) || {}).valor || ["dinheiro", "pix", "credito", "debito"];
+    const r = estado.rascunho || (estado.rascunho = { tipo: "retirada", cliente: null, itens: [], ajuste: null, pagamentos: [], taxa: "", taxaMotivo: "", obs: "", urgente: false });
+    const corpoCalculo = () => ({ tipo: r.tipo, itens: r.itens.map((i) => i.dados), ajuste: r.ajuste, taxa_entrega: r.tipo === "entrega" && r.taxa.trim() ? r.taxa.trim() : null });
+    let calc = null;
+    if (r.itens.length) { try { calc = await api("POST", "/pedidos/calcular", corpoCalculo()); } catch (e) { falha(e); } }
+    const redesenhar = () => desenharSub();
+
+    // cliente
+    const tel = h("input", { inputmode: "tel", placeholder: "Telefone com DDD", value: r.cliente ? r.cliente.telefone : "" });
+    const clienteBox = h("div", { class: "pequeno" }, r.cliente ? r.cliente.nome + " · " + (r.cliente.endereco || "sem endereço") : "Sem cliente (balcão)");
+    const novoNome = h("input", { placeholder: "Nome" }), novoEnd = h("input", { placeholder: "Endereço" });
+    const cadastro = h("div", {});
+    const buscar = async () => {
+      cadastro.replaceChildren(); msg.replaceChildren();
+      try { r.cliente = await api("GET", "/clientes/por-telefone/" + encodeURIComponent(tel.value)); redesenhar(); }
+      catch (e) {
+        cadastro.replaceChildren(h("p", { class: "pequeno" }, "Cliente novo: cadastre na primeira compra."), h("div", { class: "linha" }, campo("Nome", novoNome), campo("Endereço", novoEnd)),
+          h("button", { class: "sec", onclick: async () => {
+            try { r.cliente = await api("POST", "/clientes", { nome: novoNome.value, telefone: tel.value, endereco: novoEnd.value.trim() || null }); redesenhar(); } catch (x) { falha(x); }
+          } }, "Cadastrar e usar"));
+      }
+    };
+    const cartaoCliente = h("div", { class: "cartao" }, h("h2", {}, "1. Pedido e cliente"),
+      h("div", { class: "subnav" }, [["retirada", "Retirada"], ["entrega", "Entrega"]].map(([id, nome]) => h("button", { class: id === r.tipo ? "ativo" : "", onclick: () => { r.tipo = id; redesenhar(); } }, nome))),
+      h("div", { class: "linha" }, campo("Telefone do cliente", tel), h("div", {}, h("label", {}, " "), h("button", { class: "sec", onclick: buscar }, "Buscar"), " ",
+        r.cliente ? h("button", { class: "sec", onclick: () => { r.cliente = null; redesenhar(); } }, "Tirar") : null)), clienteBox, cadastro);
+
+    // item em montagem
+    const tipo = h("select", {}, Object.keys(rotuloTipo).map((t) => h("option", { value: t }, rotuloTipo[t])));
+    const tam = h("select", {}, [["grande", "Grande"], ["broto", "Broto"]].map(([v, n]) => h("option", { value: v }, n)));
+    const nomeProd = (p) => p.nome + (p.categoria ? " (" + p.categoria + ")" : "");
+    const sabor1 = h("select", {}), sabor2 = h("select", {}), outro = h("select", {}), borda = h("select", {});
+    const qtd = h("input", { value: "1", inputmode: "numeric" }), obsItem = h("input", { placeholder: "opcional" });
+    const caixasAd = adicionais.filter((a) => a.tipo === "adicional").map((a) => { const c = h("input", { type: "checkbox", value: a.id }); return [c, a]; });
+    const blocoPizza = h("div", {}), blocoOutro = h("div", {});
+    const preencher = () => {
+      const pizzas = produtos.filter((p) => p.tipo === "pizza");
+      sabor1.replaceChildren(...pizzas.map((p) => h("option", { value: p.id }, nomeProd(p))));
+      sabor2.replaceChildren(h("option", { value: "" }, "Sem segundo sabor"), ...pizzas.map((p) => h("option", { value: p.id }, nomeProd(p))));
+      outro.replaceChildren(...produtos.filter((p) => p.tipo === tipo.value).map((p) => h("option", { value: p.id }, p.nome + " (" + brl(p.preco_unico) + ")")));
+      borda.replaceChildren(h("option", { value: "" }, "Sem borda"), ...adicionais.filter((a) => a.tipo === "borda").map((a) => h("option", { value: a.id }, a.nome)));
+      const pizza = tipo.value === "pizza";
+      blocoPizza.hidden = !pizza; blocoOutro.hidden = pizza;
+      sabor2.disabled = tam.value === "broto"; if (sabor2.disabled) sabor2.value = "";
+    };
+    tipo.onchange = preencher; tam.onchange = preencher;
+    blocoPizza.replaceChildren(campo("Tamanho", tam), campo("Sabor 1", sabor1), campo("Sabor 2 (só Grande)", sabor2), campo("Borda", borda),
+      h("div", {}, h("label", {}, "Adicionais"), caixasAd.map(([c, a]) => h("label", { class: "inline" }, c, " " + a.nome + " "))));
+    blocoOutro.replaceChildren(campo("Produto", outro));
+    preencher();
+    const adicionar = () => {
+      const q = parseInt(qtd.value, 10);
+      let dados, rotulo;
+      if (tipo.value === "pizza") {
+        dados = { tipo: "pizza", produto_id: Number(sabor1.value), tamanho: tam.value, quantidade: q, observacoes: obsItem.value.trim() || null,
+          sabor2_id: sabor2.value ? Number(sabor2.value) : null, adicional_ids: caixasAd.filter(([c]) => c.checked).map(([c]) => Number(c.value)).concat(borda.value ? [Number(borda.value)] : []) };
+      } else dados = { tipo: tipo.value, produto_id: Number(outro.value), quantidade: q, observacoes: obsItem.value.trim() || null };
+      r.itens.push({ dados }); redesenhar();
+    };
+    const cartaoItem = h("div", { class: "cartao" }, h("h2", {}, "2. Itens"), campo("Tipo", tipo), blocoPizza, blocoOutro,
+      h("div", { class: "linha" }, campo("Quantidade", qtd), campo("Observação do item", obsItem)), h("button", { class: "principal", onclick: adicionar }, "Adicionar ao pedido"));
+
+    // resumo
+    const linhasResumo = calc ? calc.itens.map((i, ix) => h("tr", {}, h("td", {}, i.quantidade + "x " + i.descricao + (i.adicionais.length ? " + " + i.adicionais.map((a) => a.nome).join(", ") : "")),
+      h("td", {}, brl(i.total)), h("td", {}, h("button", { class: "sec", onclick: () => { r.itens.splice(ix, 1); redesenhar(); } }, "Remover")))) : [];
+    const ajTipo = h("select", {}, [["", "Sem ajuste"], ["desconto", "Desconto"], ["acrescimo", "Acréscimo"]].map(([v, n]) => h("option", { value: v }, n)));
+    ajTipo.value = r.ajuste ? r.ajuste.tipo : "";
+    const ajValor = entradaPreco(r.ajuste ? r.ajuste.valor : null), ajMotivo = h("input", { value: r.ajuste ? r.ajuste.motivo : "", placeholder: "Motivo obrigatório" });
+    const aplicarAjuste = () => { r.ajuste = ajTipo.value && ajValor.value.trim() ? { tipo: ajTipo.value, valor: ajValor.value.trim(), motivo: ajMotivo.value.trim() || " " } : null; redesenhar(); };
+    const taxa = entradaPreco(r.taxa || null), taxaMotivo = h("input", { value: r.taxaMotivo, placeholder: "Motivo, se diferente do padrão" });
+    taxa.onchange = () => { r.taxa = taxa.value; redesenhar(); }; taxaMotivo.onchange = () => { r.taxaMotivo = taxaMotivo.value; };
+    const aut = entradaAutorizacao();
+    const total = calc ? Number(calc.total) : 0;
+    const pago = r.pagamentos.reduce((a, p) => a + Number(String(p.valor).replace(",", ".")), 0);
+    const cartaoResumo = h("div", { class: "cartao" }, h("h2", {}, "3. Resumo"),
+      calc ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, linhasResumo))) : h("p", { class: "pequeno" }, "Nenhum item ainda."),
+      h("h3", {}, "Desconto ou acréscimo"), h("div", { class: "linha" }, campo("Tipo", ajTipo), campo("Valor (R$)", ajValor), campo("Motivo", ajMotivo)),
+      h("button", { class: "sec", onclick: aplicarAjuste }, "Aplicar ajuste"),
+      r.tipo === "entrega" ? h("div", { class: "linha" }, campo("Taxa de entrega (padrão " + (calc ? brl(calc.taxa_entrega_padrao) : "") + ")", taxa), campo("Motivo da taxa", taxaMotivo)) : null,
+      calc && calc.precisa_autorizacao ? h("div", {}, aviso("erro", "Desconto de " + virgula(calc.desconto_pct) + "% passa do seu limite de " + virgula(calc.limite_desconto_pct) + "%. Um gerente confirma abaixo."), aut.caixa) : null,
+      calc ? h("div", { class: "resultado" }, h("div", { class: "pequeno" }, "Itens " + brl(calc.subtotal) + " · Entrega " + brl(calc.taxa_entrega) + " · Desconto " + brl(calc.desconto) + " · Acréscimo " + brl(calc.acrescimo)),
+        h("div", { class: "total" }, "Total " + brl(calc.total))) : null);
+
+    // pagamento
+    const forma = h("select", {}, formas.map((f) => h("option", { value: f }, f))), valor = entradaPreco();
+    const falta = total - pago;
+    const cartaoPag = h("div", { class: "cartao" }, h("h2", {}, "4. Pagamento"),
+      r.pagamentos.length ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, r.pagamentos.map((p, ix) => h("tr", {}, h("td", {}, p.forma), h("td", {}, brl(Number(String(p.valor).replace(",", ".")).toFixed(2).replace(".", ","))),
+        h("td", {}, h("button", { class: "sec", onclick: () => { r.pagamentos.splice(ix, 1); redesenhar(); } }, "Remover")))))) ) : null,
+      h("div", { class: "linha" }, campo("Forma", forma), campo("Valor recebido (R$)", valor), h("div", {}, h("label", {}, " "), h("button", { class: "sec", onclick: () => {
+        if (!valor.value.trim()) { falha(new Error("Informe o valor recebido.")); return; }
+        r.pagamentos.push({ forma: forma.value, valor: valor.value.trim() }); redesenhar(); } }, "Lançar"))),
+      h("p", { class: "pequeno" }, !calc ? "" : falta > 0.004 ? "Falta receber " + brl(falta.toFixed(2)) : falta < -0.004 ? "Troco " + brl((-falta).toFixed(2)) + " (só sai do dinheiro)" : "Pago por completo."));
+
+    const obs = h("input", { value: r.obs, placeholder: "Observações do pedido (opcional)" }); obs.onchange = () => { r.obs = obs.value; };
+    const urg = h("input", { type: "checkbox" }); urg.checked = r.urgente; urg.onchange = () => { r.urgente = urg.checked; };
+    const confirmar = h("button", { class: "principal", onclick: async () => {
+      if (!r.itens.length) { falha(new Error("Inclua ao menos um item.")); return; }
+      try {
+        const criado = await api("POST", "/pedidos", { ...corpoCalculo(), cliente_id: r.cliente ? r.cliente.id : null, taxa_motivo: r.taxaMotivo.trim() || null,
+          pagamentos: r.pagamentos.map((p) => ({ forma: p.forma, valor: p.valor })), urgente: r.urgente, observacoes: r.obs.trim() || null, autorizacao: aut.valor() });
+        estado.rascunho = null; estado.subv = "dia";
+        await desenharSub(); msg.replaceChildren(aviso("ok", "Pedido " + criado.id_dia + " registrado. Total " + brl(criado.total) + (Number(criado.troco) > 0 ? ". Troco " + brl(criado.troco) + "." : ".")));
+      } catch (e) { falha(e); }
+    } }, "Confirmar pedido");
+    const cartaoFim = h("div", { class: "cartao" }, campo("Observações", obs), h("label", { class: "inline" }, urg, " Pedido urgente"), h("div", {}, confirmar, " ",
+      h("button", { class: "sec", onclick: () => { estado.rascunho = null; redesenhar(); } }, "Limpar")));
+    return h("div", {}, cartaoCliente, h("div", { class: "grade" }, cartaoItem, h("div", {}, cartaoResumo, cartaoPag, cartaoFim)));
+  }
+
+  // ---- pedidos do dia
+  async function pedidosDia() {
+    const lista = await api("GET", "/pedidos");
+    const gerente = ehGerencia();
+    const painel = h("div", {});
+    const linhas = lista.map((p) => {
+      const acoes = [];
+      const passo = async (nova) => { msg.replaceChildren(); try { await api("POST", "/pedidos/" + p.id + "/situacao", { situacao: nova }); desenharSub(); } catch (e) { falha(e); } };
+      const prox = proxSit[p.situacao];
+      if (prox && (gerente || prox === "despachado ou retirado")) acoes.push(h("button", { class: "sec", onclick: () => passo(prox) }, "Avançar para " + rotuloSit[prox]));
+      if (p.situacao === "recebido") acoes.push(h("button", { class: "sec", onclick: async () => { try { await api("POST", "/pedidos/" + p.id + "/urgente", { urgente: !p.urgente }); desenharSub(); } catch (e) { falha(e); } } }, p.urgente ? "Tirar urgência" : "Urgente"));
+      if (p.situacao !== "cancelado" && p.situacao !== "despachado ou retirado") acoes.push(h("button", { class: "sec", onclick: () => formCancelar(p) }, "Cancelar"));
+      acoes.push(h("button", { class: "sec", onclick: () => detalhe(p) }, "Ver"));
+      return h("tr", { class: p.situacao === "cancelado" ? "inativo" : "" }, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), h("td", {}, p.tipo), h("td", {}, p.cliente_nome || "Balcão"),
+        h("td", {}, brl(p.total)), h("td", {}, rotuloSit[p.situacao]), h("td", {}, acoes.flatMap((a) => [a, " "])));
+    });
+    function formCancelar(p) {
+      const motivo = h("input", { placeholder: "Motivo obrigatório" }), aut = entradaAutorizacao();
+      painel.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, "Cancelar pedido #" + p.id_dia), campo("Motivo", motivo), gerente ? null : h("div", {}, h("p", { class: "pequeno" }, "Pedido pago: um gerente confirma com login e senha."), aut.caixa),
+        h("button", { class: "principal", onclick: async () => {
+          try { await api("POST", "/pedidos/" + p.id + "/cancelar", { motivo: motivo.value, autorizacao: aut.valor() }); desenharSub(); } catch (e) { falha(e); }
+        } }, "Confirmar cancelamento"), " ", h("button", { class: "sec", onclick: () => painel.replaceChildren() }, "Voltar")));
+    }
+    async function detalhe(p) {
+      try {
+        const d = await api("GET", "/pedidos/" + p.id);
+        painel.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, "Pedido #" + d.id_dia + " · " + rotuloSit[d.situacao]),
+          h("ul", {}, d.itens.map((i) => h("li", {}, i.quantidade + "x " + i.descricao + (i.adicionais.length ? " + " + i.adicionais.map((a) => a.nome).join(", ") : "") + " · " + brl(i.preco_unit)))),
+          h("p", { class: "pequeno" }, "Pagamentos: " + d.pagamentos.map((x) => x.forma + " " + brl(x.valor) + (Number(x.troco) > 0 ? " (troco " + brl(x.troco) + ")" : "")).join(", ")),
+          d.ajustes.length ? h("p", { class: "pequeno" }, d.ajustes.map((a) => a.tipo + " " + brl(a.valor) + ": " + a.motivo + (a.autorizado ? " (autorizado)" : "")).join("; ")) : null,
+          h("p", { class: "pequeno" }, "Histórico: " + d.eventos.map((e) => rotuloSit[e.situacao] || e.situacao).join(" → ")),
+          h("button", { class: "sec", onclick: () => painel.replaceChildren() }, "Fechar")));
+      } catch (e) { falha(e); }
+    }
+    return h("div", {}, painel, h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos de hoje (" + lista.length + ")"),
+      lista.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Id", "Tipo", "Cliente", "Total", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nenhum pedido hoje.")));
+  }
+  await desenharSub();
+}
+
 async function desenhar() {
   if (!estado.token) return telaLogin();
   if (!estado.eu) {
     try { estado.eu = await api("GET", "/auth/me"); } catch (e) { return telaLogin(); }
   }
   if (estado.eu.deve_trocar_senha) return telaTrocaSenha();
-  const abas = { painel: abaPainel, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
+  const abas = { painel: abaPainel, vendas: abaVendas, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
   await (abas[estado.aba] || abaPainel)();
 }
 

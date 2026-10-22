@@ -511,3 +511,177 @@ class EtapasIn(Base):
         if len(v) > 20 or len({x.etapa_id for x in v}) != len(v):
             raise ValueError("Até 20 etapas, sem repetir.")
         return v
+
+
+# ---------------------------------------------------------------- vendas (fatia 1C)
+FORMAS = ("dinheiro", "pix", "credito", "debito")
+
+
+def _motivo(v: str) -> str:
+    v = (v or "").strip()
+    if not v or len(v) > 200:
+        raise ValueError("Informe o motivo, até 200 caracteres.")
+    return v
+
+
+Motivo = Annotated[str, AfterValidator(_motivo)]
+
+
+class Autorizacao(Base):
+    """Login de gerente, subgerente, proprietário ou administrador, digitado na hora, para passar do limite do perfil."""
+    usuario: str
+    senha: str
+
+    @field_validator("usuario")
+    @classmethod
+    def _u(cls, v):
+        v = v.strip()
+        if not v or len(v) > 60:
+            raise ValueError("Usuário do autorizador inválido.")
+        return v
+
+    @field_validator("senha")
+    @classmethod
+    def _s(cls, v):
+        if not v or len(v) > 200:
+            raise ValueError("Senha do autorizador inválida.")
+        return v
+
+
+class ItemPedidoIn(Base):
+    tipo: str
+    produto_id: int  # pizza: sabor 1; demais tipos: o próprio produto
+    tamanho: Optional[str] = None
+    sabor2_id: Optional[int] = None
+    adicional_ids: list[int] = []
+    quantidade: int = 1
+    observacoes: Optional[str] = None
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in TIPOS_PRODUTO:
+            raise ValueError("Tipo de item inválido.")
+        return v
+
+    @field_validator("tamanho")
+    @classmethod
+    def _tam(cls, v):
+        if v is not None and v not in ("grande", "broto"):
+            raise ValueError("Tamanho deve ser grande ou broto.")
+        return v
+
+    @field_validator("quantidade")
+    @classmethod
+    def _q(cls, v):
+        if not 1 <= v <= 99:
+            raise ValueError("Quantidade de 1 a 99.")
+        return v
+
+    @field_validator("adicional_ids")
+    @classmethod
+    def _a(cls, v):
+        if len(v) > 10 or len(set(v)) != len(v):
+            raise ValueError("Até 10 adicionais, sem repetir.")
+        return v
+
+    @field_validator("observacoes")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(200)(v)
+
+    @model_validator(mode="after")
+    def _coerente(self):
+        if self.tipo == "pizza":
+            if self.tamanho is None:
+                raise ValueError("Pizza exige tamanho.")
+        elif self.tamanho or self.sabor2_id or self.adicional_ids:
+            raise ValueError("Só pizza tem tamanho, segundo sabor, borda e adicionais.")
+        return self
+
+
+class AjusteIn(Base):
+    tipo: str
+    valor: Reais
+    motivo: Motivo
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("desconto", "acrescimo"):
+            raise ValueError("Ajuste deve ser desconto ou acrescimo.")
+        return v
+
+
+class PagamentoIn(Base):
+    forma: str
+    valor: Reais  # valor entregue pelo cliente; só o dinheiro pode passar do que falta e gerar troco
+
+    @field_validator("forma")
+    @classmethod
+    def _f(cls, v):
+        if v not in FORMAS:
+            raise ValueError("Forma de pagamento inválida.")
+        return v
+
+
+class PedidoCalcular(Base):
+    tipo: str = "retirada"
+    itens: list[ItemPedidoIn]
+    ajuste: Optional[AjusteIn] = None
+    taxa_entrega: Optional[Reais] = None
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("retirada", "entrega"):
+            raise ValueError("Tipo deve ser retirada ou entrega.")
+        return v
+
+    @field_validator("itens")
+    @classmethod
+    def _i(cls, v):
+        if not 1 <= len(v) <= 40:
+            raise ValueError("O pedido precisa de 1 a 40 itens.")
+        return v
+
+
+class PedidoCreate(PedidoCalcular):
+    cliente_id: Optional[int] = None
+    taxa_motivo: Optional[str] = None
+    pagamentos: list[PagamentoIn]
+    urgente: bool = False
+    observacoes: Optional[str] = None
+    autorizacao: Optional[Autorizacao] = None
+
+    @field_validator("pagamentos")
+    @classmethod
+    def _p(cls, v):
+        if not 1 <= len(v) <= 6:
+            raise ValueError("Informe de 1 a 6 pagamentos.")
+        return v
+
+    @field_validator("observacoes", "taxa_motivo")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(200)(v)
+
+
+class PedidoCancelar(Base):
+    motivo: Motivo
+    autorizacao: Optional[Autorizacao] = None
+
+
+class PedidoSituacao(Base):
+    situacao: str
+
+    @field_validator("situacao")
+    @classmethod
+    def _s(cls, v):
+        if v not in ("em producao", "acabado", "despachado ou retirado"):
+            raise ValueError("Situação inválida.")
+        return v
+
+
+class PedidoUrgente(Base):
+    urgente: bool

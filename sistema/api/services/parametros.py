@@ -25,6 +25,7 @@ CATALOGO = {
     "fundo_troco_padrao": ("dinheiro", None, "Fundo de troco padrão na abertura do caixa (R$)"),
     "tolerancia_diferenca_caixa": ("dinheiro", None, "Tolerância de diferença no fechamento do caixa (R$)"),
     "sangria_limite_gerente": ("dinheiro", None, "Valor de sangria ou suprimento acima do qual o gerente autoriza (R$)"),
+    "taxa_entrega_padrao": ("dinheiro", None, "Taxa de entrega cobrada do cliente (R$)"),
     "perda_padrao_pct": ("pct", "10", "Perda padrão (%) de cada insumo nas fichas técnicas"),
     "forno_tempo_min": ("decimal_pos", "2", "Tempo de forno por pizza (minutos)"),
     "forno_pizzas_por_vez": ("inteiro_pos", None, "Pizzas que o forno comporta por vez"),
