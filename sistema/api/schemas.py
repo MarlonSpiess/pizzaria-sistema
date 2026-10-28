@@ -1,5 +1,6 @@
 """Modelos de entrada (pydantic estrito). Toda entrada passa por aqui antes de tocar no banco."""
 import re
+from datetime import date
 import unicodedata
 from typing import Optional
 
@@ -758,3 +759,1205 @@ class ContagemMassaIn(LoteMassaIn):
 
 class PerdaMassaIn(LoteMassaIn):
     motivo_id: int
+
+
+# ---------------------------------------------------------------- caixa (fatia 1E)
+class CaixaAbrir(Base):
+    fundo_troco: Optional[ReaisOuZero] = None  # vazio usa o padrão dos parâmetros
+
+
+class MovimentoIn(Base):
+    tipo: str
+    valor: Reais
+    motivo_id: int
+    observacao: Optional[str] = None
+    comprovante: Optional[str] = None
+    autorizacao: Optional[Autorizacao] = None
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("sangria", "suprimento"):
+            raise ValueError("Tipo deve ser sangria ou suprimento.")
+        return v
+
+    @field_validator("observacao", "comprovante")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(200)(v)
+
+
+class ContagemLinha(Base):
+    forma: str
+    valor: ReaisOuZero
+
+    @field_validator("forma")
+    @classmethod
+    def _f(cls, v):
+        if v not in FORMAS:
+            raise ValueError("Forma de pagamento inválida.")
+        return v
+
+
+class ContagemIn(Base):
+    contagens: list[ContagemLinha]
+
+
+class FecharIn(Base):
+    justificativa: Optional[str] = None
+    autorizacao: Optional[Autorizacao] = None
+
+    @field_validator("justificativa")
+    @classmethod
+    def _j(cls, v):
+        return _texto_opcional(300)(v)
+
+
+class MotivoMovimentoIn(Base):
+    nome: str
+    tipo: str
+    vira_despesa: bool = False
+
+    @field_validator("nome")
+    @classmethod
+    def _n(cls, v):
+        return _nome(v)
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("sangria", "suprimento"):
+            raise ValueError("Tipo deve ser sangria ou suprimento.")
+        return v
+
+
+class MotivoMovimentoUpdate(Base):
+    nome: Optional[str] = None
+    vira_despesa: Optional[bool] = None
+    ativo: Optional[bool] = None
+
+    @field_validator("nome")
+    @classmethod
+    def _n(cls, v):
+        return None if v is None else _nome(v)
+
+
+class MaquininhaIn(Base):
+    nome: str
+
+    @field_validator("nome")
+    @classmethod
+    def _n(cls, v):
+        return _nome(v)
+
+
+class MaquininhaUpdate(Base):
+    nome: Optional[str] = None
+    ativo: Optional[bool] = None
+
+    @field_validator("nome")
+    @classmethod
+    def _n(cls, v):
+        return None if v is None else _nome(v)
+
+
+class RegraRecebimentoIn(Base):
+    forma: str
+    maquininha_id: Optional[int] = None
+    taxa_pct: Percentual = "0"
+    prazo_dias: int = 0
+
+    @field_validator("forma")
+    @classmethod
+    def _f(cls, v):
+        if v not in FORMAS:
+            raise ValueError("Forma de pagamento inválida.")
+        return v
+
+    @field_validator("prazo_dias")
+    @classmethod
+    def _p(cls, v):
+        if not 0 <= v <= 365:
+            raise ValueError("Prazo de 0 a 365 dias.")
+        return v
+
+
+class EntregaIn(Base):
+    entregador_id: int
+    valor_entrega: Optional[ReaisOuZero] = None  # vazio usa o padrão dos parâmetros
+
+
+class AcertoIn(Base):
+    entregador_id: int
+    diaria: Optional[ReaisOuZero] = None  # vazio usa o padrão; só vale na primeira vez do dia
+
+
+class CfIn(Base):
+    numero_cf: str
+
+    @field_validator("numero_cf")
+    @classmethod
+    def _c(cls, v):
+        v = v.strip()
+        if not v or len(v) > 40:
+            raise ValueError("Informe o número do CF, até 40 caracteres.")
+        return v
+
+
+# ---------------------------------------------------------------- estoques (fatia 2A)
+_QTD0 = re.compile(r"^[0-9]{1,9}([.,][0-9]{1,4})?$")
+_PRECO4 = re.compile(r"^[0-9]{1,8}([.,][0-9]{1,4})?$")
+QuantidadeOuZero = Annotated[str, AfterValidator(lambda v: _numero(_QTD0, v, rotulo="Quantidade"))]
+DataISO = Annotated[str, AfterValidator(lambda v: date.fromisoformat(v))]  # entra como texto AAAA-MM-DD; o valor validado já é date
+PrecoUnit = Annotated[str, AfterValidator(lambda v: _numero(_PRECO4, v, positivo=True, rotulo="Preço"))]
+
+
+class LocalIn(Base):
+    nome: str
+    _n = field_validator("nome")(_nome)
+
+
+class LocalUpdate(Base):
+    nome: Optional[str] = None
+    ativo: Optional[bool] = None
+
+    @field_validator("nome")
+    @classmethod
+    def _n(cls, v):
+        return None if v is None else _nome(v)
+
+
+class ItemEstoqueIn(Base):
+    unidade_compra: Optional[str] = None
+    fator_compra: Optional[Quantidade] = None
+    local_padrao_id: Optional[int] = None
+    estoque_minimo: Optional[QuantidadeOuZero] = None
+    ponto_pedido: Optional[QuantidadeOuZero] = None
+    estoque_maximo: Optional[QuantidadeOuZero] = None
+    controla_lote: Optional[bool] = None
+    critico: Optional[bool] = None
+    fornecedor_habitual_id: Optional[int] = None
+
+    @field_validator("unidade_compra")
+    @classmethod
+    def _u(cls, v):
+        return _texto_opcional(20)(v.strip() if v else v)
+
+
+class MovimentoEstoqueIn(Base):
+    tipo: str
+    item_id: int
+    quantidade: Quantidade
+    local_id: Optional[int] = None
+    destino_id: Optional[int] = None
+    lote_id: Optional[int] = None
+    motivo: Optional[str] = None
+    custo_unit: Optional[PrecoUnit] = None
+    lote_codigo: Optional[str] = None
+    validade: Optional[DataISO] = None
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("perda", "consumo_interno", "entrada_inicial", "transferencia"):
+            raise ValueError("Tipo deve ser perda, consumo_interno, entrada_inicial ou transferencia.")
+        return v
+
+    @field_validator("motivo", "lote_codigo")
+    @classmethod
+    def _m(cls, v):
+        return _texto_opcional(200)(v.strip() if v else v)
+
+
+class InventarioIn(Base):
+    tipo: str
+    item_ids: Optional[list[int]] = None
+    observacao: Optional[str] = None
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("diario", "mensal", "avulso"):
+            raise ValueError("Tipo deve ser diario, mensal ou avulso.")
+        return v
+
+    @field_validator("observacao")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(200)(v)
+
+
+class ContagemInventarioLinha(Base):
+    item_id: int
+    contado: QuantidadeOuZero
+
+
+class ContagemInventarioIn(Base):
+    linhas: list[ContagemInventarioLinha]
+
+    @field_validator("linhas")
+    @classmethod
+    def _l(cls, v):
+        if not v or len({x.item_id for x in v}) != len(v) or len(v) > 500:
+            raise ValueError("Informe de 1 a 500 itens, sem repetir.")
+        return v
+
+
+class MotivoAjuste(Base):
+    item_id: int
+    motivo: str
+
+    @field_validator("motivo")
+    @classmethod
+    def _m(cls, v):
+        v = v.strip()
+        if not v or len(v) > 200:
+            raise ValueError("Motivo obrigatório, até 200 caracteres.")
+        return v
+
+
+class FecharInventarioIn(Base):
+    motivos: list[MotivoAjuste] = []
+    confirmar_nao_contados: bool = False
+
+
+# ---------------------------------------------------------------- compras (fatia 2B)
+FORMAS_FORNECEDOR = ("dinheiro", "pix", "boleto", "cartao", "prazo", "outro")
+
+
+def _forma_forn(v):
+    if v is not None and v not in FORMAS_FORNECEDOR:
+        raise ValueError("Forma de pagamento inválida.")
+    return v
+
+
+class FornecedorIn(Base):
+    nome: str
+    contato: Optional[str] = None
+    telefone: Optional[str] = None
+    prazo_dias: Optional[int] = None
+    forma_pagamento: Optional[str] = None
+    observacao: Optional[str] = None
+    _n = field_validator("nome")(_nome)
+    _f = field_validator("forma_pagamento")(_forma_forn)
+
+    @field_validator("contato", "telefone")
+    @classmethod
+    def _c(cls, v):
+        return _texto_opcional(60)(v.strip() if v else v)
+
+    @field_validator("observacao")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(200)(v)
+
+    @field_validator("prazo_dias")
+    @classmethod
+    def _p(cls, v):
+        if v is not None and not 0 <= v <= 365:
+            raise ValueError("Prazo de 0 a 365 dias.")
+        return v
+
+
+class FornecedorUpdate(Base):
+    nome: Optional[str] = None
+    contato: Optional[str] = None
+    telefone: Optional[str] = None
+    prazo_dias: Optional[int] = None
+    forma_pagamento: Optional[str] = None
+    observacao: Optional[str] = None
+    ativo: Optional[bool] = None
+    _f = field_validator("forma_pagamento")(_forma_forn)
+
+    @field_validator("nome")
+    @classmethod
+    def _n(cls, v):
+        return None if v is None else _nome(v)
+
+    @field_validator("prazo_dias")
+    @classmethod
+    def _p(cls, v):
+        if v is not None and not 0 <= v <= 365:
+            raise ValueError("Prazo de 0 a 365 dias.")
+        return v
+
+
+class ItemQtd(Base):
+    item_id: int
+    quantidade: Quantidade
+
+
+class ListaGerarIn(Base):
+    incluir_sugeridos: bool = True
+    itens: list[ItemQtd] = []
+    observacao: Optional[str] = None
+
+    @field_validator("itens")
+    @classmethod
+    def _i(cls, v):
+        if len(v) > 200 or len({x.item_id for x in v}) != len(v):
+            raise ValueError("Até 200 itens, sem repetir.")
+        return v
+
+    @field_validator("observacao")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(200)(v)
+
+
+class ListaItemUpdate(Base):
+    quantidade: Optional[Quantidade] = None
+    removido: Optional[bool] = None
+    motivo: Optional[str] = None
+
+    @field_validator("motivo")
+    @classmethod
+    def _m(cls, v):
+        return _texto_opcional(200)(v.strip() if v else v)
+
+
+class CotacaoIn(Base):
+    lista_item_id: int
+    fornecedor_id: int
+    preco: PrecoUnit  # por unidade de compra do item
+    prazo_dias: Optional[int] = None
+    condicao: Optional[str] = None
+
+    @field_validator("condicao")
+    @classmethod
+    def _c(cls, v):
+        return _texto_opcional(120)(v.strip() if v else v)
+
+    @field_validator("prazo_dias")
+    @classmethod
+    def _p(cls, v):
+        if v is not None and not 0 <= v <= 365:
+            raise ValueError("Prazo de 0 a 365 dias.")
+        return v
+
+
+class EscolhaIn(Base):
+    lista_item_id: int
+    fornecedor_id: int
+    quantidade: Quantidade
+    preco: Optional[PrecoUnit] = None  # vazio usa a cotação do fornecedor ou, se for o habitual, o último preço pago
+
+
+class DefinirIn(Base):
+    escolhas: list[EscolhaIn]
+
+    @field_validator("escolhas")
+    @classmethod
+    def _e(cls, v):
+        if not v or len(v) > 400:
+            raise ValueError("Informe de 1 a 400 escolhas.")
+        return v
+
+
+class PedidoItemIn(Base):
+    item_id: int
+    quantidade: Quantidade
+    preco: PrecoUnit
+
+
+class PedidoCompraIn(Base):
+    fornecedor_id: int
+    itens: list[PedidoItemIn]
+    prazo_dias: Optional[int] = None
+    forma_pagamento: Optional[str] = None
+    previsao_entrega: Optional[DataISO] = None
+    observacao: Optional[str] = None
+    _f = field_validator("forma_pagamento")(_forma_forn)
+
+    @field_validator("itens")
+    @classmethod
+    def _i(cls, v):
+        if not v or len(v) > 200 or len({x.item_id for x in v}) != len(v):
+            raise ValueError("Informe de 1 a 200 itens, sem repetir.")
+        return v
+
+    @field_validator("observacao")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(200)(v)
+
+
+class RecebItemIn(Base):
+    item_id: int
+    quantidade: Quantidade
+    preco: PrecoUnit
+    lote_codigo: Optional[str] = None
+    validade: Optional[DataISO] = None
+    diferenca_motivo: Optional[str] = None
+
+    @field_validator("lote_codigo", "diferenca_motivo")
+    @classmethod
+    def _t(cls, v):
+        return _texto_opcional(120)(v.strip() if v else v)
+
+
+class RecebimentoIn(Base):
+    pedido_id: Optional[int] = None
+    fornecedor_id: Optional[int] = None
+    numero_nota: Optional[str] = None
+    data_nota: DataISO
+    conferente_id: Optional[int] = None
+    itens: list[RecebItemIn]
+    frete: Optional[ReaisOuZero] = None
+    desconto: Optional[ReaisOuZero] = None
+    forma_pagamento: Optional[str] = None
+    vencimento: Optional[DataISO] = None
+    movimento_caixa_id: Optional[int] = None
+    observacao: Optional[str] = None
+    _f = field_validator("forma_pagamento")(_forma_forn)
+
+    @field_validator("itens")
+    @classmethod
+    def _i(cls, v):
+        if not v or len(v) > 200 or len({x.item_id for x in v}) != len(v):
+            raise ValueError("Informe de 1 a 200 itens, sem repetir.")
+        return v
+
+    @field_validator("numero_nota", "observacao")
+    @classmethod
+    def _t(cls, v):
+        return _texto_opcional(120)(v.strip() if v else v)
+
+
+# ---------------------------------------------------------------- contas
+from decimal import Decimal  # noqa: E402
+
+FORMAS_BAIXA = ("dinheiro", "pix", "credito", "debito", "boleto", "transferencia")
+NATUREZAS = ("fixa", "variavel", "pessoal", "tributo", "financiamento", "retirada", "outra")
+TIPOS_CONTA = ("corrente", "poupanca", "caixa_fisico", "outro")
+
+
+class ContaBancariaIn(Base):
+    nome: str
+    banco: Optional[str] = None
+    agencia: Optional[str] = None
+    numero: Optional[str] = None
+    tipo: str = "corrente"
+    saldo_inicial: ReaisOuZero = "0"
+    saldo_inicial_data: DataISO
+    _n = field_validator("nome")(_nome)
+
+    @field_validator("banco", "agencia", "numero")
+    @classmethod
+    def _t(cls, v):
+        return _texto_opcional(60)(v.strip() if v else v)
+
+    @field_validator("tipo")
+    @classmethod
+    def _tp(cls, v):
+        if v not in TIPOS_CONTA:
+            raise ValueError("Tipo de conta inválido.")
+        return v
+
+
+class AtivoIn(Base):
+    ativo: bool
+
+
+class TipoDespesaIn(Base):
+    nome: str
+    natureza: str
+    _n = field_validator("nome")(_nome)
+
+    @field_validator("natureza")
+    @classmethod
+    def _nt(cls, v):
+        if v not in NATUREZAS:
+            raise ValueError("Natureza inválida.")
+        return v
+
+
+class CanalRepasseIn(Base):
+    canal: str
+    taxa_pct: str = "0"
+    prazo_dias: int = 0
+    _n = field_validator("canal")(_nome)
+
+    @field_validator("taxa_pct")
+    @classmethod
+    def _tx(cls, v):
+        try:
+            x = Decimal(v.replace(",", "."))
+            if not x.is_finite():
+                raise ValueError("Valor inválido.")
+        except Exception as e:
+            raise ValueError("Taxa inválida.") from e
+        if x < 0 or x > 100:
+            raise ValueError("A taxa fica entre 0 e 100.")
+        return str(x.quantize(Decimal("0.01")))
+
+    @field_validator("prazo_dias")
+    @classmethod
+    def _pz(cls, v):
+        if not 0 <= v <= 365:
+            raise ValueError("O prazo fica entre 0 e 365 dias.")
+        return v
+
+
+class RecorrenteIn(Base):
+    descricao: str
+    tipo_despesa_id: int
+    fornecedor_id: Optional[int] = None
+    valor: Reais
+    dia_vencimento: int
+    inicio: DataISO
+    fim: Optional[DataISO] = None
+
+    @field_validator("descricao")
+    @classmethod
+    def _d(cls, v):
+        return _nome(v)
+
+    @field_validator("dia_vencimento")
+    @classmethod
+    def _dv(cls, v):
+        if not 1 <= v <= 28:
+            raise ValueError("O dia de vencimento fica entre 1 e 28.")
+        return v
+
+
+class TituloIn(Base):
+    sentido: str
+    descricao: str
+    valor: Reais
+    vencimento: DataISO
+    fornecedor_id: Optional[int] = None
+    tipo_despesa_id: Optional[int] = None
+    canal: Optional[str] = None
+    competencia: Optional[DataISO] = None
+    parcelas: int = 1
+    comprovante: Optional[str] = None
+
+    @field_validator("sentido")
+    @classmethod
+    def _s(cls, v):
+        if v not in ("pagar", "receber"):
+            raise ValueError("Sentido: pagar ou receber.")
+        return v
+
+    @field_validator("descricao")
+    @classmethod
+    def _d(cls, v):
+        return _nome(v)
+
+    @field_validator("canal", "comprovante")
+    @classmethod
+    def _t(cls, v):
+        return _texto_opcional(120)(v.strip() if v else v)
+
+    @field_validator("parcelas")
+    @classmethod
+    def _p(cls, v):
+        if not 1 <= v <= 60:
+            raise ValueError("Parcelas: de 1 a 60.")
+        return v
+
+
+class CancelarTituloIn(Base):
+    motivo: str
+
+    @field_validator("motivo")
+    @classmethod
+    def _m(cls, v):
+        if not v or len(v) > 200:
+            raise ValueError("Motivo obrigatório, até 200 caracteres.")
+        return v
+
+
+class BaixaIn(Base):
+    data: Optional[DataISO] = None
+    valor: Optional[Reais] = None
+    desconto: ReaisOuZero = "0"
+    juros: ReaisOuZero = "0"
+    multa: ReaisOuZero = "0"
+    forma: str
+    conta_id: int
+
+    @field_validator("forma")
+    @classmethod
+    def _f(cls, v):
+        if v not in FORMAS_BAIXA:
+            raise ValueError("Forma de pagamento inválida.")
+        return v
+
+
+class ExtratoIn(Base):
+    conta_id: int
+    data: DataISO
+    descricao: str
+    valor: str  # com sinal: entrada positiva, saída negativa
+
+    @field_validator("descricao")
+    @classmethod
+    def _d(cls, v):
+        return _nome(v)
+
+    @field_validator("valor")
+    @classmethod
+    def _v(cls, v):
+        neg = v.startswith("-")
+        x = parse_reais(v[1:] if neg else v)
+        if x == 0:
+            raise ValueError("Valor zero não é aceito.")
+        return ("-" if neg else "") + str(x)
+
+
+class ConciliarIn(Base):
+    extrato_id: int
+    baixa_id: int
+
+
+def _dec3(v):
+    x = Decimal(v.replace(",", "."))
+    if not x.is_finite():
+        raise ValueError("Número inválido.")
+    return str(x.quantize(Decimal("0.001")))
+
+
+# ---------------------------------------------------------------- custos
+class FatorCorrecaoIn(Base):
+    fator_correcao: str
+
+    @field_validator("fator_correcao")
+    @classmethod
+    def _f(cls, v):
+        try:
+            x = Decimal(v.replace(",", "."))
+            if not x.is_finite():
+                raise ValueError("Valor inválido.")
+        except Exception as e:
+            raise ValueError("Fator inválido.") from e
+        if x < 1 or x > 10:
+            raise ValueError("O fator de correção fica entre 1 e 10 (1 quando não houver perda na limpeza).")
+        return str(x.quantize(Decimal("0.001")))
+
+
+class FecharCmvIn(Base):
+    mes: str  # AAAA-MM
+
+    @field_validator("mes")
+    @classmethod
+    def _m(cls, v):
+        if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", v):
+            raise ValueError("Mês no formato AAAA-MM.")
+        return v
+
+
+# ---------------------------------------------------------------- imobilizado
+METODOS_DEP = ("fiscal", "vida_util")
+TIPOS_BAIXA = ("venda", "perda", "descarte", "doacao")
+TIPOS_OS = ("preventiva", "preditiva", "corretiva")
+
+
+class CategoriaBemIn(Base):
+    nome: str
+    taxa_fiscal_pct: str
+    veiculo: bool = False
+    _n = field_validator("nome")(_nome)
+
+    @field_validator("taxa_fiscal_pct")
+    @classmethod
+    def _t(cls, v):
+        try:
+            x = Decimal(v.replace(",", "."))
+            if not x.is_finite():
+                raise ValueError("Valor inválido.")
+        except Exception as e:
+            raise ValueError("Taxa inválida.") from e
+        if not x.is_finite() or x < 1 or x > 100:
+            raise ValueError("A taxa anual fica entre 1 e 100.")
+        return str(x.quantize(Decimal("0.01")))
+
+
+def _data_bem(v):
+    if v is not None and not 2000 <= v.year <= 2100:
+        raise ValueError("Data fora do intervalo (2000 a 2100).")
+    return v
+
+
+class BemIn(Base):
+    codigo: str
+    nome: str
+    categoria_id: int
+    valor_aquisicao: Reais
+    data_aquisicao: DataISO
+    inicio_uso: Optional[DataISO] = None
+    fornecedor_id: Optional[int] = None
+    numero_nota: Optional[str] = None
+    local_texto: Optional[str] = None
+    responsavel: Optional[str] = None
+    numero_serie: Optional[str] = None
+    placa: Optional[str] = None
+    quilometragem: Optional[int] = None
+    critico: bool = False
+    metodo: str = "fiscal"
+    vida_util_meses: Optional[int] = None
+    valor_residual: ReaisOuZero = "0"
+    garantia_ate: Optional[DataISO] = None
+    seguro_ate: Optional[DataISO] = None
+    apolice: Optional[str] = None
+    _n = field_validator("nome")(_nome)
+
+    @field_validator("codigo")
+    @classmethod
+    def _c(cls, v):
+        if not v or len(v) > 40:
+            raise ValueError("Plaqueta obrigatória, até 40 caracteres.")
+        return v
+
+    @field_validator("numero_nota", "local_texto", "responsavel", "numero_serie", "placa", "apolice")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(80)(v.strip() if v else v)
+
+    @field_validator("metodo")
+    @classmethod
+    def _m(cls, v):
+        if v not in METODOS_DEP:
+            raise ValueError("Método de depreciação inválido.")
+        return v
+
+    @field_validator("vida_util_meses")
+    @classmethod
+    def _v(cls, v):
+        if v is not None and not 1 <= v <= 600:
+            raise ValueError("Vida útil entre 1 e 600 meses.")
+        return v
+
+    @field_validator("quilometragem")
+    @classmethod
+    def _k(cls, v):
+        if v is not None and not 0 <= v <= 5_000_000:
+            raise ValueError("Quilometragem inválida.")
+        return v
+
+    _db = field_validator("data_aquisicao", "inicio_uso")(_data_bem)
+
+
+class BemUpdate(Base):
+    nome: Optional[str] = None
+    local_texto: Optional[str] = None
+    responsavel: Optional[str] = None
+    numero_serie: Optional[str] = None
+    placa: Optional[str] = None
+    quilometragem: Optional[int] = None
+    critico: Optional[bool] = None
+    inicio_uso: Optional[DataISO] = None
+    metodo: Optional[str] = None
+    vida_util_meses: Optional[int] = None
+    valor_residual: Optional[ReaisOuZero] = None
+    garantia_ate: Optional[DataISO] = None
+    seguro_ate: Optional[DataISO] = None
+    apolice: Optional[str] = None
+    _n = field_validator("nome")(lambda cls, v: _nome(v) if v is not None else v)
+
+    @field_validator("local_texto", "responsavel", "numero_serie", "placa", "apolice")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(80)(v.strip() if v else v)
+
+    @field_validator("metodo")
+    @classmethod
+    def _m(cls, v):
+        if v is not None and v not in METODOS_DEP:
+            raise ValueError("Método de depreciação inválido.")
+        return v
+
+    _db = field_validator("inicio_uso")(_data_bem)
+
+
+class BaixaBemIn(Base):
+    tipo: str
+    data: DataISO
+    valor: ReaisOuZero = "0"
+    motivo: str
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in TIPOS_BAIXA:
+            raise ValueError("Tipo de baixa inválido.")
+        return v
+
+    @field_validator("motivo")
+    @classmethod
+    def _m(cls, v):
+        if not v or len(v) > 200:
+            raise ValueError("Motivo obrigatório, até 200 caracteres.")
+        return v
+
+
+class ConferenciaBemIn(Base):
+    encontrado: bool
+    local_encontrado: Optional[str] = None
+    observacao: Optional[str] = None
+
+    @field_validator("local_encontrado", "observacao")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(120)(v.strip() if v else v)
+
+
+class PlanoIn(Base):
+    tarefa: str
+    periodicidade_dias: int
+    antecedencia_dias: int = 7
+    base_em: Optional[DataISO] = None
+
+    @field_validator("tarefa")
+    @classmethod
+    def _t(cls, v):
+        return _nome(v)
+
+    @field_validator("periodicidade_dias")
+    @classmethod
+    def _p(cls, v):
+        if not 1 <= v <= 3650:
+            raise ValueError("Periodicidade de 1 a 3650 dias.")
+        return v
+
+    @field_validator("antecedencia_dias")
+    @classmethod
+    def _a(cls, v):
+        if not 0 <= v <= 365:
+            raise ValueError("Antecedência de 0 a 365 dias.")
+        return v
+
+
+class LimiteLeituraIn(Base):
+    grandeza: str
+    unidade: Optional[str] = None
+    minimo: Optional[str] = None
+    maximo: Optional[str] = None
+
+    @field_validator("grandeza")
+    @classmethod
+    def _g(cls, v):
+        return _nome(v)
+
+    @field_validator("unidade")
+    @classmethod
+    def _u(cls, v):
+        return _texto_opcional(20)(v.strip() if v else v)
+
+    @field_validator("minimo", "maximo")
+    @classmethod
+    def _n(cls, v):
+        if v is None:
+            return v
+        try:
+            return _dec3(v)
+        except Exception as e:
+            raise ValueError("Número inválido.") from e
+
+
+class LeituraIn(Base):
+    grandeza: str
+    valor: str
+    data: Optional[DataISO] = None
+
+    @field_validator("valor")
+    @classmethod
+    def _v(cls, v):
+        try:
+            return _dec3(v)
+        except Exception as e:
+            raise ValueError("Valor inválido.") from e
+
+
+class OsIn(Base):
+    bem_id: int
+    tipo: str
+    descricao: str
+    plano_id: Optional[int] = None
+    parou: bool = False
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in TIPOS_OS:
+            raise ValueError("Tipo de ordem inválido.")
+        return v
+
+    @field_validator("descricao")
+    @classmethod
+    def _d(cls, v):
+        if not v or len(v) > 300:
+            raise ValueError("Descrição obrigatória, até 300 caracteres.")
+        return v
+
+
+class OsIniciarIn(Base):
+    executor_tipo: str
+    executor_nome: Optional[str] = None
+    fornecedor_id: Optional[int] = None
+
+    @field_validator("executor_tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("funcionario", "terceiro"):
+            raise ValueError("Executor: funcionário ou terceiro.")
+        return v
+
+    @field_validator("executor_nome")
+    @classmethod
+    def _n(cls, v):
+        return _texto_opcional(80)(v.strip() if v else v)
+
+
+class OsPecaIn(Base):
+    item_id: int
+    quantidade: str
+
+    @field_validator("quantidade")
+    @classmethod
+    def _q(cls, v):
+        try:
+            x = Decimal(v.replace(",", "."))
+            if not x.is_finite():
+                raise ValueError("Valor inválido.")
+        except Exception as e:
+            raise ValueError("Quantidade inválida.") from e
+        if x <= 0 or x > 1_000_000:
+            raise ValueError("Quantidade inválida.")
+        return str(x.quantize(Decimal("0.0001")))
+
+
+class OsFecharIn(Base):
+    servico_feito: str
+    causa: Optional[str] = None
+    mao_obra: ReaisOuZero = "0"
+    tipo_despesa_id: Optional[int] = None
+    vencimento: Optional[DataISO] = None
+
+    @field_validator("servico_feito")
+    @classmethod
+    def _s(cls, v):
+        if not v or len(v) > 300:
+            raise ValueError("Descreva o serviço feito, até 300 caracteres.")
+        return v
+
+    @field_validator("causa")
+    @classmethod
+    def _c(cls, v):
+        return _texto_opcional(200)(v.strip() if v else v)
+
+
+# ---------------------------------------------------------------- rh
+TIPOS_CONTRATO = ("clt", "intermitente", "freelancer", "diarista", "prolabore", "outro")
+FORMAS_PAGTO_RH = ("mensal", "diaria", "hora")
+TIPOS_AUSENCIA = ("ferias", "afastamento", "atestado", "falta")
+HORA = r"^([01]\d|2[0-3]):[0-5]\d$"
+
+
+def _hora(v):
+    if not re.fullmatch(HORA, v):
+        raise ValueError("Hora no formato HH:MM.")
+    return v
+
+
+class FuncaoRhIn(Base):
+    nome: str
+    _n = field_validator("nome")(_nome)
+
+
+class EscalaTipoIn(Base):
+    nome: str
+    dias_trabalho: int
+    dias_folga: int
+    horas_semana: str
+    _n = field_validator("nome")(_nome)
+
+    @field_validator("dias_trabalho")
+    @classmethod
+    def _dt(cls, v):
+        if not 1 <= v <= 7:
+            raise ValueError("Dias de trabalho de 1 a 7.")
+        return v
+
+    @field_validator("dias_folga")
+    @classmethod
+    def _df(cls, v):
+        if not 0 <= v <= 7:
+            raise ValueError("Dias de folga de 0 a 7.")
+        return v
+
+    @field_validator("horas_semana")
+    @classmethod
+    def _hs(cls, v):
+        try:
+            x = Decimal(v.replace(",", "."))
+            if not x.is_finite():
+                raise ValueError("Valor inválido.")
+        except Exception as e:
+            raise ValueError("Horas inválidas.") from e
+        if x <= 0 or x > 60:
+            raise ValueError("Horas por semana de 1 a 60.")
+        return str(x.quantize(Decimal("0.01")))
+
+
+class FuncionarioIn(Base):
+    nome: str
+    telefone: Optional[str] = None
+    funcao_id: int
+    usuario_id: Optional[int] = None
+    admissao: DataISO
+    preco_especial: bool = False
+    _n = field_validator("nome")(_nome)
+    _t = field_validator("telefone")(lambda cls, v: _telefone(v) if v else None)
+
+
+class FuncionarioUpdate(Base):
+    nome: Optional[str] = None
+    telefone: Optional[str] = None
+    funcao_id: Optional[int] = None
+    usuario_id: Optional[int] = None
+    preco_especial: Optional[bool] = None
+    _n = field_validator("nome")(lambda cls, v: _nome(v) if v is not None else v)
+    _t = field_validator("telefone")(lambda cls, v: _telefone(v) if v else None)
+
+
+class DesligarIn(Base):
+    data: DataISO
+    motivo: str
+
+    @field_validator("motivo")
+    @classmethod
+    def _m(cls, v):
+        if not v or len(v) > 200:
+            raise ValueError("Motivo obrigatório, até 200 caracteres.")
+        return v
+
+
+class ContratoIn(Base):
+    tipo: str
+    escala_id: Optional[int] = None
+    forma_pagamento: str
+    valor: Reais
+    vigente_desde: DataISO
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in TIPOS_CONTRATO:
+            raise ValueError("Tipo de contrato inválido.")
+        return v
+
+    @field_validator("forma_pagamento")
+    @classmethod
+    def _f(cls, v):
+        if v not in FORMAS_PAGTO_RH:
+            raise ValueError("Forma de pagamento inválida.")
+        return v
+
+
+class BeneficioIn(Base):
+    nome: str
+    valor_mensal: Reais
+    _n = field_validator("nome")(_nome)
+
+
+class TurnoIn(Base):
+    funcionario_id: int
+    data: DataISO
+    funcao_id: int
+    inicio: str
+    fim: str
+    _i = field_validator("inicio")(lambda cls, v: _hora(v))
+    _f = field_validator("fim")(lambda cls, v: _hora(v))
+
+
+class PontoIn(Base):
+    funcionario_id: int
+    data: DataISO
+    entrada: str
+    saida: str
+    _e = field_validator("entrada")(lambda cls, v: _hora(v))
+    _s = field_validator("saida")(lambda cls, v: _hora(v))
+
+
+class BancoHorasIn(Base):
+    funcionario_id: int
+    data: DataISO
+    minutos: int
+    motivo: str
+
+    @field_validator("minutos")
+    @classmethod
+    def _m(cls, v):
+        if v == 0 or abs(v) > 1440:
+            raise ValueError("Minutos diferentes de zero, até 1440 por lançamento.")
+        return v
+
+    @field_validator("motivo")
+    @classmethod
+    def _mo(cls, v):
+        if not v or len(v) > 200:
+            raise ValueError("Motivo obrigatório, até 200 caracteres.")
+        return v
+
+
+class AusenciaIn(Base):
+    funcionario_id: int
+    tipo: str
+    inicio: DataISO
+    fim: DataISO
+    motivo: Optional[str] = None
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in TIPOS_AUSENCIA:
+            raise ValueError("Tipo inválido.")
+        return v
+
+    @field_validator("motivo")
+    @classmethod
+    def _m(cls, v):
+        return _texto_opcional(200)(v.strip() if v else v)
+
+
+class DocumentoRhIn(Base):
+    funcionario_id: int
+    nome: str
+    emitido: Optional[DataISO] = None
+    validade: DataISO
+    observacao: Optional[str] = None
+    _n = field_validator("nome")(_nome)
+
+    @field_validator("observacao")
+    @classmethod
+    def _o(cls, v):
+        return _texto_opcional(200)(v.strip() if v else v)
+
+
+class FolhaResumoIn(Base):
+    competencia: str  # AAAA-MM
+    funcionario_id: int
+    bruto: Reais
+    encargos: ReaisOuZero = "0"
+    beneficios: ReaisOuZero = "0"
+
+    @field_validator("competencia")
+    @classmethod
+    def _c(cls, v):
+        if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", v):
+            raise ValueError("Competência no formato AAAA-MM.")
+        return v
+
+
+class FolhaLancarIn(Base):
+    competencia: str
+    vencimento: Optional[DataISO] = None
+
+    @field_validator("competencia")
+    @classmethod
+    def _c(cls, v):
+        if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", v):
+            raise ValueError("Competência no formato AAAA-MM.")
+        return v

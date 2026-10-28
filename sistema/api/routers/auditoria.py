@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 
 from api.config import LOJA_ID
 from api.database import get_db
-from api.security import requer
+from api.security import PERMISSOES, requer
 
 router = APIRouter(prefix="/auditoria", tags=["auditoria"])
 
@@ -15,6 +15,8 @@ def listar(entidade: Optional[str] = Query(default=None, max_length=40), limite:
     filtro, params = "", [LOJA_ID]
     if entidade:
         filtro, params = " AND entidade = %s", [LOJA_ID, entidade]
+    if "rh.salarios" not in PERMISSOES.get(sessao["perfil"], set()):  # salário e folha não aparecem para quem não os vê
+        filtro += " AND NOT (entidade = 'funcionario' AND acao IN ('contrato','beneficio','folha_resumo')) AND NOT (entidade = 'beneficio_funcionario') AND acao <> 'lancar_folha'"
     total = conn.execute(f"SELECT count(*) AS n FROM auditoria WHERE loja_id = %s{filtro}", params).fetchone()["n"]
     dados = conn.execute(
         "SELECT id, quando, usuario, acao, entidade, entidade_id, antes, depois FROM auditoria "

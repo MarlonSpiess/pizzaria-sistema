@@ -115,7 +115,8 @@ def excede_limite(desconto: Decimal, subtotal: Decimal, limite) -> bool:
     return limite is not None and desconto * 100 > subtotal * limite
 
 
-def autorizar(conn, request: Request, aut, requerente_id: int, desconto: Decimal | None = None, subtotal: Decimal | None = None) -> int:
+def autorizar(conn, request: Request, aut, requerente_id: int, desconto: Decimal | None = None, subtotal: Decimal | None = None,
+              perfis: tuple = AUTORIZADORES) -> int:
     """Confere login e senha de quem autoriza. Devolve o id do autorizador.
     A trava de tentativas é por quem pede e quem autoriza, não pelo IP: o terminal de um atendente não bloqueia o login do gerente."""
     ip = f"aut:{requerente_id}|{ip_cliente(request)}"
@@ -123,7 +124,7 @@ def autorizar(conn, request: Request, aut, requerente_id: int, desconto: Decimal
     u = conn.execute("SELECT id, perfil, senha_hash, ativo, deve_trocar_senha FROM usuario WHERE usuario = %s",
                      (aut.usuario,)).fetchone()
     ok = verificar_senha(aut.senha, u["senha_hash"] if u else SENHA_DUMMY_HASH)
-    valido = bool(u and ok and u["ativo"] and not u["deve_trocar_senha"] and u["perfil"] in AUTORIZADORES
+    valido = bool(u and ok and u["ativo"] and not u["deve_trocar_senha"] and u["perfil"] in perfis
                   and u["id"] != requerente_id)
     if not valido:
         registrar_falha_login(conn, ip, aut.usuario)

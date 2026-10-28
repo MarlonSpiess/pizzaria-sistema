@@ -8,6 +8,8 @@ from decimal import Decimal
 
 from fastapi import HTTPException
 
+from api.config import LOJA_ID
+from api.services import estoque
 from api.services.parametros import vigentes
 
 MOTIVOS_RETROCESSO_PADRAO = (("Falta de insumo", True), ("Saída do pizzaiolo", False), ("Erro na borda", False), ("Outros", False))
@@ -27,6 +29,8 @@ def mover(conn, pizza_id: int, nova: str, usuario_id, quando, responsavel="mante
     else:
         conn.execute("UPDATE pizza_producao SET situacao = %s, responsavel_id = %s WHERE id = %s", (nova, responsavel, pizza_id))
     evento(conn, pizza_id, nova, usuario_id, quando)
+    if nova in ("acabada", "perdida"):  # Estoques baixa o consumo pela ficha técnica; nunca trava a produção
+        estoque.baixar_pizza(conn, LOJA_ID, pizza_id, nova, usuario_id, quando)
 
 
 def _proxima_ordem(conn, loja_id: int) -> Decimal:

@@ -31,6 +31,20 @@ CATALOGO = {
     "producao_pizzaiolos_ativos": ("inteiro_pos", None, "Pizzaiolos trabalhando ao mesmo tempo (estimativa de entrega)"),
     "producao_acabamento_min": ("decimal_pos", None, "Minutos de acabamento e embalagem por pedido (estimativa de entrega)"),
     "entrega_deslocamento_min": ("decimal_pos", None, "Minutos de deslocamento da entrega (estimativa de entrega)"),
+    "alerta_validade_dias": ("inteiro_pos", "7", "Dias antes do vencimento em que o lote entra nos alertas e na lista de necessidades"),
+    "compra_valor_aprovacao": ("dinheiro", None, "Valor da lista de compras acima do qual outra pessoa precisa aprovar (R$)"),
+    "conta_valor_aprovacao": ("dinheiro", None, "Valor do título a pagar lançado à mão acima do qual o administrador ou proprietário precisa aprovar (R$)"),
+    "bem_valor_minimo": ("dinheiro", None, "Valor mínimo para cadastrar um bem do imobilizado (R$); abaixo disso é material de uso e consumo. Confirmar com o contador"),
+    "manutencao_valor_aprovacao": ("dinheiro", None, "Custo de uma ordem de serviço acima do qual o administrador ou proprietário precisa aprovar (R$)"),
+    "rh_encargos_pct": ("pct", None, "Encargos estimados (%) sobre o salário de CLT e intermitente, para a prévia gerencial da folha"),
+    "rh_limite_extra_min_mes": ("inteiro_pos", None, "Minutos de hora extra por pessoa e mês acima dos quais só o administrador ou proprietário aprova"),
+    "cmv_meta_pct": ("pct", None, "Meta de CMV (% das vendas) do mês; vazio = sem meta, o alerta de CMV fica desligado"),
+    "bi_alerta_cmv": ("sim_nao", "sim", "Alerta de CMV acima da meta (precisa da meta)"),
+    "bi_alerta_estoque": ("sim_nao", "sim", "Alerta de estoque abaixo do mínimo ou perto de vencer"),
+    "bi_alerta_caixa": ("sim_nao", "sim", "Alerta de diferença de caixa nos últimos 7 dias"),
+    "bi_alerta_atraso": ("sim_nao", "sim", "Alerta de pedido atrasado"),
+    "bi_alerta_manutencao": ("sim_nao", "sim", "Alerta de manutenção vencendo, leitura fora do normal e bem crítico parado"),
+    "venda_exige_caixa_aberto": ("sim_nao", None, "Só vender com o caixa do dia aberto (sim ou não)"),
     "perda_padrao_pct": ("pct", "10", "Perda padrão (%) de cada insumo nas fichas técnicas"),
     "forno_tempo_min": ("decimal_pos", "2", "Tempo de forno por pizza (minutos)"),
     "forno_pizzas_por_vez": ("inteiro_pos", None, "Pizzas que o forno comporta por vez"),
@@ -84,6 +98,10 @@ def normalizar(chave: str, valor) -> str | None:
             return str(_dec(valor, Decimal(0), Decimal(100)).quantize(Decimal("0.01")))
         if tipo == "dinheiro":
             return str(_dec(valor, Decimal(0), Decimal("999999.99")).quantize(Decimal("0.01")))
+        if tipo == "sim_nao":
+            if valor not in ("sim", "nao"):
+                raise ValueError("Informe sim ou nao.")
+            return valor
         if tipo == "tamanho_massa":
             if valor not in ("grande", "broto"):
                 raise ValueError("Informe grande ou broto.")

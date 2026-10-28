@@ -110,3 +110,8 @@ label.inline input{width:auto}
 .acoes-linha button,.acoes-linha select{min-height:44px}
 .etiqueta{border:2px dashed var(--line)}
 @media print{#menu,.topo,.subnav{display:none}}
+
+tr.destaque td { font-weight: 600; }
+td.negativo { color: #e5484d; font-weight: 600; }
+tr.atrasado td { color: #e5484d; }
+.cartao.destaque { border-color: var(--acento, #e0a030); }

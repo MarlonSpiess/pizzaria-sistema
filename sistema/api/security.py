@@ -20,25 +20,32 @@ _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ve
           "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar",
           "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir",
           "producao.ver", "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
-          "producao.refazer", "producao.gerir", "producao.perda_massa"}
+          "producao.refazer", "producao.gerir", "producao.perda_massa",
+          "caixa.ver", "caixa.operar", "caixa.aprovar", "caixa.gerir",
+          "estoque.ver", "estoque.mover", "estoque.gerir", "compras.ver", "compras.operar", "compras.aprovar",
+          "contas.ver", "contas.operar", "contas.aprovar", "custos.ver", "custos.gerir", "imobilizado.ver", "imobilizado.operar", "imobilizado.aprovar",
+          "rh.ver", "rh.operar", "rh.aprovar", "rh.salarios", "rh.proprio", "bi.ver"}
 _GERENCIA = {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar", "cardapio.ver", "cardapio.editar",
              "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar", "ficha.ver", "ficha.editar",
              "vendas.ver", "vendas.criar", "vendas.gerir",
              "producao.ver", "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
-             "producao.refazer", "producao.gerir", "producao.perda_massa"}
+             "producao.refazer", "producao.gerir", "producao.perda_massa",
+             "caixa.ver", "caixa.operar", "caixa.gerir",
+             "estoque.ver", "estoque.mover", "estoque.gerir", "compras.ver", "compras.operar", "compras.aprovar",
+             "contas.ver", "contas.operar", "custos.ver", "custos.gerir", "imobilizado.ver", "imobilizado.operar", "rh.ver", "rh.operar", "rh.proprio", "bi.ver"}  # subgerente: tudo do gerente, menos aprovar diferença de caixa
 PERMISSOES = {
     "administrador": _TODAS,
     "proprietario": _TODAS,
-    "gerente": _GERENCIA,
+    "gerente": _GERENCIA | {"caixa.aprovar", "rh.aprovar"},
     # Subgerente: permissões do gerente, exceto aprovar diferença de caixa (decisão de 19/10/2026; entra na fatia 1E).
     "subgerente": _GERENCIA,
     # Atendente consulta o cardápio e os entregadores e cadastra cliente na primeira compra.
-    "atendente": {"cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver",
-                  "vendas.ver", "vendas.criar", "producao.ver"},
+    "atendente": {"rh.proprio", "cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver",
+                  "vendas.ver", "vendas.criar", "producao.ver", "caixa.ver", "caixa.operar"},
     # Funções de produção: cada tablet só enxerga e faz o que é da sua função (login pessoal).
-    "massa": {"producao.ver", "producao.massa", "producao.perda_massa"},
-    "pizzaiolo": {"producao.ver", "producao.montagem", "producao.forno", "producao.perda"},
-    "acabamento": {"producao.ver", "producao.forno", "producao.acabamento", "producao.perda", "producao.refazer"},
+    "massa": {"rh.proprio", "producao.ver", "producao.massa", "producao.perda_massa"},
+    "pizzaiolo": {"rh.proprio", "producao.ver", "producao.montagem", "producao.forno", "producao.perda"},
+    "acabamento": {"rh.proprio", "producao.ver", "producao.forno", "producao.acabamento", "producao.perda", "producao.refazer"},
 }
 
 

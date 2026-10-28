@@ -8,10 +8,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, hoje, traduzir_erro
-from api.schemas import PedidoCalcular, PedidoCancelar, PedidoCreate, PedidoSituacao, PedidoUrgente
+from api.schemas import CfIn, PedidoCalcular, PedidoCancelar, PedidoCreate, PedidoSituacao, PedidoUrgente
 from api.security import PERMISSOES, requer
 from api.services import parametros as svc_parametros
 from api.services import producao as svc_producao
+from api.services import estoque
+from api.services.caixa import exigir_nao_encerrado
 from api.services.dinheiro import fmt
 from api.services.vendas import SITUACOES, autorizar, excede_limite, limite_desconto, repartir_pagamentos, totais
 
@@ -93,6 +95,7 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
                                 t["desconto"] if excede_limite(t["desconto"], t["subtotal"], lim) else None, t["subtotal"])
     quando, dia = agora(), hoje()
     try:
+        exigir_nao_encerrado(conn, LOJA_ID, dia, svc_parametros.vigentes(conn, LOJA_ID)["venda_exige_caixa_aberto"]["valor"] == "sim")
         id_dia = conn.execute(
             "INSERT INTO contador_dia (loja_id, data, ultimo) VALUES (%s, %s, 1) "
             "ON CONFLICT (loja_id, data) DO UPDATE SET ultimo = contador_dia.ultimo + 1 RETURNING ultimo",
@@ -203,6 +206,8 @@ def mudar_situacao(conn, sessao, p: dict, nova: str) -> dict:
     conn.execute("INSERT INTO evento_pedido (pedido_id, situacao, usuario_id, criado_em) VALUES (%s,%s,%s,%s)",
                  (p["id"], nova, sessao["usuario_id"], quando))
     auditar(conn, sessao, "situacao", "pedido", p["id"], antes={"situacao": atual}, depois={"situacao": nova})
+    if nova == "acabado":  # bebidas e acompanhamentos saem do estoque pela ficha do produto
+        estoque.baixar_itens_do_pedido(conn, LOJA_ID, p["id"], sessao["usuario_id"], quando)
     return _pedido(conn, p["id"])
 
 
@@ -227,6 +232,18 @@ def urgente(pid: int, d: PedidoUrgente, sessao=Depends(requer("vendas.criar")), 
     return _out(_pedido(conn, pid))
 
 
+@router.patch("/{pid}/cf")
+def informar_cf(pid: int, d: CfIn, sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
+    """Número do cupom fiscal emitido no software de terceiro (digitação dupla por enquanto)."""
+    p = _pedido(conn, pid, travar=True)
+    if p["situacao"] == "cancelado":
+        raise HTTPException(status_code=409, detail="Pedido cancelado não tem CF.")
+    conn.execute("UPDATE pedido SET numero_cf = %s WHERE id = %s", (d.numero_cf, pid))
+    auditar(conn, sessao, "informar_cf", "pedido", pid, antes={"numero_cf": p["numero_cf"]}, depois={"numero_cf": d.numero_cf})
+    conn.commit()
+    return _out(_pedido(conn, pid))
+
+
 @router.post("/{pid}/cancelar")
 def cancelar(pid: int, d: PedidoCancelar, request: Request, sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
     p = _pedido(conn, pid, travar=True)
@@ -242,6 +259,12 @@ def cancelar(pid: int, d: PedidoCancelar, request: Request, sessao=Depends(reque
             raise HTTPException(status_code=409, detail=f"Pedido {p['situacao']} não pode ser cancelado.")
     quando = agora()
     try:
+        exigir_nao_encerrado(conn, LOJA_ID, quando.date(), False)
+        for e in conn.execute("SELECT forma, sum(valor - troco) AS valor FROM pagamento WHERE pedido_id = %s GROUP BY forma HAVING sum(valor - troco) > 0",
+                              (pid,)).fetchall():  # devolução ao cliente: uma linha por forma, na data do cancelamento
+            conn.execute("INSERT INTO estorno (loja_id, data, pedido_id, forma, valor, motivo, usuario_id, autorizado_por, criado_em) "
+                         "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                         (LOJA_ID, quando.date(), pid, e["forma"], e["valor"], d.motivo, sessao["usuario_id"], autorizador, quando))
         conn.execute("INSERT INTO cancelamento (pedido_id, motivo, usuario_id, autorizado_por, situacao_anterior, criado_em) "
                      "VALUES (%s,%s,%s,%s,%s,%s)", (pid, d.motivo, sessao["usuario_id"], autorizador, p["situacao"], quando))
         conn.execute("UPDATE pedido SET situacao = 'cancelado' WHERE id = %s", (pid,))
