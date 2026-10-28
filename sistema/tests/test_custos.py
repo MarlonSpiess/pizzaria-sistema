@@ -73,7 +73,7 @@ def test_cmv_e_resultado_do_mes(client, cardapio, hs):
     mes = hoje.strftime("%Y-%m")
     c = client.get(f"/api/custos/cmv?mes={mes}", headers=h).json()
     assert c["fechado"] is False
-    assert D(c["cmv_real"]) == D(c["estoque_inicial"]) + D(c["compras"]) - D(c["estoque_final"])
+    assert D(c["cmv_real"]) == D(c["estoque_inicial"]) + D(c["compras"]) - D(c["estoque_final"]) - D(c["manutencao_pecas"])
     r = client.get(f"/api/custos/resultado?mes={mes}", headers=h).json()
     assert D(r["receita"]) == D(r["receita_bruta"]) - D(r["descontos"])
     assert D(r["margem_contribuicao"]) == D(r["receita"]) - D(r["cmv"]) - D(r["custos_variaveis"])

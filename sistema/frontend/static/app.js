@@ -1792,7 +1792,7 @@ async function abaMeusDados() {
   let d;
   try { d = await api("GET", "/rh/meus-dados"); } catch (e) { alvo.replaceChildren(aviso("erro", e.message)); return; }
   const dia = (iso) => String(iso).slice(8, 10) + "/" + String(iso).slice(5, 7);
-  alvo.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, d.funcionario + " · " + d.funcao), h("p", {}, "Banco de horas: " + Math.floor(d.banco_horas_min / 60) + "h" + String(Math.abs(d.banco_horas_min) % 60).padStart(2, "0"))),
+  alvo.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, d.funcionario + " · " + d.funcao), h("p", {}, "Banco de horas: " + (d.banco_horas_min < 0 ? "-" : "") + Math.floor(Math.abs(d.banco_horas_min) / 60) + "h" + String(Math.abs(d.banco_horas_min) % 60).padStart(2, "0"))),
     h("div", { class: "cartao" }, h("h2", {}, "Minha escala"), d.turnos.length ? h("ul", {}, d.turnos.map((t) => h("li", {}, dia(t.data) + ": " + t.inicio + " às " + t.fim))) : h("p", {}, "Nenhum turno lançado.")),
     h("div", { class: "cartao" }, h("h2", {}, "Meu ponto"), d.ponto.length ? h("ul", {}, d.ponto.map((p) => h("li", {}, dia(p.data) + ": " + p.entrada + " às " + p.saida))) : h("p", {}, "Nenhum ponto lançado."),
       d.ausencias.length ? h("p", {}, "Ausências: " + d.ausencias.map((a) => a.tipo + " " + dia(a.inicio) + " a " + dia(a.fim)).join(" · ")) : ""));

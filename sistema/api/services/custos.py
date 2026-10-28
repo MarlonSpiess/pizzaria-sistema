@@ -67,9 +67,10 @@ def cmv_mes(conn, loja_id, mes: date) -> dict:
     compras = conn.execute("SELECT COALESCE(sum(quantidade * COALESCE(custo_unit, 0)), 0) AS v FROM movimento_estoque WHERE tipo IN ('entrada_compra','entrada_inicial','devolucao_fornecedor') AND criado_em >= %s AND criado_em < %s", (ini, fim)).fetchone()["v"]  # entrada inicial e devolução entram como compra (líquida), senão o estoque final aparece como sobra
     inicial, final = valor_estoque(conn, ini), valor_estoque(conn, fim)
     vendas = conn.execute("SELECT COALESCE(sum(subtotal - desconto + acrescimo), 0) AS v FROM pedido WHERE loja_id = %s AND situacao <> 'cancelado' AND data >= %s AND data < %s", (loja_id, mes, prox)).fetchone()["v"]
-    real = inicial.quantize(Q2) + compras.quantize(Q2) - final.quantize(Q2)
+    manutencao = conn.execute("SELECT COALESCE(sum(-quantidade * COALESCE(custo_unit, 0)), 0) AS v FROM movimento_estoque WHERE origem_tipo = 'ordem_servico' AND criado_em >= %s AND criado_em < %s", (ini, fim)).fetchone()["v"]
+    real = inicial.quantize(Q2) + compras.quantize(Q2) - final.quantize(Q2) - manutencao.quantize(Q2)  # peça de manutenção sai do estoque mas é custo da ordem, não CMV
     teorico = soma(["saida_venda"]).quantize(Q2)
-    return {"mes": mes, "estoque_inicial": inicial.quantize(Q2), "compras": compras.quantize(Q2), "estoque_final": final.quantize(Q2), "cmv_real": real, "cmv_teorico": teorico,
+    return {"mes": mes, "estoque_inicial": inicial.quantize(Q2), "compras": compras.quantize(Q2), "estoque_final": final.quantize(Q2), "cmv_real": real, "cmv_teorico": teorico, "manutencao_pecas": manutencao.quantize(Q2),
             "diferenca": real - teorico, "perdas": soma(["perda"]).quantize(Q2), "consumo_interno": soma(["consumo_interno"]).quantize(Q2), "vendas": vendas.quantize(Q2),
             "cmv_pct": (real / vendas * 100).quantize(Q2) if vendas > 0 else None}
 

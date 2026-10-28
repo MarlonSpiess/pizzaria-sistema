@@ -170,6 +170,9 @@ def test_ordem_de_servico_completa_com_peca_aprovacao_e_titulo(client, base, con
     assert conn_teste.execute("SELECT bem_id FROM titulo WHERE id = %s", (t["id"],)).fetchone()[0] == b
     cm = client.get("/api/imobilizado/custos-manutencao", headers=h).json()
     assert any(x["bem_id"] == b and x["custo"] == "500.00" for x in cm["por_bem"]) and any(x["tipo"] == "preventiva" for x in cm["por_tipo"])
+    # a peça da ordem sai do estoque mas não é CMV
+    c = client.get("/api/custos/cmv", headers=ha).json()
+    assert D(c["manutencao_pecas"]) >= D("100.00") and D(c["cmv_real"]) == D(c["estoque_inicial"]) + D(c["compras"]) - D(c["estoque_final"]) - D(c["manutencao_pecas"])
     # bem com ordem em aberto não recebe baixa
     o2 = client.post("/api/imobilizado/os", json={"bem_id": b, "tipo": "corretiva", "descricao": "Quebrou"}, headers=h).json()
     assert client.post(f"/api/imobilizado/bens/{b}/baixa", json={"tipo": "perda", "data": str(hoje), "motivo": "x"}, headers=ha).status_code == 409
