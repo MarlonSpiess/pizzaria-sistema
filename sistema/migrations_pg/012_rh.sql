@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS ponto (
     lancado_por BIGINT REFERENCES usuario(id),
     criado_em TIMESTAMPTZ NOT NULL,
     UNIQUE (funcionario_id, data),
-    CONSTRAINT ck_ponto_ordem CHECK (saida > entrada)
+    CONSTRAINT ck_ponto_ordem CHECK (saida <> entrada)  -- saída menor que a entrada = virou o dia (turno da noite)
 );
 
 CREATE TABLE IF NOT EXISTS banco_horas (
@@ -124,9 +124,9 @@ CREATE TABLE IF NOT EXISTS folha_resumo (
     encargos NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (encargos >= 0),
     beneficios NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (beneficios >= 0),
     criado_em TIMESTAMPTZ NOT NULL,
-    criado_por BIGINT REFERENCES usuario(id),
-    UNIQUE (competencia, funcionario_id)
-);
+    criado_por BIGINT REFERENCES usuario(id)
+);  -- correção = novo registro; vale o mais recente de cada pessoa no mês
+CREATE INDEX IF NOT EXISTS idx_folha_resumo ON folha_resumo (loja_id, competencia, funcionario_id, id DESC);
 
 DO $$
 DECLARE t TEXT;

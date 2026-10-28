@@ -64,7 +64,7 @@ def cmv_mes(conn, loja_id, mes: date) -> dict:
     def soma(tipos):
         return conn.execute("SELECT COALESCE(sum(-quantidade * COALESCE(custo_unit, 0)), 0) AS v FROM movimento_estoque WHERE tipo = ANY(%s) AND criado_em >= %s AND criado_em < %s",
                             (tipos, ini, fim)).fetchone()["v"]
-    compras = conn.execute("SELECT COALESCE(sum(quantidade * COALESCE(custo_unit, 0)), 0) AS v FROM movimento_estoque WHERE tipo = 'entrada_compra' AND criado_em >= %s AND criado_em < %s", (ini, fim)).fetchone()["v"]
+    compras = conn.execute("SELECT COALESCE(sum(quantidade * COALESCE(custo_unit, 0)), 0) AS v FROM movimento_estoque WHERE tipo IN ('entrada_compra','entrada_inicial','devolucao_fornecedor') AND criado_em >= %s AND criado_em < %s", (ini, fim)).fetchone()["v"]  # entrada inicial e devolução entram como compra (líquida), senão o estoque final aparece como sobra
     inicial, final = valor_estoque(conn, ini), valor_estoque(conn, fim)
     vendas = conn.execute("SELECT COALESCE(sum(subtotal - desconto + acrescimo), 0) AS v FROM pedido WHERE loja_id = %s AND situacao <> 'cancelado' AND data >= %s AND data < %s", (loja_id, mes, prox)).fetchone()["v"]
     real = inicial.quantize(Q2) + compras.quantize(Q2) - final.quantize(Q2)

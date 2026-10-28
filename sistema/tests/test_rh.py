@@ -132,7 +132,10 @@ def test_ponto_saldo_e_banco_de_horas_com_limite(client, base):
     t = {"funcionario_id": fid, "data": str(ontem), "funcao_id": base["funcs"]["Pizzaiolo"], "inicio": "16:00", "fim": "23:00"}
     assert client.put("/api/rh/turnos", json=t, headers=base["gerente"]).status_code == 200
     assert client.put("/api/rh/ponto", json={"funcionario_id": fid, "data": str(ontem), "entrada": "16:00", "saida": "23:30"}, headers=base["gerente"]).status_code == 200
-    assert client.put("/api/rh/ponto", json={"funcionario_id": fid, "data": str(ontem), "entrada": "16:00", "saida": "15:00"}, headers=base["gerente"]).status_code == 400
+    assert client.put("/api/rh/ponto", json={"funcionario_id": fid, "data": str(ontem), "entrada": "16:00", "saida": "15:00"}, headers=base["gerente"]).status_code == 400  # 23 h
+    assert client.put("/api/rh/ponto", json={"funcionario_id": fid, "data": str(ontem), "entrada": "22:00", "saida": "02:00"}, headers=base["gerente"]).status_code == 200  # vira o dia: 4 h
+    assert client.put("/api/rh/ponto", json={"funcionario_id": fid, "data": str(ontem), "entrada": "10:00", "saida": "10:00"}, headers=base["gerente"]).status_code == 400
+    assert client.put("/api/rh/ponto", json={"funcionario_id": fid, "data": str(ontem), "entrada": "16:00", "saida": "23:30"}, headers=base["gerente"]).status_code == 200
     assert client.put("/api/rh/ponto", json={"funcionario_id": fid, "data": str(date.today() + timedelta(days=1)), "entrada": "10:00", "saida": "11:00"}, headers=base["gerente"]).status_code == 400
     s = client.get(f"/api/rh/ponto/saldo?funcionario_id={fid}&mes={ontem.strftime('%Y-%m')}", headers=base["gerente"]).json()
     dia = next(x for x in s["dias"] if x["data"] == str(ontem))
@@ -143,6 +146,7 @@ def test_ponto_saldo_e_banco_de_horas_com_limite(client, base):
     r = client.post("/api/rh/banco-horas", json={**b, "minutos": 200}, headers=base["gerente"])
     assert r.status_code == 403  # 700 > limite de 600 no mês
     assert client.post("/api/rh/banco-horas", json={**b, "minutos": 200}, headers=base["administrador"]).status_code == 201
+    assert client.post("/api/rh/banco-horas", json={**b, "minutos": 10, "data": str(date.today() - timedelta(days=100))}, headers=base["gerente"]).status_code == 403  # retroativo demais
     assert client.post("/api/rh/banco-horas", json={**b, "minutos": -900}, headers=base["gerente"]).status_code == 400  # passa do saldo
     assert client.post("/api/rh/banco-horas", json={**b, "minutos": -300, "motivo": "Folga compensada"}, headers=base["gerente"]).json()["saldo_min"] == 400
 
@@ -184,7 +188,7 @@ def test_resumo_do_contador_vale_no_lugar_da_previa(client, base):
     mes = (date.today().replace(day=1) - timedelta(days=1)).strftime("%Y-%m")  # mês passado
     f = _func(client, base)
     assert client.post("/api/rh/folha/resumo", json={"competencia": mes, "funcionario_id": f, "bruto": "3000,00", "encargos": "900,00", "beneficios": "100,00"}, headers=base["administrador"]).status_code == 201
-    assert client.post("/api/rh/folha/resumo", json={"competencia": mes, "funcionario_id": f, "bruto": "1,00"}, headers=base["administrador"]).status_code == 409
+    assert client.post("/api/rh/folha/resumo", json={"competencia": mes, "funcionario_id": f, "bruto": "3000,00", "encargos": "900,00", "beneficios": "100,00"}, headers=base["administrador"]).status_code == 201  # correção: vale o último
     previa = client.get(f"/api/rh/folha/previa?mes={mes}", headers=base["administrador"]).json()["linhas"]
     outros = [l["funcionario_id"] for l in previa if l["funcionario_id"] != f]
     if outros:  # resumo incompleto não se lança

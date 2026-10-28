@@ -28,6 +28,11 @@ def _ex(conn, e):
     raise traduzir_erro(e) from e
 
 
+def _hm(v: str) -> int:
+    h, m = v.split(":")[:2]
+    return int(h) * 60 + int(m)
+
+
 def _pode_salarios(sessao) -> bool:
     return "rh.salarios" in PERMISSOES.get(sessao["perfil"], set())
 
@@ -271,8 +276,10 @@ def lancar_turno(d: TurnoIn, sessao=Depends(requer("rh.operar")), conn=Depends(g
     f = _func(conn, d.funcionario_id, ativo=True)
     if not conn.execute("SELECT 1 FROM funcao_rh WHERE id = %s AND loja_id = %s AND ativo", (d.funcao_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Função não encontrada.")
-    if d.fim <= d.inicio:
-        raise HTTPException(status_code=400, detail="O fim do turno precisa ser depois do início.")
+    if (_hm(d.fim) - _hm(d.inicio)) % 1440 > 960:
+        raise HTTPException(status_code=400, detail="O turno passa de 16 horas.")
+    if d.fim == d.inicio:
+        raise HTTPException(status_code=400, detail="O fim do turno não pode ser igual ao início (fim menor que o início vira o dia).")
     if d.data < f["admissao"]:
         raise HTTPException(status_code=400, detail="Antes da admissão.")
     aus = _em_ausencia(conn, d.funcionario_id, d.data)
@@ -321,8 +328,10 @@ def lancar_ponto(d: PontoIn, sessao=Depends(requer("rh.operar")), conn=Depends(g
     f = _func(conn, d.funcionario_id)
     if d.data > agora().date() or d.data < f["admissao"]:
         raise HTTPException(status_code=400, detail="Data fora do intervalo (da admissão até hoje).")
-    if d.saida <= d.entrada:
-        raise HTTPException(status_code=400, detail="A saída precisa ser depois da entrada.")
+    if (_hm(d.saida) - _hm(d.entrada)) % 1440 > 960:
+        raise HTTPException(status_code=400, detail="O ponto passa de 16 horas.")
+    if d.saida == d.entrada:
+        raise HTTPException(status_code=400, detail="A saída não pode ser igual à entrada (saída menor que a entrada vira o dia).")
     antes = conn.execute("SELECT entrada, saida FROM ponto WHERE funcionario_id = %s AND data = %s", (d.funcionario_id, d.data)).fetchone()
     try:
         conn.execute("INSERT INTO ponto (funcionario_id, data, entrada, saida, lancado_por, criado_em) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (funcionario_id, data) DO UPDATE SET entrada = EXCLUDED.entrada, saida = EXCLUDED.saida, lancado_por = EXCLUDED.lancado_por, criado_em = EXCLUDED.criado_em",
@@ -350,7 +359,7 @@ def saldo_ponto(funcionario_id: int, mes: Optional[str] = None, sessao=Depends(r
     turnos_ = {t["data"] for t in conn.execute("SELECT data FROM turno WHERE funcionario_id = %s AND data BETWEEN %s AND %s", (funcionario_id, ini, fim)).fetchall()}
     dias, total = [], 0
     for dia in sorted(set(pontos) | turnos_):
-        trab = _min(pontos[dia]["saida"]) - _min(pontos[dia]["entrada"]) if dia in pontos else 0
+        trab = (_min(pontos[dia]["saida"]) - _min(pontos[dia]["entrada"])) % 1440 if dia in pontos else 0
         prev = _jornada_dia(conn, funcionario_id, dia) if dia in turnos_ else 0
         total += trab - prev
         dias.append({"data": dia, "trabalhado_min": trab, "previsto_min": prev, "saldo_min": trab - prev, "falta_ponto": dia in turnos_ and dia not in pontos and dia < agora().date()})
@@ -362,8 +371,11 @@ def saldo_ponto(funcionario_id: int, mes: Optional[str] = None, sessao=Depends(r
 def lancar_banco(d: BancoHorasIn, sessao=Depends(requer("rh.aprovar")), conn=Depends(get_db)):
     """Hora extra ou compensação aprovada. Acima do limite mensal dos parâmetros, só administrador ou proprietário."""
     _func(conn, d.funcionario_id, ativo=True)
+    conn.execute("SELECT pg_advisory_xact_lock(%s, %s)", (7101, d.funcionario_id))  # serializa os lançamentos da pessoa (saldo e limite do mês)
     if d.data > agora().date():
         raise HTTPException(status_code=400, detail="Data futura.")
+    if (agora().date() - d.data).days > 62 and not _pode_salarios(sessao):
+        raise HTTPException(status_code=403, detail="Lançamento com mais de 62 dias de atraso: só o administrador ou proprietário.")
     if d.minutos > 0:
         lim = vigentes(conn, LOJA_ID)["rh_limite_extra_min_mes"]["valor"]
         if lim is not None and not _pode_salarios(sessao):
@@ -465,7 +477,7 @@ def _previa(conn, ini: date) -> dict:
             dias = conn.execute("SELECT count(*) AS n FROM ponto WHERE funcionario_id = %s AND data >= %s AND data < %s", (f["id"], ini, prox)).fetchone()["n"]
             bruto = c["valor"] * dias
         else:
-            mins = conn.execute("SELECT COALESCE(sum(EXTRACT(EPOCH FROM (saida - entrada)) / 60), 0) AS m FROM ponto WHERE funcionario_id = %s AND data >= %s AND data < %s", (f["id"], ini, prox)).fetchone()["m"]
+            mins = conn.execute("SELECT COALESCE(sum(MOD(EXTRACT(EPOCH FROM (saida - entrada))::numeric + 86400, 86400) / 60), 0) AS m FROM ponto WHERE funcionario_id = %s AND data >= %s AND data < %s", (f["id"], ini, prox)).fetchone()["m"]
             bruto = (c["valor"] * Decimal(mins) / 60).quantize(Decimal("0.01"))
         enc = (bruto * enc_pct / 100).quantize(Decimal("0.01")) if c["tipo"] in COM_ENCARGOS else ZERO
         ben = conn.execute("SELECT COALESCE(sum(valor_mensal), 0) AS s FROM beneficio_funcionario WHERE funcionario_id = %s AND ativo", (f["id"],)).fetchone()["s"]
@@ -487,7 +499,7 @@ def previa(mes: Optional[str] = None, sessao=Depends(requer("rh.salarios")), con
 
 @router.post("/folha/resumo", status_code=201)
 def resumo_contador(d: FolhaResumoIn, sessao=Depends(requer("rh.salarios")), conn=Depends(get_db)):
-    """Valores da folha entregues pelo contador, digitados. Quando existem, valem no lugar da prévia."""
+    """Valores da folha entregues pelo contador, digitados. Quando existem, valem no lugar da prévia. Para corrigir, lance de novo: vale o mais recente."""
     ini = _mes(d.competencia)
     _func(conn, d.funcionario_id)
     if conn.execute("SELECT 1 FROM titulo WHERE origem_tipo = 'folha' AND competencia = %s AND situacao <> 'cancelado'", (ini,)).fetchone():
@@ -509,7 +521,7 @@ def lancar_folha(d: FolhaLancarIn, sessao=Depends(requer("rh.salarios")), conn=D
     tipo = conn.execute("SELECT id FROM tipo_despesa WHERE loja_id = %s AND ativo AND lower(nome) = 'folha de pagamento'", (LOJA_ID,)).fetchone()
     if not tipo:
         raise HTTPException(status_code=400, detail="Crie antes o tipo de despesa 'Folha de pagamento' em Contas.")
-    r = conn.execute("SELECT COALESCE(sum(bruto + encargos + beneficios), 0) AS t, count(*) AS n FROM folha_resumo WHERE loja_id = %s AND competencia = %s", (LOJA_ID, ini)).fetchone()
+    r = conn.execute("SELECT COALESCE(sum(bruto + encargos + beneficios), 0) AS t, count(*) AS n FROM (SELECT DISTINCT ON (funcionario_id) * FROM folha_resumo WHERE loja_id = %s AND competencia = %s ORDER BY funcionario_id, id DESC) u", (LOJA_ID, ini)).fetchone()
     previa = _previa(conn, ini)
     if r["n"] and r["n"] < len(previa["linhas"]):
         raise HTTPException(status_code=409, detail=f"O resumo do contador cobre {r['n']} de {len(previa['linhas'])} pessoas: complete o resumo antes de lançar.")
