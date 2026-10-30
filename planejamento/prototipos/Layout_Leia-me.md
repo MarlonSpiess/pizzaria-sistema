@@ -32,3 +32,7 @@ Como ver: abra cada arquivo no navegador. Cada um tem Painel e Pedidos do dia (p
 ## Recomendação
 
 Adotar o **A como padrão do sistema inteiro**, porque é a evolução direta do que já está construído e do kit do relatório, com o menor retrabalho, e aplicar **o padrão do B nas telas de operação no tablet** (Pedidos do dia e Caixa): segmentos por situação com contagem, lista com detalhe ao lado e botões de 48 px. Do C, aproveitar só o destaque de vendas com meta e o minigráfico nos KPIs do Painel e do BI. Produção continua fora até o layout próprio dela ser definido.
+
+## Decisão do Marlon (30/10/2026)
+
+Gostou do A e do C e vai fazer uma mescla dos dois. Pausado; próximo passo é definir com ele o que vem de cada um e montar o protótipo mesclado.
