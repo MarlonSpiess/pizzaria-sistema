@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layout C: Visual com cartões</title>
+<style>
+:root{
+  --bg:#17120f;--bg2:#1f1915;--panel:#2a221c;--panel2:#33291f;
+  --line:#44372b;--txt:#f3ebe0;--txt2:#cdbfae;--txt3:#9a8b79;
+  --brand:#d9a441;--brand2:#b9862b;--accent:#e0573a;--crit:#ff6b5e;--alerta:#ffb020;--ok:#4cc27a;--info:#6aa8ff;--roxo:#b58cff;
+  --on-brand:#2b1d06;--shadow:0 10px 30px rgba(0,0,0,.35);
+  --rail-bg:#120e0b;--hero:linear-gradient(120deg,#3a2a1c,#2a1d16 60%,#3b1a12);
+  --switch-track:#44372b;--switch-knob:#f3ebe0;
+}
+[data-theme="light"]{
+  --bg:#faf6ef;--bg2:#f1e7d8;--panel:#ffffff;--panel2:#f6efe4;
+  --line:#e9dfd0;--txt:#2b2420;--txt2:#5e534a;--txt3:#8a7d70;
+  --brand:#b5361f;--brand2:#992c19;--accent:#d9a441;--crit:#c0392b;--alerta:#a8700a;--ok:#2f7a48;--info:#2a62b8;--roxo:#6b45b8;
+  --on-brand:#ffffff;--shadow:0 8px 24px rgba(80,50,20,.08);
+  --rail-bg:#2b2420;--hero:linear-gradient(120deg,#fde9c8,#fbe0d4 60%,#f7d0c4);
+  --switch-track:#b5361f;--switch-knob:#ffffff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100vh}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.45;display:flex;flex-direction:column}
+.faixa-proto{background:var(--accent);color:#fff;text-align:center;font-size:12px;font-weight:700;padding:3px 8px;letter-spacing:.4px}
+.mono{font-variant-numeric:tabular-nums}
+#quadro{display:flex;flex:1;min-height:0}
+
+/* trilho de ícones com rótulo embaixo, sempre escuro */
+.trilho{width:84px;flex-shrink:0;background:var(--rail-bg);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;overflow-y:auto}
+.trilho .logo{width:42px;height:42px;margin-bottom:10px}
+.r-item{width:70px;background:none;border:0;color:#b8a996;border-radius:14px;padding:8px 0;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600}
+.r-item span{display:block;font-size:22px;margin-bottom:2px}
+.r-item:hover{background:#ffffff12;color:#fff}
+.r-item.ativo{background:#d9a44133;color:#ffd98c}
+.r-sep{width:40px;height:1px;background:#ffffff1a;margin:6px 0}
+
+.area-principal{flex:1;min-width:0;overflow-y:auto}
+.miolo{max-width:1180px;margin:0 auto;padding:20px 24px 40px}
+.cab{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.cab h1{font-size:24px;font-weight:800;letter-spacing:-.3px}
+.cab .sub{color:var(--txt3);font-size:14px}
+.cab-dir{margin-left:auto;display:flex;gap:10px;align-items:center}
+.tema{display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:6px 10px;color:var(--txt3)}
+.tema-trilho{width:38px;height:21px;background:var(--switch-track);border-radius:11px;position:relative}
+.tema-bola{position:absolute;top:3px;left:3px;width:15px;height:15px;background:var(--switch-knob);border-radius:50%;transition:.2s}
+[data-theme="light"] .tema-bola{left:20px}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-weight:800}
+
+.hero{background:var(--hero);border-radius:20px;padding:22px 24px;margin-bottom:18px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;border:1px solid var(--line)}
+.hero .grande{font-size:38px;font-weight:800;letter-spacing:-1px}
+.hero .rot{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3);font-weight:700}
+.hero .meta{flex:1;min-width:220px}
+.meta-barra{height:12px;background:color-mix(in srgb,var(--txt) 12%,transparent);border-radius:6px;overflow:hidden;margin:8px 0 4px}
+.meta-barra i{display:block;height:100%;width:67%;background:linear-gradient(90deg,var(--brand),var(--accent));border-radius:6px}
+
+.alertas{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:18px}
+.alerta{display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:16px;background:color-mix(in srgb,var(--alerta) 14%,var(--panel));border:1px solid color-mix(in srgb,var(--alerta) 40%,transparent)}
+.alerta.crit{background:color-mix(in srgb,var(--crit) 14%,var(--panel));border-color:color-mix(in srgb,var(--crit) 40%,transparent)}
+.alerta .ic{font-size:26px}
+.alerta b{display:block}
+.alerta small{color:var(--txt2)}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.kpi .topo-k{display:flex;align-items:center;gap:10px}
+.kpi .bolha{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:19px;background:color-mix(in srgb,var(--c) 18%,transparent)}
+.kpi .rot{font-size:12px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+.kpi .val{font-size:28px;font-weight:800;margin:8px 0 2px;letter-spacing:-.5px}
+.kpi .var{font-size:12px;font-weight:700;color:var(--c)}
+.kpi svg{width:100%;height:36px;margin-top:6px}
+
+.grade{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.cartao{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.cartao h2{font-size:16px;margin-bottom:12px}
+.rosca{display:flex;align-items:center;gap:18px}
+.rosca .anel{width:130px;height:130px;border-radius:50%;background:conic-gradient(var(--ok) 0 30%,var(--info) 30% 70%,var(--brand) 70% 100%);display:grid;place-items:center;flex-shrink:0}
+.rosca .anel div{width:84px;height:84px;border-radius:50%;background:var(--panel);display:grid;place-items:center;font-weight:800}
+.legenda div{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.legenda i{width:10px;height:10px;border-radius:3px}
+.sabores{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sabor{background:var(--panel2);border-radius:14px;padding:10px;text-align:center}
+.sabor .e{font-size:26px}
+.sabor b{display:block;font-size:20px}
+.sabor small{color:var(--txt3);font-size:12px}
+
+/* pedidos em quadro por situação */
+.barra-acoes{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.busca{flex:1;min-width:200px;position:relative}
+.busca input{width:100%;padding:12px 14px 12px 40px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:15px;font-family:inherit}
+.busca::before{content:"🔎";position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;opacity:.7}
+.chip-f{background:var(--panel);border:1px solid var(--line);color:var(--txt2);border-radius:24px;padding:9px 14px;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px}
+.chip-f.ativo{background:var(--txt);color:var(--bg);border-color:var(--txt)}
+.btn{border:0;border-radius:14px;padding:12px 18px;font-weight:700;cursor:pointer;font-size:15px;font-family:inherit;background:var(--panel2);color:var(--txt)}
+.btn.principal{background:var(--brand);color:var(--on-brand);box-shadow:0 6px 16px color-mix(in srgb,var(--brand) 35%,transparent)}
+.btn.perigo{background:color-mix(in srgb,var(--crit) 16%,transparent);color:var(--crit)}
+.quadro-k{display:grid;grid-template-columns:repeat(4,minmax(240px,1fr));gap:14px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x mandatory}
+.coluna{background:var(--bg2);border-radius:18px;padding:12px;scroll-snap-align:start;min-height:300px}
+.coluna h3{font-size:14px;display:flex;align-items:center;gap:8px;margin:2px 4px 10px}
+.coluna h3 .n{margin-left:auto;background:var(--panel);border-radius:10px;padding:1px 8px;font-size:12px}
+.coluna h3 i{width:10px;height:10px;border-radius:50%}
+.ped{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:var(--shadow);border-top:4px solid var(--c)}
+.ped .l1{display:flex;justify-content:space-between;align-items:center}
+.ped .num{font-size:20px;font-weight:800}
+.ped .cli{font-weight:700;margin-top:2px}
+.ped small{color:var(--txt3);display:block}
+.ped .l3{display:flex;gap:6px;align-items:center;margin-top:10px}
+.pill{font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px;background:var(--panel2);color:var(--txt2)}
+.pill.crit{background:color-mix(in srgb,var(--crit) 18%,transparent);color:var(--crit)}
+.ped .mini{margin-left:auto;border:0;background:var(--panel2);color:var(--txt);border-radius:10px;padding:6px 10px;font-weight:700;cursor:pointer;font-family:inherit}
+.vazio{text-align:center;color:var(--txt3);padding:30px 8px;font-size:14px}
+
+#modal-fundo{display:none;position:fixed;inset:0;background:rgba(10,6,4,.6);backdrop-filter:blur(4px);z-index:80;align-items:center;justify-content:center;padding:16px}
+#modal-fundo.aberto{display:flex}
+.modal{background:var(--panel);border-radius:22px;width:100%;max-width:480px;padding:22px;box-shadow:var(--shadow);text-align:center}
+.modal .ic{font-size:40px}
+.modal h3{font-size:20px;margin:6px 0}
+.modal p{color:var(--txt3);margin-bottom:14px}
+.modal input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);color:var(--txt);font-size:15px;margin-bottom:14px}
+.modal .bts{display:flex;gap:10px}.modal .bts .btn{flex:1}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--txt);color:var(--bg);padding:12px 20px;border-radius:30px;font-weight:700;transition:.25s;z-index:90}
+#toast.ver{transform:translate(-50%,0)}
+.tela{display:none}.tela.ativa{display:block}
+
+@media (max-width:1100px){.kpis{grid-template-columns:1fr 1fr}.grade{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){
+  #quadro{flex-direction:column-reverse}
+  .trilho{width:100%;flex-direction:row;justify-content:space-around;padding:4px;overflow-x:auto;flex-shrink:0}
+  .trilho .logo,.r-sep,.r-extra{display:none}
+  .r-item{width:auto;flex:1;padding:6px 0;font-size:10px}.r-item span{font-size:19px}
+  .miolo{padding:14px}
+  .cab h1{font-size:20px}.cab .sub{display:none}
+  .hero .grande{font-size:30px}
+  .grade{grid-template-columns:1fr}
+  .quadro-k{grid-template-columns:repeat(4,85%)}
+}
+</style>
+</head>
+<body>
+<div class="faixa-proto">PROTÓTIPO C: VISUAL COM CARTÕES. DADOS FICTÍCIOS, NADA É GRAVADO.</div>
+<div id="quadro">
+  <nav class="trilho">
+    <svg class="logo" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="#d9a441"/><circle cx="32" cy="32" r="25" fill="#e8c26a"/><circle cx="32" cy="32" r="22" fill="#d6492f"/><circle cx="24" cy="23" r="4" fill="#8e2417"/><circle cx="40" cy="24" r="4" fill="#8e2417"/><circle cx="32" cy="41" r="4" fill="#8e2417"/></svg>
+    <button class="r-item ativo" data-tela="painel"><span>📊</span>Painel</button>
+    <button class="r-item" data-tela="pedidos"><span>🧾</span>Pedidos</button>
+    <button class="r-item"><span>👨‍🍳</span>Produção</button>
+    <button class="r-item"><span>💰</span>Caixa</button>
+    <div class="r-sep"></div>
+    <button class="r-item r-extra"><span>📦</span>Estoque</button>
+    <button class="r-item r-extra"><span>🏦</span>Financeiro</button>
+    <button class="r-item r-extra"><span>🪪</span>RH</button>
+    <button class="r-item r-extra"><span>📉</span>BI</button>
+    <button class="r-item"><span>⋯</span>Mais</button>
+  </nav>
+  <main class="area-principal"><div class="miolo">
+    <div class="cab">
+      <div><h1 id="titulo">Boa noite, Usuário Teste</h1><div class="sub" id="subtitulo">Sexta, 30/10 · caixa aberto desde 18:00</div></div>
+      <div class="cab-dir">
+        <button class="tema" id="tema" aria-label="Trocar tema">🌙<span class="tema-trilho"><span class="tema-bola"></span></span>☀️</button>
+        <span class="avatar" title="Usuário Teste · gerente">UT</span>
+      </div>
+    </div>
+
+    <section class="tela ativa" id="t-painel">
+      <div class="alertas">
+        <div class="alerta crit" data-tela="pedidos" style="cursor:pointer"><span class="ic">⏱️</span><div><b>2 pedidos atrasados</b><small>Nº 6 e 7, há mais de 40 min. Toque para ver.</small></div></div>
+        <div class="alerta"><span class="ic">📦</span><div><b>3 insumos abaixo do mínimo</b><small>Insumo Exemplo 1, 2 e 3</small></div></div>
+      </div>
+      <div class="hero">
+        <div><div class="rot">Vendas hoje</div><div class="grande mono">R$ 1.000,00</div></div>
+        <div class="meta"><div class="rot">Meta fictícia do dia: R$ 1.500,00</div><div class="meta-barra"><i></i></div><small style="color:var(--txt3)">67% atingido · faltam R$ 500,00</small></div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grade">
+        <div class="cartao"><h2>💳 Formas de pagamento</h2><div class="rosca"><div class="anel"><div class="mono">40</div></div><div class="legenda">
+          <div><i style="background:var(--ok)"></i>Dinheiro 30%</div><div><i style="background:var(--info)"></i>Pix 40%</div><div><i style="background:var(--brand)"></i>Cartão 30%</div></div></div></div>
+        <div class="cartao"><h2>🍕 Mais vendidos</h2><div class="sabores">
+          <div class="sabor"><div class="e">🍕</div><b class="mono">12</b><small>Sabor Exemplo 1</small></div>
+          <div class="sabor"><div class="e">🍕</div><b class="mono">9</b><small>Sabor Exemplo 2</small></div>
+          <div class="sabor"><div class="e">🥟</div><b class="mono">5</b><small>Calzone Exemplo</small></div>
+          <div class="sabor"><div class="e">🥤</div><b class="mono">8</b><small>Bebida Exemplo</small></div></div></div>
+        <div class="cartao"><h2>🛵 Entrega x retirada</h2>
+          <div style="display:flex;height:22px;border-radius:11px;overflow:hidden;margin:10px 0"><i style="width:62%;background:var(--roxo)"></i><i style="width:38%;background:var(--brand)"></i></div>
+          <div class="legenda"><div><i style="background:var(--roxo)"></i>Entrega 25 pedidos</div><div><i style="background:var(--brand)"></i>Retirada 15 pedidos</div></div>
+          <p style="color:var(--txt3);font-size:13px;margin-top:10px">Tempo médio de entrega: 35 min (exemplo)</p></div>
+      </div>
+    </section>
+
+    <section class="tela" id="t-pedidos">
+      <div class="barra-acoes">
+        <div class="busca"><input id="busca" placeholder="Buscar cliente ou número"></div>
+        <button class="chip-f ativo" data-tipo="">Todos</button><button class="chip-f" data-tipo="Entrega">🛵 Entrega</button><button class="chip-f" data-tipo="Retirada">🏪 Retirada</button>
+        <button class="btn principal" id="novo">+ Novo pedido</button>
+      </div>
+      <div class="quadro-k" id="quadro-k"></div>
+    </section>
+  </div></main>
+</div>
+<div id="modal-fundo"><div class="modal" id="modal"></div></div>
+<div id="toast"></div>
+<script>
+"use strict";
+const COLS = [["recebido","Recebido","--info"],["producao","Em produção","--alerta"],["acabado","Acabado","--ok"],["despachado","Saiu para entrega","--roxo"]];
+const PEDIDOS = [
+  [3,"18:20","Cliente Exemplo C","Entrega","2 Grande Especial",110,"despachado",50],
+  [4,"18:31","Cliente Exemplo D","Entrega","1 Calzone",60,"acabado",39],
+  [5,"18:40","Cliente Exemplo E","Retirada","1 Grande 2 sabores",42.5,"producao",30],
+  [6,"18:24","Cliente Exemplo F","Entrega","1 Grande + Borda",55,"producao",46],
+  [7,"18:28","Cliente Exemplo G","Entrega","3 Broto",85,"recebido",42],
+  [8,"19:01","Cliente Exemplo H","Retirada","1 Grande Tradicional",35,"recebido",9],
+  [10,"19:06","Cliente Exemplo J","Retirada","1 Broto",25,"recebido",4]
+];
+const $ = id => document.getElementById(id);
+const brl = v => "R$ " + v.toFixed(2).replace(".", ",");
+let tipo = "";
+
+function spark(pts, c) {
+  const max = Math.max(...pts), w = 100 / (pts.length - 1);
+  const d = pts.map((v, i) => `${i ? "L" : "M"}${(i * w).toFixed(1)},${(34 - v / max * 30).toFixed(1)}`).join(" ");
+  return `<svg viewBox="0 0 100 36" preserveAspectRatio="none"><path d="${d} L100,36 L0,36 Z" fill="var(${c})" opacity=".15"/><path d="${d}" fill="none" stroke="var(${c})" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+$("kpis").innerHTML = [
+  ["Pedidos","40","🧾","--ok","▲ 5 sobre sexta passada",[3,6,9,14,11,7]],
+  ["Ticket médio","R$ 25,00","💰","--brand","igual à média",[24,26,25,25,24,25]],
+  ["Em produção","6","🔥","--alerta","tempo médio 18 min",[2,4,6,5,7,6]],
+  ["Atrasados","2","⏱️","--crit","acima de 40 min",[0,0,1,1,2,2]]
+].map(([r, v, ic, c, s, pts]) => `<div class="kpi" style="--c:var(${c})"><div class="topo-k"><span class="bolha">${ic}</span><span class="rot">${r}</span></div><div class="val mono">${v}</div><div class="var">${s}</div>${spark(pts, c)}</div>`).join("");
+
+function quadro() {
+  const q = $("busca").value.toLowerCase();
+  $("quadro-k").innerHTML = COLS.map(([k, nome, c], i) => {
+    const ps = PEDIDOS.filter(p => p[6] === k && (!tipo || p[3] === tipo) && (!q || (p[2] + p[0]).toLowerCase().includes(q)));
+    return `<div class="coluna"><h3><i style="background:var(${c})"></i>${nome}<span class="n">${ps.length}</span></h3>${ps.map(p => `
+      <div class="ped" style="--c:var(${c})"><div class="l1"><span class="num mono">#${p[0]}</span><b class="mono">${brl(p[5])}</b></div>
+      <div class="cli">${p[2]}</div><small>${p[4]}</small>
+      <div class="l3"><span class="pill">${p[3] === "Entrega" ? "🛵" : "🏪"} ${p[3]}</span><span class="pill ${p[7] >= 40 ? "crit" : ""} mono">${p[7]} min</span>
+      ${COLS[i + 1] ? `<button class="mini" data-avancar="${p[0]}" title="Avançar para ${COLS[i + 1][1]}">→</button>` : `<button class="mini" data-cancelar="${p[0]}" title="Mais ações">⋯</button>`}</div></div>`).join("") || `<div class="vazio">Nada aqui agora</div>`}</div>`;
+  }).join("");
+}
+function toast(t) { $("toast").textContent = t; $("toast").classList.add("ver"); setTimeout(() => $("toast").classList.remove("ver"), 2500); }
+function modal(html) { $("modal").innerHTML = html; $("modal-fundo").classList.add("aberto"); }
+const fechar = () => $("modal-fundo").classList.remove("aberto");
+$("modal-fundo").onclick = e => { if (e.target.id === "modal-fundo") fechar(); };
+$("busca").oninput = quadro;
+$("novo").onclick = () => modal(`<div class="ic">🍕</div><h3>Novo pedido</h3><p>No modelo C o pedido abre em tela cheia com o cardápio em cartões. Aqui é só a amostra.</p><div class="bts"><button class="btn" id="fechar">Fechar</button></div>`);
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-tela]"); if (t) mostrar(t.dataset.tela);
+  const f = e.target.closest("[data-tipo]");
+  if (f) { tipo = f.dataset.tipo; document.querySelectorAll(".chip-f").forEach(b => b.classList.toggle("ativo", b === f)); quadro(); }
+  const a = e.target.closest("[data-avancar]");
+  if (a) { const p = PEDIDOS.find(x => x[0] === +a.dataset.avancar); const i = COLS.findIndex(c => c[0] === p[6]); p[6] = COLS[i + 1][0]; quadro(); toast("#" + p[0] + " foi para " + COLS[i + 1][1]); }
+  const c = e.target.closest("[data-cancelar]");
+  if (c) modal(`<div class="ic">⚠️</div><h3>Cancelar pedido #${c.dataset.cancelar}?</h3><p>Esta ação não volta.</p><input placeholder="Motivo (obrigatório)"><div class="bts"><button class="btn" id="fechar">Voltar</button><button class="btn perigo" id="confirma">Cancelar pedido</button></div>`);
+  if (e.target.id === "fechar") fechar();
+  if (e.target.id === "confirma") { fechar(); toast("Pedido cancelado (exemplo)"); }
+});
+function mostrar(t) {
+  document.querySelectorAll(".tela").forEach(s => s.classList.toggle("ativa", s.id === "t-" + t));
+  document.querySelectorAll(".r-item").forEach(b => b.classList.toggle("ativo", b.dataset.tela === t));
+  $("titulo").textContent = t === "painel" ? "Boa noite, Usuário Teste" : "Pedidos do dia";
+  $("subtitulo").textContent = t === "painel" ? "Sexta, 30/10 · caixa aberto desde 18:00" : "Toque na seta para avançar a situação";
+}
+$("tema").onclick = () => { const r = document.documentElement; r.dataset.theme === "light" ? delete r.dataset.theme : r.dataset.theme = "light"; };
+quadro();
+</script>
+</body>
+</html>
