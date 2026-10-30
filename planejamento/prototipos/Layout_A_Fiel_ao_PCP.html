@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layout A: Fiel ao PCP</title>
+<style>
+:root{
+  --bg:#17120f;--bg2:#1f1915;--panel:#2a221c;--panel2:#33291f;
+  --line:#44372b;--txt:#f3ebe0;--txt2:#cdbfae;--txt3:#9a8b79;
+  --brand:#d9a441;--brand2:#b9862b;--accent:#e0573a;--crit:#ff6b5e;--alerta:#ffb020;--ok:#4cc27a;--info:#6aa8ff;--roxo:#b58cff;
+  --on-brand:#2b1d06;--shadow:0 8px 30px rgba(0,0,0,.35);--radius:12px;
+  --sidebar-bg:linear-gradient(180deg,#1d1612,#130f0c);
+  --kpi-bg:linear-gradient(135deg,#2f261f,#231c17);
+  --switch-track:#44372b;--switch-knob:#f3ebe0;
+}
+[data-theme="light"]{
+  --bg:#faf6ef;--bg2:#f1e7d8;--panel:#ffffff;--panel2:#f6efe4;
+  --line:#e0d4c2;--txt:#2b2420;--txt2:#5e534a;--txt3:#8a7d70;
+  --brand:#b5361f;--brand2:#992c19;--accent:#d9a441;--crit:#c0392b;--alerta:#a8700a;--ok:#2f7a48;--info:#2a62b8;--roxo:#6b45b8;
+  --on-brand:#ffffff;--shadow:0 6px 20px rgba(0,0,0,.08);
+  --sidebar-bg:linear-gradient(180deg,#fffaf2,#f1e7d8);
+  --kpi-bg:linear-gradient(135deg,#ffffff,#fbf6ee);
+  --switch-track:#b5361f;--switch-knob:#ffffff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100vh}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.45;display:flex;flex-direction:column}
+.faixa-proto{background:var(--accent);color:#fff;text-align:center;font-size:12px;font-weight:700;padding:3px 8px;letter-spacing:.4px}
+#quadro{display:flex;flex:1;min-height:0;overflow:hidden}
+#menu{width:250px;flex-shrink:0;background:var(--sidebar-bg);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto;transition:width .15s,transform .2s}
+#menu.recolhido{width:60px}
+.marca{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.logo{width:34px;height:34px;flex-shrink:0}
+.marca .t1{font-weight:700;font-size:15px;white-space:nowrap}
+.marca .t2{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+#menu.recolhido .txt,#menu.recolhido .menu-sec,#menu.recolhido .rot{display:none}
+.menu{padding:8px 8px 24px}
+.menu-sec{font-size:10px;text-transform:uppercase;letter-spacing:1.3px;color:var(--txt3);padding:14px 10px 5px;font-weight:700}
+.menu-item{display:flex;align-items:center;gap:11px;width:100%;padding:9px 10px;border-radius:8px;color:var(--txt2);cursor:pointer;font-size:14px;font-weight:500;margin:1px 0;background:transparent;border:0;text-align:left;font-family:inherit;white-space:nowrap}
+.menu-item:hover{background:var(--panel);color:var(--txt)}
+.menu-item.ativo{background:linear-gradient(90deg,var(--panel2),transparent);color:var(--txt);box-shadow:inset 3px 0 0 var(--brand);font-weight:600}
+.menu-item .ic{width:20px;text-align:center;font-size:16px}
+#principal{flex:1;min-width:0;display:flex;flex-direction:column}
+.topo{height:56px;flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 20px}
+.sanduiche{flex-shrink:0;background:var(--panel);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:16px}
+.titulo-pagina{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.topo-dir{margin-left:auto;display:flex;align-items:center;gap:10px}
+.chip{background:var(--panel);border:1px solid var(--line);padding:6px 11px;border-radius:20px;font-size:13px;color:var(--txt2);white-space:nowrap}
+.chip b{color:var(--txt)}
+.tema{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--txt3);cursor:pointer;background:transparent;border:0}
+.tema-trilho{width:38px;height:21px;background:var(--switch-track);border-radius:11px;position:relative;border:1px solid var(--line)}
+.tema-bola{position:absolute;top:2px;left:2px;width:15px;height:15px;background:var(--switch-knob);border-radius:50%;transition:.2s}
+[data-theme="light"] .tema-bola{left:19px}
+.conteudo{flex:1;overflow-y:auto;padding:20px}
+.miolo{max-width:1100px;margin:0 auto}
+#fundo-menu{display:none;position:fixed;inset:0;background:#000a;z-index:49}
+#fundo-menu.aberto{display:block}
+
+/* kit de componentes */
+.alertas{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.alerta{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--alerta);border-radius:8px;padding:10px 14px;display:flex;gap:10px;align-items:center;font-size:14px}
+.alerta.crit{border-left-color:var(--crit)}
+.alerta .acao{margin-left:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.kpi{position:relative;overflow:hidden;background:var(--kpi-bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:inset 3px 0 0 var(--brand)}
+.kpi.c-ok{box-shadow:inset 3px 0 0 var(--ok)}.kpi.c-alerta{box-shadow:inset 3px 0 0 var(--alerta)}.kpi.c-crit{box-shadow:inset 3px 0 0 var(--crit)}
+[data-theme="light"] .kpi{box-shadow:inset 3px 0 0 var(--brand),var(--shadow)}
+[data-theme="light"] .kpi.c-ok{box-shadow:inset 3px 0 0 var(--ok),var(--shadow)}
+[data-theme="light"] .kpi.c-alerta{box-shadow:inset 3px 0 0 var(--alerta),var(--shadow)}
+[data-theme="light"] .kpi.c-crit{box-shadow:inset 3px 0 0 var(--crit),var(--shadow)}
+.kpi .rot{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--txt3);font-weight:700}
+.kpi .val{font-size:26px;font-weight:800;letter-spacing:-.5px;margin:2px 0;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:12px;color:var(--txt3)}
+.kpi .fundo-ic{position:absolute;right:8px;top:4px;font-size:46px;opacity:.09}
+.painel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.painel h2{font-size:16px;margin-bottom:2px}
+.p-sub{font-size:12px;color:var(--txt3);margin-bottom:12px}
+.duas{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.barras{display:flex;align-items:flex-end;gap:8px;height:160px;padding-top:8px}
+.barra{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.barra i{display:block;width:100%;background:var(--brand);border-radius:4px 4px 0 0;opacity:.85}
+.barra span{font-size:11px;color:var(--txt3)}
+.ranking div{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:14px}
+.ranking .nome{width:130px;color:var(--txt2)}
+.ranking .trilho{flex:1;height:8px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.ranking .trilho i{display:block;height:100%;background:var(--accent)}
+.ranking .n{width:30px;text-align:right;font-variant-numeric:tabular-nums}
+.filterbar{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.grupo label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);font-weight:700;margin-bottom:4px}
+input,select{padding:8px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--bg2);color:var(--txt);font-family:inherit}
+.busca{position:relative}
+.busca input{padding-left:32px;width:240px}
+.busca::before{content:"";position:absolute;left:11px;top:50%;width:10px;height:10px;border:2px solid var(--txt3);border-radius:50%;transform:translateY(-60%)}
+.busca::after{content:"";position:absolute;left:21px;top:58%;width:6px;height:2px;background:var(--txt3);transform:rotate(45deg)}
+.btn{background:var(--panel2);color:var(--txt2);border:1px solid var(--line);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600}
+.btn:hover{color:var(--txt)}
+.btn.principal{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.btn.perigo{background:transparent;color:var(--crit);border-color:var(--crit)}
+.btn.pequeno{padding:4px 9px;font-size:12px}
+.direita{margin-left:auto}
+.tbl-wrap{border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:430px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{position:sticky;top:0;background:var(--bg2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);text-align:left;padding:10px;z-index:1}
+td{padding:10px;border-top:1px solid var(--line);color:var(--txt2)}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--panel2)}
+td b{color:var(--txt)}
+.mono{font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.t-recebido{background:color-mix(in srgb,var(--info) 18%,transparent);color:var(--info)}
+.t-producao{background:color-mix(in srgb,var(--alerta) 18%,transparent);color:var(--alerta)}
+.t-acabado{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.t-despachado{background:color-mix(in srgb,var(--roxo) 18%,transparent);color:var(--roxo)}
+.t-retirado{background:color-mix(in srgb,var(--txt3) 18%,transparent);color:var(--txt2)}
+.t-cancelado,.t-atrasado{background:color-mix(in srgb,var(--crit) 18%,transparent);color:var(--crit)}
+.paginacao{display:flex;justify-content:flex-end;gap:10px;align-items:center;font-size:13px;color:var(--txt3);margin-top:10px}
+.cartoes-lista{display:none}
+.vazio{text-align:center;color:var(--txt3);padding:40px}
+#modal-fundo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:80;align-items:center;justify-content:center;padding:16px}
+#modal-fundo.aberto{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:100%;max-width:540px;box-shadow:var(--shadow)}
+.modal-cab{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);font-weight:700}
+.modal-cab button{margin-left:auto;background:none;border:0;color:var(--txt3);font-size:18px;cursor:pointer}
+.modal-corpo{padding:16px 18px}
+.modal-rod{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row .full{grid-column:1/-1}
+.form-row input,.form-row select{width:100%}
+#toast{position:fixed;right:20px;bottom:20px;background:var(--ok);color:#fff;padding:11px 16px;border-radius:10px;font-weight:600;box-shadow:var(--shadow);transform:translateY(120px);transition:.25s;z-index:90}
+#toast.ver{transform:none}
+.tela{display:none}.tela.ativa{display:block}
+
+@media (max-width:1100px){.duas{grid-template-columns:1fr}.barras{height:120px}}
+@media (max-width:760px){
+  #menu{position:fixed;z-index:50;height:100vh;transform:translateX(-100%);width:230px}
+  #menu.aberto{transform:none}
+  .topo{padding:0 10px;gap:8px}.conteudo{padding:10px}
+  .chip .perfil{display:none}
+  .titulo-pagina{font-size:15px}.tema{gap:3px}
+  .kpis{grid-template-columns:1fr 1fr}.kpi .val{font-size:20px}
+  .tbl-wrap,.paginacao{display:none}
+  .cartoes-lista{display:flex;flex-direction:column;gap:8px}
+  .cartao-ped{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .cartao-ped .l1{display:flex;justify-content:space-between;align-items:center}
+  .cartao-ped .l2{font-size:13px;color:var(--txt3);margin-top:4px}
+  .busca input{width:100%}.busca,.grupo{flex:1 1 140px}
+}
+</style>
+</head>
+<body>
+<div class="faixa-proto">PROTÓTIPO A: FIEL AO PCP. DADOS FICTÍCIOS, NADA É GRAVADO.</div>
+<div id="quadro">
+  <aside id="menu">
+    <div class="marca">
+      <svg class="logo" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="#d9a441"/><circle cx="32" cy="32" r="25" fill="#e8c26a"/><circle cx="32" cy="32" r="22" fill="#d6492f"/><circle cx="24" cy="23" r="4" fill="#8e2417"/><circle cx="40" cy="24" r="4" fill="#8e2417"/><circle cx="32" cy="41" r="4" fill="#8e2417"/></svg>
+      <div class="txt"><div class="t1">Pizzaria</div><div class="t2">Gestão integrada</div></div>
+    </div>
+    <nav class="menu">
+      <div class="menu-sec">Visão geral</div>
+      <button class="menu-item ativo" data-tela="painel"><span class="ic">📊</span><span class="rot">Painel</span></button>
+      <button class="menu-item"><span class="ic">🗓️</span><span class="rot">Meus dados</span></button>
+      <div class="menu-sec">Operação</div>
+      <button class="menu-item" data-tela="pedidos"><span class="ic">🧾</span><span class="rot">Vendas</span></button>
+      <button class="menu-item"><span class="ic">👨‍🍳</span><span class="rot">Produção</span></button>
+      <button class="menu-item"><span class="ic">💰</span><span class="rot">Caixa</span></button>
+      <div class="menu-sec">Suprimentos</div>
+      <button class="menu-item"><span class="ic">📦</span><span class="rot">Estoque</span></button>
+      <button class="menu-item"><span class="ic">🛒</span><span class="rot">Compras</span></button>
+      <div class="menu-sec">Financeiro</div>
+      <button class="menu-item"><span class="ic">🏦</span><span class="rot">Contas</span></button>
+      <button class="menu-item"><span class="ic">📈</span><span class="rot">Custos</span></button>
+      <button class="menu-item"><span class="ic">🏭</span><span class="rot">Imobilizado</span></button>
+      <button class="menu-item"><span class="ic">🪪</span><span class="rot">RH</span></button>
+      <button class="menu-item"><span class="ic">📉</span><span class="rot">BI</span></button>
+      <div class="menu-sec">Cadastros</div>
+      <button class="menu-item"><span class="ic">🍕</span><span class="rot">Cardápio</span></button>
+      <button class="menu-item"><span class="ic">👥</span><span class="rot">Clientes</span></button>
+      <div class="menu-sec">Sistema</div>
+      <button class="menu-item"><span class="ic">⚙️</span><span class="rot">Parâmetros</span></button>
+      <button class="menu-item"><span class="ic">🔍</span><span class="rot">Auditoria</span></button>
+    </nav>
+  </aside>
+  <div id="fundo-menu"></div>
+  <main id="principal">
+    <header class="topo">
+      <button class="sanduiche" id="sanduiche" aria-label="Menu">☰</button>
+      <div class="titulo-pagina" id="titulo">Painel</div>
+      <div class="topo-dir">
+        <button class="tema" id="tema" aria-label="Trocar tema">🌙<span class="tema-trilho"><span class="tema-bola"></span></span>☀️</button>
+        <span class="chip"><b>Usuário Teste</b> <span class="perfil">· gerente</span></span>
+        <button class="btn pequeno">Sair</button>
+      </div>
+    </header>
+    <div class="conteudo"><div class="miolo">
+
+      <section class="tela ativa" id="t-painel">
+        <div class="alertas">
+          <div class="alerta crit">⏱️ <span><b>2 pedidos atrasados</b> há mais de 40 minutos (exemplo)</span><button class="btn pequeno acao" data-ir="pedidos">Ver pedidos</button></div>
+          <div class="alerta">📦 <span><b>3 insumos abaixo do mínimo</b>: Insumo Exemplo 1, 2 e 3</span><button class="btn pequeno acao">Ver estoque</button></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="rot">Vendas hoje</div><div class="val">R$ 1.000,00</div><div class="sub">valor fictício</div><span class="fundo-ic">💰</span></div>
+          <div class="kpi c-ok"><div class="rot">Pedidos</div><div class="val">40</div><div class="sub">25 entrega · 15 retirada</div><span class="fundo-ic">🧾</span></div>
+          <div class="kpi c-alerta"><div class="rot">Em produção</div><div class="val">6</div><div class="sub">tempo médio 18 min</div><span class="fundo-ic">🔥</span></div>
+          <div class="kpi c-crit"><div class="rot">Atrasados</div><div class="val">2</div><div class="sub">acima de 40 min</div><span class="fundo-ic">⏱️</span></div>
+        </div>
+        <div class="duas">
+          <div class="painel"><h2>📈 Pedidos por hora</h2><div class="p-sub">Hoje, dados de exemplo</div><div class="barras" id="barras"></div></div>
+          <div class="painel"><h2>🍕 Sabores mais vendidos</h2><div class="p-sub">Hoje, dados de exemplo</div><div class="ranking" id="ranking"></div></div>
+        </div>
+        <div class="painel"><h2>💰 Caixa do dia</h2><div class="p-sub">Aberto às 18:00 por Usuário Teste</div>
+          <div class="kpis" style="margin:0">
+            <div class="kpi c-ok"><div class="rot">Dinheiro</div><div class="val">R$ 300,00</div></div>
+            <div class="kpi c-ok"><div class="rot">Pix</div><div class="val">R$ 400,00</div></div>
+            <div class="kpi c-ok"><div class="rot">Cartão</div><div class="val">R$ 300,00</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tela" id="t-pedidos">
+        <div class="filterbar">
+          <div class="grupo"><label>Buscar</label><div class="busca"><input id="busca" placeholder="Cliente ou número"></div></div>
+          <div class="grupo"><label>Situação</label><select id="filtro"><option value="">Todas</option></select></div>
+          <div class="grupo"><label>Tipo</label><select id="tipo"><option value="">Todos</option><option>Entrega</option><option>Retirada</option></select></div>
+          <button class="btn principal direita" id="novo">+ Novo pedido</button>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Nº</th><th>Hora</th><th>Cliente</th><th>Tipo</th><th>Itens</th><th>Pagamento</th><th style="text-align:right">Valor</th><th>Situação</th><th></th></tr></thead><tbody id="linhas"></tbody></table></div>
+        <div class="cartoes-lista" id="cartoes"></div>
+        <div class="paginacao">‹ Anterior · Pág 1 / 1 · <span id="qtd"></span> registros · Próxima ›</div>
+      </section>
+
+    </div></div>
+  </main>
+</div>
+<div id="modal-fundo"><div class="modal"><div class="modal-cab"><span id="modal-tit"></span><button id="modal-x">✕</button></div><div class="modal-corpo" id="modal-corpo"></div><div class="modal-rod" id="modal-rod"></div></div></div>
+<div id="toast"></div>
+<script>
+"use strict";
+const SIT = {recebido:"Recebido",producao:"Em produção",acabado:"Acabado",despachado:"Despachado",retirado:"Retirado",cancelado:"Cancelado"};
+const PEDIDOS = [
+  [1,"18:05","Cliente Exemplo A","Entrega","1 Grande Tradicional","Pix",45,"retirado"],
+  [2,"18:12","Cliente Exemplo B","Retirada","1 Broto + 1 Bebida","Dinheiro",33,"retirado"],
+  [3,"18:20","Cliente Exemplo C","Entrega","2 Grande Especial","Cartão",110,"despachado"],
+  [4,"18:31","Cliente Exemplo D","Entrega","1 Calzone","Pix",60,"acabado"],
+  [5,"18:40","Cliente Exemplo E","Retirada","1 Grande 2 sabores","Cartão",42.5,"producao"],
+  [6,"18:44","Cliente Exemplo F","Entrega","1 Grande + Borda","Pix",55,"producao",true],
+  [7,"18:52","Cliente Exemplo G","Entrega","3 Broto","Dinheiro",85,"recebido",true],
+  [8,"19:01","Cliente Exemplo H","Retirada","1 Grande Tradicional","Pix",35,"recebido"],
+  [9,"19:03","Cliente Exemplo I","Entrega","1 Grande Especial","Cartão",60,"cancelado"]
+];
+const brl = v => "R$ " + v.toFixed(2).replace(".", ",");
+const $ = id => document.getElementById(id);
+const tag = (s, atrasado) => `<span class="tag t-${s}">${SIT[s]}</span>` + (atrasado ? ` <span class="tag t-atrasado">Atrasado</span>` : "");
+
+Object.entries(SIT).forEach(([k, v]) => $("filtro").insertAdjacentHTML("beforeend", `<option value="${k}">${v}</option>`));
+[["18h",6],["19h",14],["20h",11],["21h",7],["22h",2]].forEach(([h, n]) =>
+  $("barras").insertAdjacentHTML("beforeend", `<div class="barra"><b class="mono" style="font-size:12px">${n}</b><i style="height:${n / 14 * 100}%"></i><span>${h}</span></div>`));
+[["Sabor Exemplo 1",12],["Sabor Exemplo 2",9],["Sabor Exemplo 3",7],["Sabor Exemplo 4",5],["Sabor Exemplo 5",3]].forEach(([s, n]) =>
+  $("ranking").insertAdjacentHTML("beforeend", `<div><span class="nome">${s}</span><span class="trilho"><i style="width:${n / 12 * 100}%"></i></span><span class="n mono">${n}</span></div>`));
+
+function lista() {
+  const q = $("busca").value.toLowerCase(), f = $("filtro").value, t = $("tipo").value;
+  const rows = PEDIDOS.filter(p => (!q || (p[2] + p[0]).toLowerCase().includes(q)) && (!f || p[7] === f) && (!t || p[3] === t));
+  $("qtd").textContent = rows.length;
+  $("linhas").innerHTML = rows.length ? rows.map(p => `<tr><td class="mono"><b>${p[0]}</b></td><td class="mono">${p[1]}</td><td><b>${p[2]}</b></td><td>${p[3]}</td><td>${p[4]}</td><td>${p[5]}</td><td class="mono" style="text-align:right"><b>${brl(p[6])}</b></td><td>${tag(p[7], p[8])}</td><td>${p[7] === "cancelado" || p[7] === "retirado" ? "" : `<button class="btn perigo pequeno" data-cancelar="${p[0]}">Cancelar</button>`}</td></tr>`).join("")
+    : `<tr><td colspan="9" class="vazio">Nenhum pedido com esses filtros</td></tr>`;
+  $("cartoes").innerHTML = rows.map(p => `<div class="cartao-ped"><div class="l1"><b>#${p[0]} · ${p[2]}</b><b class="mono">${brl(p[6])}</b></div><div class="l2">${p[1]} · ${p[3]} · ${p[4]}</div><div style="margin-top:6px">${tag(p[7], p[8])}</div></div>`).join("") || `<div class="vazio">Nenhum pedido</div>`;
+}
+["busca","filtro","tipo"].forEach(id => $(id).addEventListener("input", lista));
+lista();
+
+function modal(tit, corpo, botoes) {
+  $("modal-tit").textContent = tit; $("modal-corpo").innerHTML = corpo; $("modal-rod").innerHTML = "";
+  botoes.forEach(([rot, cls, fn]) => { const b = document.createElement("button"); b.className = "btn " + cls; b.textContent = rot; b.onclick = () => { fechar(); fn && fn(); }; $("modal-rod").append(b); });
+  $("modal-fundo").classList.add("aberto");
+}
+const fechar = () => $("modal-fundo").classList.remove("aberto");
+$("modal-x").onclick = fechar;
+$("modal-fundo").onclick = e => { if (e.target.id === "modal-fundo") fechar(); };
+function toast(txt) { $("toast").textContent = txt; $("toast").classList.add("ver"); setTimeout(() => $("toast").classList.remove("ver"), 3000); }
+
+$("novo").onclick = () => modal("Novo pedido", `<div class="form-row">
+  <div class="grupo full"><label>Cliente *</label><input placeholder="Cliente Exemplo"></div>
+  <div class="grupo"><label>Tipo *</label><select><option>Retirada</option><option>Entrega</option></select></div>
+  <div class="grupo"><label>Pagamento *</label><select><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select></div>
+  <div class="grupo full"><label>Item</label><select><option>Grande Tradicional R$ 35,00</option><option>Grande Especial R$ 50,00</option><option>Broto R$ 25,00</option><option>Calzone R$ 50,00</option></select></div></div>`,
+  [["Cancelar","",null],["Confirmar pedido","principal",() => toast("Pedido de exemplo confirmado")]]);
+document.addEventListener("click", e => {
+  const c = e.target.dataset.cancelar;
+  if (c) modal("Cancelar pedido " + c, `<div class="grupo"><label>Motivo *</label><input style="width:100%" placeholder="Obrigatório"></div><p style="margin-top:10px;color:var(--txt3);font-size:13px">Esta ação não volta. Pedido já em produção só gerente ou subgerente cancela.</p>`,
+    [["Voltar","",null],["Cancelar pedido","perigo",() => toast("Pedido " + c + " cancelado (exemplo)")]]);
+  const ir = e.target.closest("[data-tela],[data-ir]");
+  if (ir) mostrar(ir.dataset.tela || ir.dataset.ir);
+});
+function mostrar(t) {
+  document.querySelectorAll(".tela").forEach(s => s.classList.toggle("ativa", s.id === "t-" + t));
+  document.querySelectorAll(".menu-item").forEach(m => m.classList.toggle("ativo", m.dataset.tela === t));
+  $("titulo").textContent = t === "painel" ? "Painel" : "Vendas · Pedidos do dia";
+  $("menu").classList.remove("aberto"); $("fundo-menu").classList.remove("aberto");
+}
+$("tema").onclick = () => { const r = document.documentElement; r.dataset.theme === "light" ? delete r.dataset.theme : r.dataset.theme = "light"; };
+$("sanduiche").onclick = () => {
+  if (innerWidth <= 760) { $("menu").classList.toggle("aberto"); $("fundo-menu").classList.toggle("aberto"); }
+  else $("menu").classList.toggle("recolhido");
+};
+$("fundo-menu").onclick = () => { $("menu").classList.remove("aberto"); $("fundo-menu").classList.remove("aberto"); };
+</script>
+</body>
+</html>
