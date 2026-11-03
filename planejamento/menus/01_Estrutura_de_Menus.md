@@ -24,7 +24,7 @@ Aplicado ao caso: Produção e Vendas são **áreas de operação** (tablet e ba
 
 ## 2. Decisão em aberto: uma entrada ou três aplicações
 
-Perguntado a Marlon no cartão de decisão. Recomendação: **um login, três áreas**.
+**Decidido por Marlon em 03/11/2026: um login, três áreas.**
 
 | Critério | Um login, 3 áreas | 3 aplicações separadas |
 |---|---|---|
