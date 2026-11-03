@@ -31,7 +31,7 @@ async function api(metodo, caminho, corpo) {
 
 function sair(chamarApi = true) {
   if (chamarApi && estado.token) api("POST", "/auth/logout").catch(() => {});
-  estado.token = null; estado.eu = null; estado.rascunho = null;
+  estado.token = null; estado.eu = null; estado.rascunho = null; estado.modoPedidos = null;
   try { sessionStorage.removeItem("pz-token"); } catch (e) { /* ok */ }
   desenhar();
 }
@@ -826,12 +826,12 @@ async function abaVendas() {
       try {
         const criado = await api("POST", "/pedidos", { ...corpoCalculo(), cliente_id: r.cliente ? r.cliente.id : null, taxa_motivo: r.taxaMotivo.trim() || null,
           pagamentos: r.pagamentos.map((p) => ({ forma: p.forma, valor: p.valor })), urgente: r.urgente, observacoes: r.obs.trim() || null, autorizacao: aut.valor(), chave: r.chave });
-        estado.rascunho = null; estado.subv = "dia";
+        estado.rascunho = null; estado.modoPedidos = null; estado.subv = "dia";
         await desenharSub(); msg.replaceChildren(aviso("ok", "Pedido " + criado.id_dia + " registrado. Total " + brl(criado.total) + (Number(criado.troco) > 0 ? ". Troco " + brl(criado.troco) + "." : ".")));
       } catch (e) { confirmar.disabled = false; falha(e); }
     } }, "Confirmar pedido");
     const cartaoFim = h("div", { class: "cartao" }, campo("Observações", obs), h("label", { class: "inline" }, urg, " Pedido urgente"), h("div", {}, confirmar, " ",
-      h("button", { class: "sec", onclick: () => { estado.rascunho = null; redesenhar(); } }, "Limpar")));
+      h("button", { class: "sec", onclick: () => { estado.rascunho = null; estado.modoPedidos = null; redesenhar(); } }, "Limpar")));
     return h("div", {}, cartaoCliente, h("div", { class: "grade" }, cartaoItem, h("div", {}, cartaoResumo, cartaoPag, cartaoFim)));
   }
 
@@ -840,7 +840,7 @@ async function abaVendas() {
     const lista = await api("GET", "/pedidos");
     const gerente = ehGerencia();
     const painel = h("div", {});
-    const linhas = lista.map((p) => {
+    const acoesDe = (p) => {
       const acoes = [];
       const passo = async (nova) => { msg.replaceChildren(); try { await api("POST", "/pedidos/" + p.id + "/situacao", { situacao: nova }); desenharSub(); } catch (e) { falha(e); } };
       const prox = proxSit[p.situacao];
@@ -848,15 +848,26 @@ async function abaVendas() {
       if (p.situacao === "recebido") acoes.push(h("button", { class: "sec", onclick: async () => { try { await api("POST", "/pedidos/" + p.id + "/urgente", { urgente: !p.urgente }); desenharSub(); } catch (e) { falha(e); } } }, p.urgente ? "Tirar urgência" : "Urgente"));
       if (p.situacao !== "cancelado" && p.situacao !== "despachado ou retirado") acoes.push(h("button", { class: "sec", onclick: () => formCancelar(p) }, "Cancelar"));
       acoes.push(h("button", { class: "sec", onclick: () => detalhe(p) }, "Ver"));
+      return acoes;
+    };
+    const linhasLista = () => lista.map((p) => {
+      const acoes = acoesDe(p);
       return h("tr", { class: p.situacao === "cancelado" ? "inativo" : "" }, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), h("td", {}, p.tipo), h("td", {}, p.cliente_nome || "Balcão"),
         h("td", {}, brl(p.total)), h("td", {}, rotuloSit[p.situacao]), h("td", {}, acoes.flatMap((a) => [a, " "])));
     });
+    const colunas = Object.keys(rotuloSit);
+    const desenharQuadro = () => h("div", { class: "quadro" }, colunas.map((sit) => {
+      const ps = lista.filter((p) => p.situacao === sit).sort((a, b) => (Number(b.urgente) - Number(a.urgente)) || (a.id_dia - b.id_dia));
+      return h("div", { class: "cartao coluna" }, h("h2", {}, rotuloSit[sit] + " (" + ps.length + ")"),
+        ps.length ? ps.map((p) => h("div", { class: "cartao-pedido" }, h("strong", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), " ", p.tipo, h("div", { class: "pequeno" }, (p.cliente_nome || "Balcão") + " · " + brl(p.total)), h("div", { class: "acoes-pedido" }, acoesDe(p)))) : h("p", { class: "pequeno" }, "Vazio"));
+    }));
     function formCancelar(p) {
       const motivo = h("input", { placeholder: "Motivo obrigatório" }), aut = entradaAutorizacao();
       painel.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, "Cancelar pedido #" + p.id_dia), campo("Motivo", motivo), gerente ? null : h("div", {}, h("p", { class: "pequeno" }, "Pedido pago: um gerente confirma com login e senha."), aut.caixa),
         h("button", { class: "principal", onclick: async () => {
           try { await api("POST", "/pedidos/" + p.id + "/cancelar", { motivo: motivo.value, autorizacao: aut.valor() }); desenharSub(); } catch (e) { falha(e); }
         } }, "Confirmar cancelamento"), " ", h("button", { class: "sec", onclick: () => painel.replaceChildren() }, "Voltar")));
+      painel.scrollIntoView({ block: "nearest" });
     }
     async function detalhe(p) {
       try {
@@ -867,10 +878,14 @@ async function abaVendas() {
           d.ajustes.length ? h("p", { class: "pequeno" }, d.ajustes.map((a) => a.tipo + " " + brl(a.valor) + ": " + a.motivo + (a.autorizado ? " (autorizado)" : "")).join("; ")) : null,
           h("p", { class: "pequeno" }, "Histórico: " + d.eventos.map((e) => rotuloSit[e.situacao] || e.situacao).join(" → ")),
           h("button", { class: "sec", onclick: () => painel.replaceChildren() }, "Fechar")));
+        painel.scrollIntoView({ block: "nearest" });
       } catch (e) { falha(e); }
     }
-    return h("div", {}, painel, h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos de hoje (" + lista.length + ")"),
-      lista.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Id", "Tipo", "Cliente", "Total", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nenhum pedido hoje.")));
+    const modo = estado.modoPedidos || "quadro";
+    const alterna = h("div", { class: "modo-vista" }, h("span", { class: "pequeno" }, "Ver como:"), [["quadro", "Quadro"], ["lista", "Lista"]].map(([id, nome]) => h("button", { class: id === modo ? "ativo" : "", onclick: () => { estado.modoPedidos = id; msg.replaceChildren(); desenharSub(); } }, nome)));
+    if (modo === "quadro") return h("div", {}, painel, alterna, desenharQuadro());
+    return h("div", {}, painel, alterna, h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos de hoje (" + lista.length + ")"),
+      lista.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Id", "Tipo", "Cliente", "Total", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhasLista())) : h("p", {}, "Nenhum pedido hoje.")));
   }
   await desenharSub();
 }

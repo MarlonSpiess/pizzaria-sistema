@@ -124,3 +124,11 @@ tr.destaque td { font-weight: 600; }
 td.negativo { color: #e5484d; font-weight: 600; }
 tr.atrasado td { color: #e5484d; }
 .cartao.destaque { border-color: var(--acento, #e0a030); }
+.quadro { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 1fr); gap: 12px; align-items: start; overflow-x: auto; }
+.quadro > * { min-width: 0; }
+.coluna { max-height: 70vh; overflow-y: auto; }
+.cartao-pedido { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+.cartao-pedido .acoes-pedido { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.cartao-pedido button { white-space: normal; text-align: left; min-height: 44px; }
+.modo-vista { display: flex; gap: 6px; align-items: center; margin: 8px 0; }
+.modo-vista button.ativo { font-weight: 700; }
