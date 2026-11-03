@@ -205,7 +205,8 @@ def test_permissoes_por_funcao(client, cardapio, hs):
     assert client.post("/api/producao/pizzas/proxima", headers=hs["massa"]).status_code == 403
     assert client.post("/api/producao/pizzas/proxima", headers=hs["acabamento"]).status_code == 403
     assert client.post("/api/producao/pizzas/proxima", headers=hs["atendente"]).status_code == 403
-    assert client.get("/api/producao/fila", headers=hs["atendente"]).status_code == 200  # consulta
+    assert client.get("/api/producao/fila", headers=hs["atendente"]).status_code == 403  # acesso rígido: o atendente só lê os pedidos em aberto
+    assert client.get("/api/producao/pedidos", headers=hs["atendente"]).status_code == 200
     assert client.post("/api/producao/motivos/perda", json={"nome": "X"}, headers=hs["atendente"]).status_code == 403
     assert client.get("/api/producao/fila").status_code == 401
     assert client.get("/api/pedidos", headers=hs["pizzaiolo"]).status_code == 403  # produção não vê vendas

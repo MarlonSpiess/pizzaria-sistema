@@ -9,7 +9,7 @@ from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, traduzir_erro
 from api.routers.vendas import _pedido, mudar_situacao
 from api.schemas import ContagemMassaIn, LoteMassaIn, MotivoIn, MotivoRef, MotivoUpdate, PerdaMassaIn
-from api.security import PERMISSOES, requer
+from api.security import PERMISSOES, requer, requer_alguma
 from api.services import producao as svc
 from api.services.parametros import vigentes
 
@@ -65,18 +65,40 @@ def _motivo(conn, tabela: str, motivo_id: int) -> dict:
 
 # ---------------------------------------------------------------- consulta
 @router.get("/fila")
-def fila(situacao: Optional[str] = None, sessao=Depends(requer("producao.ver")), conn=Depends(get_db)):
-    """Pizzas ainda não finalizadas, na ordem de trabalho (urgentes primeiro), mais o estado do forno."""
+def fila(situacao: Optional[str] = None,
+         sessao=Depends(requer_alguma("producao.montagem", "producao.forno", "producao.acabamento", "producao.gerir")),
+         conn=Depends(get_db)):
+    """Pizzas ainda não finalizadas, na ordem de trabalho (urgentes primeiro), mais o estado do forno.
+    Acesso rígido por função: cada perfil recebe só as situações da sua tela; o nome do cliente só vai a quem precisa."""
+    todas = ("na lista", "em montagem", "no forno", "saiu do forno", "acabada")
     filtro = situacao or None
-    if filtro and filtro not in ("na lista", "em montagem", "no forno", "saiu do forno", "acabada"):
+    if filtro and filtro not in todas:
         raise HTTPException(status_code=400, detail="Situação inválida.")
-    sit = "(%s)" if filtro else "('na lista','em montagem','no forno','saiu do forno')"
-    sql = f"SELECT {_COLS} {_BASE} AND ped.situacao <> 'cancelado' AND p.situacao IN {sit if filtro else sit} {_ORDEM}"
-    params = [LOJA_ID] + ([filtro] if filtro else [])
-    pizzas = [_out(r) | {"minha": r["responsavel_id"] == sessao["usuario_id"]} for r in conn.execute(sql, params).fetchall()]
+    perms = PERMISSOES.get(sessao["perfil"], set())
+    if "producao.gerir" in perms:
+        permitidas, ve_cliente, ve_forno = set(todas), True, True
+    else:
+        permitidas = set()
+        if "producao.montagem" in perms:
+            permitidas |= {"na lista", "em montagem"}
+        if "producao.forno" in perms or "producao.acabamento" in perms:  # na prática as duas são do acabamento
+            permitidas |= {"no forno", "saiu do forno", "acabada"}
+        ve_cliente = "producao.acabamento" in perms
+        ve_forno = "producao.forno" in perms or "producao.acabamento" in perms
+    if filtro and filtro not in permitidas:
+        raise HTTPException(status_code=403, detail="Perfil insuficiente para esta operação")
+    abertas = {"na lista", "em montagem", "no forno", "saiu do forno"}
+    quais = sorted([filtro] if filtro else abertas & permitidas)
+    sql = f"SELECT {_COLS} {_BASE} AND ped.situacao <> 'cancelado' AND p.situacao = ANY(%s) {_ORDEM}"
+    pizzas = [_out(r) | {"minha": r["responsavel_id"] == sessao["usuario_id"]} for r in conn.execute(sql, [LOJA_ID, quais]).fetchall()]
+    if not ve_cliente:  # a montagem não precisa de nome de cliente nem de dados do pedido ou de outras pessoas
+        for p in pizzas:
+            for campo in ("cliente", "tipo_pedido", "situacao_pedido", "responsavel_id", "original_id"):
+                p.pop(campo, None)
+    if not ve_forno:
+        return {"pizzas": pizzas, "forno": None}
     par = vigentes(conn, LOJA_ID)
-    no_forno = sum(1 for p in pizzas if p["situacao"] == "no forno") if not filtro else conn.execute(
-        "SELECT count(*) AS n FROM pizza_producao WHERE loja_id = %s AND situacao = 'no forno'", (LOJA_ID,)).fetchone()["n"]
+    no_forno = conn.execute("SELECT count(*) AS n FROM pizza_producao WHERE loja_id = %s AND situacao = 'no forno'", (LOJA_ID,)).fetchone()["n"]
     cap = par["forno_pizzas_por_vez"]["valor"]
     return {"pizzas": pizzas, "forno": {"quantidade": no_forno, "capacidade": None if cap is None else int(cap),
                                           "tempo_min": par["forno_tempo_min"]["valor"],
@@ -84,7 +106,8 @@ def fila(situacao: Optional[str] = None, sessao=Depends(requer("producao.ver")),
 
 
 @router.get("/pedidos")
-def pedidos_abertos(sessao=Depends(requer("producao.ver")), conn=Depends(get_db)):
+def pedidos_abertos(sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir", "vendas.ver")), conn=Depends(get_db)):
+    # vendas.ver: ponte para o Andamento do atendente, até a hora de entrega aparecer em Vendas > Pedidos.
     """Todos os pedidos em aberto com o andamento das pizzas (só consulta; o pedido só vira acabado à mão)."""
     rows = conn.execute(
         "SELECT ped.id, ped.id_dia, ped.tipo, ped.urgente, ped.situacao, c.nome AS cliente, ped.entrega_calculada, "
@@ -259,7 +282,7 @@ def refazer(pid: int, d: MotivoRef, sessao=Depends(requer("producao.refazer")), 
 
 # ---------------------------------------------------------------- massa
 @router.get("/massa")
-def massa(sessao=Depends(requer("producao.ver")), conn=Depends(get_db)):
+def massa(sessao=Depends(requer_alguma("producao.massa", "producao.gerir")), conn=Depends(get_db)):
     return svc.saldo_massa(conn, LOJA_ID)
 
 
@@ -294,9 +317,12 @@ def perda_massa(d: PerdaMassaIn, sessao=Depends(requer("producao.perda_massa")),
 
 # ---------------------------------------------------------------- motivos (listas em tabela)
 @router.get("/motivos")
-def motivos(sessao=Depends(requer("producao.ver")), conn=Depends(get_db)):
-    return {"retrocesso": conn.execute("SELECT id, nome, avisa_estoque, ativo FROM motivo_retrocesso WHERE loja_id = %s ORDER BY id", (LOJA_ID,)).fetchall(),
-            "perda": conn.execute("SELECT id, nome, ativo FROM motivo_perda WHERE loja_id = %s ORDER BY id", (LOJA_ID,)).fetchall()}
+def motivos(sessao=Depends(requer_alguma("producao.montagem", "producao.perda", "producao.perda_massa", "producao.refazer", "producao.gerir")), conn=Depends(get_db)):
+    perms = PERMISSOES.get(sessao["perfil"], set())
+    ve_retro = bool(perms & {"producao.montagem", "producao.gerir"})  # cada função recebe só a lista de motivos que usa
+    ve_perda = bool(perms & {"producao.perda", "producao.perda_massa", "producao.refazer", "producao.gerir"})
+    return {"retrocesso": conn.execute("SELECT id, nome, avisa_estoque, ativo FROM motivo_retrocesso WHERE loja_id = %s ORDER BY id", (LOJA_ID,)).fetchall() if ve_retro else [],
+            "perda": conn.execute("SELECT id, nome, ativo FROM motivo_perda WHERE loja_id = %s ORDER BY id", (LOJA_ID,)).fetchall() if ve_perda else []}
 
 
 @router.post("/motivos/iniciar-padrao", status_code=201)

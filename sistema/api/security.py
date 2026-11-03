@@ -19,7 +19,7 @@ PERFIS = ("administrador", "proprietario", "gerente", "subgerente", "atendente",
 _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar",
           "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar",
           "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir",
-          "producao.ver", "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
+          "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
           "producao.refazer", "producao.gerir", "producao.perda_massa",
           "caixa.ver", "caixa.operar", "caixa.aprovar", "caixa.gerir",
           "estoque.ver", "estoque.mover", "estoque.gerir", "compras.ver", "compras.operar", "compras.aprovar",
@@ -28,7 +28,7 @@ _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ve
 _GERENCIA = {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar", "cardapio.ver", "cardapio.editar",
              "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar", "ficha.ver", "ficha.editar",
              "vendas.ver", "vendas.criar", "vendas.gerir",
-             "producao.ver", "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
+             "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
              "producao.refazer", "producao.gerir", "producao.perda_massa",
              "caixa.ver", "caixa.operar", "caixa.gerir",
              "estoque.ver", "estoque.mover", "estoque.gerir", "compras.ver", "compras.operar", "compras.aprovar",
@@ -41,11 +41,11 @@ PERMISSOES = {
     "subgerente": _GERENCIA,
     # Atendente consulta o cardápio e os entregadores e cadastra cliente na primeira compra.
     "atendente": {"rh.proprio", "cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver",
-                  "vendas.ver", "vendas.criar", "producao.ver", "caixa.ver", "caixa.operar"},
+                  "vendas.ver", "vendas.criar", "caixa.ver", "caixa.operar"},
     # Funções de produção: cada tablet só enxerga e faz o que é da sua função (login pessoal).
-    "massa": {"rh.proprio", "producao.ver", "producao.massa", "producao.perda_massa"},
-    "pizzaiolo": {"rh.proprio", "producao.ver", "producao.montagem", "producao.forno", "producao.perda"},
-    "acabamento": {"rh.proprio", "producao.ver", "producao.forno", "producao.acabamento", "producao.perda", "producao.refazer"},
+    "massa": {"rh.proprio", "producao.massa", "producao.perda_massa"},
+    "pizzaiolo": {"rh.proprio", "producao.montagem", "producao.perda"},  # forno é do acabamento (decisão de Marlon, 03/11/2026)
+    "acabamento": {"rh.proprio", "producao.forno", "producao.acabamento", "producao.perda", "producao.refazer"},
 }
 
 
@@ -151,6 +151,17 @@ def get_current_session(authorization: Optional[str] = Header(default=None), con
         raise HTTPException(status_code=401, detail="Sessão inválida ou expirada")
     row["token"] = token
     return row
+
+
+def requer_alguma(*permissoes: str):
+    """Como requer, mas basta uma das permissões. Usado em leituras de tela compartilhada (acesso rígido por função)."""
+    def _guard(sessao: dict = Depends(get_current_session)) -> dict:
+        if sessao["deve_trocar_senha"]:
+            raise HTTPException(status_code=403, detail="Troque a senha antes de continuar.")
+        if not PERMISSOES.get(sessao["perfil"], set()).intersection(permissoes):
+            raise HTTPException(status_code=403, detail="Perfil insuficiente para esta operação")
+        return sessao
+    return _guard
 
 
 def requer(permissao: str):

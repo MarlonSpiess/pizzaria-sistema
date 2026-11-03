@@ -49,7 +49,7 @@ function telaLogin(msg) {
       const r = await api("POST", "/auth/login", { usuario: u.value, senha: s.value });
       estado.token = r.token; estado.eu = r;
       try { sessionStorage.setItem("pz-token", r.token); } catch (e) { /* ok */ }
-      estado.aba = "painel"; desenhar();
+      estado.aba = abaInicial(); desenhar();
     } catch (e) { erro.replaceChildren(aviso("erro", e.message)); }
   } },
   h("h2", {}, "Entrar"), msg ? aviso("ok", msg) : null, erro,
@@ -76,27 +76,45 @@ function telaTrocaSenha() {
     h("button", { class: "sec", onclick: () => sair() }, "Sair")));
 }
 
+// Cada aba pertence a uma área (um login, 3 áreas; decisão de Marlon, 03/11/2026): producao, vendas, admin.
+// Área "conta" fica fora do trilho (Meus dados abre pelo nome no topo). O servidor confere a permissão de cada chamada; isto só esconde.
+const GERENCIA_PERFIS = ["administrador", "proprietario", "gerente", "subgerente"];
+const AREAS = [["producao", "Produção", "🍕"], ["vendas", "Vendas", "🧾"], ["admin", "Admin", "🏢"]];
 const ABAS = [
-  ["painel", "Painel", null, "Visão geral", "📊"],
-  ["vendas", "Vendas", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Operação", "🧾"],
-  ["producao", "Produção", ["administrador", "proprietario", "gerente", "subgerente", "massa", "pizzaiolo", "acabamento", "atendente"], "Operação", "👨‍🍳"],
-  ["caixa", "Caixa", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Operação", "💰"],
-  ["estoque", "Estoque", ["administrador", "proprietario", "gerente", "subgerente"], "Suprimentos", "📦"],
-  ["compras", "Compras", ["administrador", "proprietario", "gerente", "subgerente"], "Suprimentos", "🛒"],
-  ["contas", "Contas", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "🏦"],
-  ["bi", "BI", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "📊"],
-  ["custos", "Custos", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "📈"],
-  ["imobilizado", "Imobilizado", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "🏭"],
-  ["rh", "RH", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "👥"],
-  ["meusdados", "Meus dados", null, "Visão geral", "🗓️"],
-  ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "🍕"],
-  ["fichas", "Fichas e etapas", ["administrador", "proprietario", "gerente", "subgerente"], "Cadastros", "📋"],
-  ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "👥"],
-  ["entregadores", "Entregadores", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "🛵"],
-  ["usuarios", "Usuários", ["administrador", "proprietario"], "Sistema", "🔑"],
-  ["parametros", "Parâmetros", ["administrador", "proprietario", "gerente", "subgerente"], "Sistema", "⚙️"],
-  ["auditoria", "Auditoria", ["administrador", "proprietario", "gerente", "subgerente"], "Sistema", "🧾"],
+  // [id, nome, perfis (null = todos), grupo (não usado no trilho), ícone, área]
+  ["producao", "Produção", [...GERENCIA_PERFIS, "massa", "pizzaiolo", "acabamento", "atendente"], "", "👨‍🍳", "producao"],
+  ["vendas", "Pedidos", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "🧾", "vendas"],
+  ["caixa", "Caixa e entregas", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "💰", "vendas"],
+  ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "👥", "vendas"],
+  ["entregadores", "Entregadores", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "🛵", "vendas"],
+  ["painel", "Painel", GERENCIA_PERFIS, "", "📊", "admin"],
+  ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "🍕", "admin"],
+  ["fichas", "Fichas e etapas", GERENCIA_PERFIS, "", "📋", "admin"],
+  ["estoque", "Estoque", GERENCIA_PERFIS, "", "📦", "admin"],
+  ["compras", "Compras", GERENCIA_PERFIS, "", "🛒", "admin"],
+  ["contas", "Contas", GERENCIA_PERFIS, "", "🏦", "admin"],
+  ["bi", "BI", GERENCIA_PERFIS, "", "📈", "admin"],
+  ["custos", "Custos", GERENCIA_PERFIS, "", "🧮", "admin"],
+  ["imobilizado", "Imobilizado", GERENCIA_PERFIS, "", "🏭", "admin"],
+  ["rh", "RH", GERENCIA_PERFIS, "", "🪪", "admin"],
+  ["usuarios", "Usuários", ["administrador", "proprietario"], "", "🔑", "admin"],
+  ["parametros", "Parâmetros", GERENCIA_PERFIS, "", "⚙️", "admin"],
+  ["auditoria", "Auditoria", GERENCIA_PERFIS, "", "🧾", "admin"],
+  ["meusdados", "Meus dados", null, "", "🗓️", "conta"],
 ];
+const ENTRADA_AREA = { atendente: "vendas", massa: "producao", pizzaiolo: "producao", acabamento: "producao" };
+const abasDoPerfil = () => ABAS.filter(([, , perfis]) => !perfis || perfis.includes(estado.eu.perfil));
+const areasDoPerfil = () => AREAS.filter(([id]) => abasDoPerfil().some((a) => a[5] === id));
+function areaDaAba(id) { const a = ABAS.find((x) => x[0] === id); return a ? a[5] : null; }
+function abaInicial() {
+  const areas = areasDoPerfil();
+  let ultima = null;
+  try { ultima = localStorage.getItem("pz-area-" + estado.eu.perfil); } catch (e) { /* sem armazenamento */ }
+  const id = ENTRADA_AREA[estado.eu.perfil] || ultima || "admin";
+  const area = (areas.find(([a]) => a === id) || areas[0] || [])[0];
+  const aba = abasDoPerfil().find((a) => a[5] === area);
+  return aba ? aba[0] : "meusdados";
+}
 
 function alternarTema() {
   const dia = document.documentElement.getAttribute("data-theme") === "light";
@@ -105,20 +123,32 @@ function alternarTema() {
 }
 
 function moldura(conteudo) {
-  const abas = ABAS.filter(([, , perfis]) => !perfis || perfis.includes(estado.eu.perfil));
+  const todas = abasDoPerfil();
+  const areaAtual = areaDaAba(estado.aba);
+  const areas = areasDoPerfil();
   const itens = [];
-  let grupo = null;
-  for (const [id, nome, , g, icone] of abas) {
-    if (g !== grupo) { itens.push(h("div", { class: "menu-sec" }, g)); grupo = g; }
-    itens.push(h("button", { class: "menu-item" + (id === estado.aba ? " ativo" : ""), title: nome, onclick: () => { estado.aba = id; desenhar(); } },
-      h("span", { class: "ic" }, icone), h("span", { class: "rot" }, nome)));
+  if (areas.length > 1) {
+    itens.push(h("div", { class: "areas", role: "group", "aria-label": "Área" }, areas.map(([id, nome, ic]) =>
+      h("button", { class: "area" + (id === areaAtual ? " ativo" : ""), title: nome, "aria-pressed": String(id === areaAtual), onclick: () => {
+        try { localStorage.setItem("pz-area-" + estado.eu.perfil, id); } catch (e) { /* sem armazenamento */ }
+        estado.aba = todas.find((a) => a[5] === id)[0]; desenhar();
+      } }, h("span", { "aria-hidden": "true" }, ic), nome))));
+  }
+  if (areaAtual === "conta" && areas.length === 1) {  // quem tem uma área só precisa de um caminho de volta de Meus dados
+    itens.push(h("button", { class: "menu-item", onclick: () => { estado.aba = abaInicial(); desenhar(); } },
+      h("span", { class: "ic", "aria-hidden": "true" }, "↩"), h("span", { class: "rot" }, "Voltar")));
+  }
+  for (const [id, nome, , , icone, area] of todas) {
+    if (area !== areaAtual || area === "conta") continue;
+    itens.push(h("button", { class: "menu-item" + (id === estado.aba ? " ativo" : ""), title: nome, "aria-current": id === estado.aba ? "page" : "false", onclick: () => { estado.aba = id; desenhar(); } },
+      h("span", { class: "ic", "aria-hidden": "true" }, icone), h("span", { class: "rot" }, nome)));
   }
   const menu = h("aside", { id: "menu" },
     h("div", { class: "marca" }, h("img", { src: "/static/logo.svg", alt: "Pizza" }),
       h("div", { class: "txt" }, h("div", { class: "t1" }, "Sistema da Pizzaria"), h("div", { class: "t2" }, "Gestão integrada"))),
     h("nav", { class: "menu" }, itens));
   const fundo = h("div", { id: "fundo-menu", onclick: () => { menu.classList.remove("aberto"); fundo.classList.remove("aberto"); } });
-  const titulo = (abas.find(([id]) => id === estado.aba) || abas[0])[1];
+  const titulo = (todas.find(([id]) => id === estado.aba) || todas[0])[1];
   const topo = h("div", { class: "topo" },
     h("button", { class: "sanduiche", title: "Menu", onclick: () => {
       if (window.matchMedia("(max-width:760px)").matches) { const a = menu.classList.toggle("aberto"); fundo.classList.toggle("aberto", a); }
@@ -128,7 +158,7 @@ function moldura(conteudo) {
     h("div", { class: "topo-dir" },
       h("button", { class: "tema", title: "Alternar noite e dia", onclick: alternarTema },
         h("span", {}, "🌙"), h("span", { class: "tema-trilho" }, h("span", { class: "tema-bola" })), h("span", {}, "☀️")),
-      h("div", { class: "chip" }, "👤 ", h("b", {}, estado.eu.nome), h("span", { class: "nome-completo" }, " (" + estado.eu.perfil + ")")),
+      h("button", { class: "chip", title: "Meus dados", onclick: () => { estado.aba = "meusdados"; desenhar(); } }, "👤 ", h("b", {}, estado.eu.nome), h("span", { class: "nome-completo" }, " (" + estado.eu.perfil + ")")),
       h("button", { class: "sec", onclick: () => sair() }, "Sair")));
   raiz.replaceChildren(h("div", { id: "quadro" }, menu, fundo,
     h("div", { id: "principal" }, topo, h("main", { class: "conteudo" }, h("div", { class: "conteudo-miolo" }, conteudo)))));
@@ -138,7 +168,7 @@ async function abaPainel() {
   const alvo = h("div"); alvo.append(h("p", {}, "Carregando..."));
   moldura(alvo);
   const blocos = [h("div", { class: "cartao" }, h("h2", {}, "Bem-vindo, " + estado.eu.nome),
-    h("p", {}, "Este é o primeiro incremento do sistema: acesso, usuários, parâmetros e auditoria. Pedidos, produção e caixa entram nas próximas fatias."))];
+    h("p", {}, "Use as áreas no alto do menu: Produção, Vendas e Admin. Cada pessoa vê só as áreas e telas do seu perfil."))];
   if (["administrador", "proprietario", "gerente", "subgerente"].includes(estado.eu.perfil)) {
     try {
       const b = await api("GET", "/sistema/backup");
@@ -824,9 +854,9 @@ const GER = ["administrador", "proprietario", "gerente", "subgerente"];
 const SUBS_PRODUCAO = [
   ["massa", "Massa", [...GER, "massa"]],
   ["montagem", "Montagem", [...GER, "pizzaiolo"]],
-  ["forno", "Forno", [...GER, "pizzaiolo", "acabamento"]],
+  ["forno", "Forno", [...GER, "acabamento"]],
   ["acabamento", "Acabamento", [...GER, "acabamento"]],
-  ["andamento", "Andamento", [...GER, "atendente", "massa", "pizzaiolo", "acabamento"]],
+  ["andamento", "Andamento", [...GER, "atendente"]],
   ["motivos", "Motivos", GER],
 ];
 let relogioProducao = null, etiquetaAberta = null, desenhandoProducao = false;
@@ -1804,6 +1834,7 @@ async function desenhar() {
     try { estado.eu = await api("GET", "/auth/me"); } catch (e) { return telaLogin(); }
   }
   if (estado.eu.deve_trocar_senha) return telaTrocaSenha();
+  if (!abasDoPerfil().some(([id]) => id === estado.aba)) estado.aba = abaInicial();
   const abas = { painel: abaPainel, vendas: abaVendas, producao: abaProducao, caixa: abaCaixa, estoque: abaEstoque, compras: abaCompras, contas: abaContas, custos: abaCustos, bi: abaBi, imobilizado: abaImobilizado, rh: abaRh, meusdados: abaMeusDados, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
   await (abas[estado.aba] || abaPainel)();
 }

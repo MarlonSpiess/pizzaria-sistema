@@ -37,6 +37,15 @@ body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;background
 .menu-item{display:flex;align-items:center;gap:11px;width:100%;padding:9px 10px;border-radius:8px;color:var(--txt2);cursor:pointer;font-size:14px;font-weight:500;margin:1px 0;background:transparent;border:0;text-align:left;font-family:inherit;white-space:nowrap}
 .menu-item:hover{background:var(--panel);color:var(--txt)}
 .menu-item.ativo{background:linear-gradient(90deg,var(--panel2),transparent);color:var(--txt);box-shadow:inset 3px 0 0 var(--brand);font-weight:600}
+.areas{display:flex;gap:6px;padding:10px 8px 6px}
+.area{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--txt2);border-radius:12px;padding:6px 2px;cursor:pointer;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;font-family:inherit;min-height:44px}
+.area span{display:block;font-size:18px}
+.area.ativo{border-color:var(--brand);color:var(--txt);background:var(--panel2)}
+.area:focus-visible,.menu-item:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+#menu.recolhido .areas{flex-direction:column;padding:8px 4px}
+#menu.recolhido .area{font-size:0}
+#menu.recolhido .area span{font-size:18px}
+.chip{cursor:pointer;font-family:inherit;color:inherit}
 .menu-item .ic{width:20px;text-align:center;font-size:16px;flex-shrink:0}
 #principal{flex:1;min-width:0;display:flex;flex-direction:column}
 .topo{height:56px;flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 20px}
