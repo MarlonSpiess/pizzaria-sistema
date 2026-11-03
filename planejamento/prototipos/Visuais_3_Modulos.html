@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prévia visual dos 3 módulos</title>
+<style>
+:root{
+  --bg:#17120f;--bg2:#1f1915;--panel:#2a221c;--panel2:#33291f;
+  --line:#44372b;--txt:#f3ebe0;--txt2:#cdbfae;--txt3:#a99a88;
+  --brand:#d9a441;--accent:#e0573a;--crit:#ff6b5e;--alerta:#ffb020;--ok:#4cc27a;--info:#6aa8ff;--roxo:#b58cff;
+  --on-brand:#2b1d06;--shadow:0 10px 30px rgba(0,0,0,.35);--rail-bg:#120e0b;
+  --hero:linear-gradient(120deg,#3a2a1c,#2a1d16 60%,#3b1a12);
+  --switch-track:#44372b;--switch-knob:#f3ebe0;
+}
+[data-theme="light"]{
+  --bg:#faf6ef;--bg2:#f1e7d8;--panel:#ffffff;--panel2:#f6efe4;
+  --line:#e9dfd0;--txt:#2b2420;--txt2:#5e534a;--txt3:#6f6357;
+  --brand:#b5361f;--accent:#d9a441;--crit:#b32d20;--alerta:#8a5a00;--ok:#2f7a48;--info:#2a62b8;--roxo:#6b45b8;
+  --on-brand:#ffffff;--shadow:0 8px 24px rgba(80,50,20,.08);--rail-bg:#2b2420;
+  --hero:linear-gradient(120deg,#fde9c8,#fbe0d4 60%,#f7d0c4);
+  --switch-track:#b5361f;--switch-knob:#ffffff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.45;display:flex;flex-direction:column}
+button,select,input{font-family:inherit}
+.mono{font-variant-numeric:tabular-nums}
+.faixa-proto{background:var(--accent);color:#1a0f08;text-align:center;font-size:12px;font-weight:700;padding:3px 8px;letter-spacing:.4px}
+#quadro{display:flex;flex:1;min-height:0}
+.trilho{width:88px;flex-shrink:0;background:var(--rail-bg);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:4px;overflow-y:auto}
+.areas{display:flex;flex-direction:column;gap:4px;width:76px;padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid #ffffff1a}
+.area{background:#ffffff0d;border:1px solid transparent;color:#b8a996;border-radius:12px;padding:6px 0;cursor:pointer;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.area span{display:block;font-size:18px}
+.area.ativo{border-color:#d9a441;color:#ffd98c;background:#d9a44122}
+.r-item{width:72px;min-height:60px;background:none;border:0;color:#b8a996;border-radius:14px;padding:8px 0;cursor:pointer;font-size:12px;font-weight:600}
+.r-item span{display:block;font-size:22px;margin-bottom:2px}
+@media (hover:hover){.r-item:hover{background:#ffffff12;color:#fff}}
+.r-item.ativo{background:#d9a44133;color:#ffd98c}
+.r-item:focus-visible,.area:focus-visible{outline:2px solid #ffd98c;outline-offset:2px}
+.aba:focus-visible,.tema:focus-visible,.btn:focus-visible,.chip-f:focus-visible,.avatar:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.area-principal{flex:1;min-width:0;overflow-y:auto}
+.miolo{max-width:1180px;margin:0 auto;padding:20px 24px 40px}
+.cab{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.cab h1{font-size:24px;font-weight:800;letter-spacing:-.3px}
+.cab .sub{color:var(--txt3);font-size:14px}
+.cab-dir{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cab-dir label{font-size:13px;color:var(--txt3)}
+select{padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:14px}
+.tema{display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:6px 10px;color:var(--txt3)}
+.tema-trilho{width:38px;height:21px;background:var(--switch-track);border-radius:11px;position:relative}
+.tema-bola{position:absolute;top:3px;left:3px;width:15px;height:15px;background:var(--switch-knob);border-radius:50%;transition:.2s}
+[data-theme="light"] .tema-bola{left:20px}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-weight:800;border:0}
+.abas{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.aba{background:var(--panel);border:1px solid var(--line);color:var(--txt2);border-radius:24px;padding:9px 14px;font-weight:600;cursor:pointer;font-size:14px}
+.aba.ativo{background:var(--txt);color:var(--bg);border-color:var(--txt)}
+
+/* blocos */
+.cartao{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.cartao h2{font-size:16px;margin-bottom:12px}
+.cartao h2 small{font-weight:500;color:var(--txt3);font-size:13px}
+.grade{display:grid;gap:14px;margin-bottom:14px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g21{grid-template-columns:2fr 1fr}
+.grade>.cartao{margin-bottom:0}
+.alertas{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:14px}
+.alerta{display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:16px;background:color-mix(in srgb,var(--alerta) 14%,var(--panel));border:1px solid color-mix(in srgb,var(--alerta) 40%,transparent)}
+.alerta.crit{background:color-mix(in srgb,var(--crit) 14%,var(--panel));border-color:color-mix(in srgb,var(--crit) 40%,transparent)}
+.alerta .ic{font-size:26px}.alerta b{display:block}.alerta small{color:var(--txt2)}
+.hero{background:var(--hero);border-radius:20px;padding:20px 24px;margin-bottom:14px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;border:1px solid var(--line)}
+.hero .grande{font-size:36px;font-weight:800;letter-spacing:-1px}
+.rot{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3);font-weight:700}
+.hero .meta{flex:1;min-width:220px}
+.barra{height:12px;background:color-mix(in srgb,var(--txt) 12%,transparent);border-radius:6px;overflow:hidden;margin:8px 0 4px}
+.barra i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--accent));border-radius:6px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.kpi .topo-k{display:flex;align-items:center;gap:10px}
+.kpi .bolha{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:19px;background:color-mix(in srgb,var(--c) 18%,transparent)}
+.kpi .val{font-size:26px;font-weight:800;margin:8px 0 2px;letter-spacing:-.5px}
+.kpi .var{font-size:12px;font-weight:700;color:var(--c)}
+.pill{display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px;color:var(--c,var(--txt2));background:color-mix(in srgb,var(--c,var(--txt2)) 18%,transparent)}
+.pill.crit{--c:var(--crit)}.pill.ok{--c:var(--ok)}.pill.al{--c:var(--alerta)}.pill.in{--c:var(--info)}.pill.ro{--c:var(--roxo)}
+.btn{border:0;border-radius:14px;padding:12px 18px;font-weight:700;cursor:pointer;font-size:15px;background:var(--panel2);color:var(--txt)}
+.btn.principal{background:var(--brand);color:var(--on-brand);box-shadow:0 6px 16px color-mix(in srgb,var(--brand) 35%,transparent)}
+.btn.perigo{background:color-mix(in srgb,var(--crit) 16%,transparent);color:var(--crit)}
+.btn,.aba,.chip-f,.tema,select{min-height:44px}
+.btn.grande{padding:18px 26px;font-size:18px;border-radius:18px}
+.barra-acoes{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.busca{flex:1;min-width:200px}
+.busca input{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:15px}
+.chip-f{cursor:pointer;background:var(--panel);border:1px solid var(--line);color:var(--txt2);border-radius:24px;padding:9px 14px;font-weight:600;font-size:14px}
+.chip-f.ativo{background:var(--txt);color:var(--bg);border-color:var(--txt)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3);padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right}
+.tab-rolar{overflow-x:auto}
+.legenda div{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.legenda i{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.rosca{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.anel{width:120px;height:120px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+.anel div{width:76px;height:76px;border-radius:50%;background:var(--panel);display:grid;place-items:center;font-weight:800}
+.barras{display:flex;align-items:flex-end;gap:10px;height:140px;padding-top:8px}
+.barras div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:4px;font-size:11px;color:var(--txt3)}
+.barras i{display:block;width:100%;background:linear-gradient(180deg,var(--brand),var(--accent));border-radius:6px 6px 2px 2px;min-height:4px}
+p.nota{color:var(--txt3);font-size:13px;margin-top:8px}
+
+/* quadro de pedidos e filas */
+.quadro-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;overflow-x:auto;padding-bottom:8px}
+.coluna{background:var(--bg2);border-radius:18px;padding:12px;min-height:260px}
+.coluna h3{font-size:14px;display:flex;align-items:center;gap:8px;margin:2px 4px 10px}
+.coluna h3 .n{margin-left:auto;background:var(--panel);border-radius:10px;padding:1px 8px;font-size:12px}
+.coluna h3 i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.ped{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;border-top:4px solid var(--c)}
+.ped .l1{display:flex;justify-content:space-between;align-items:center}
+.ped .n1{font-size:20px;font-weight:800}
+.ped b{display:block;margin-top:2px}
+.ped small{color:var(--txt3);display:block}
+.ped .l3{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap}
+/* tablet de produção */
+.tablet{background:var(--bg2);border:1px solid var(--line);border-radius:26px;padding:18px;margin-bottom:14px}
+.pizza-atual{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.pizza-atual .disco{width:96px;height:96px;border-radius:50%;background:radial-gradient(circle,#d6492f 0 55%,#e8c26a 56% 78%,#d9a441 79%);display:grid;place-items:center;font-size:34px;flex-shrink:0}
+.pizza-atual h2{font-size:26px;margin:0}
+.pizza-atual .info{flex:1;min-width:200px}
+.acoes-t{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.etiqueta{border:2px dashed var(--line);border-radius:12px;padding:12px 16px;background:var(--panel);max-width:300px}
+.etiqueta b{font-size:20px;display:block}
+.fases{display:flex;gap:6px;margin-top:6px}
+.fases i{flex:1;height:8px;border-radius:4px;background:var(--line)}
+.fases i.f{background:var(--ok)}.fases i.a{background:var(--alerta)}
+.so-leitor{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.tab-rolar:focus-visible,.quadro-k:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@media (max-width:1100px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}.g21{grid-template-columns:1fr}}
+@media (max-width:760px){
+  #quadro{flex-direction:column}
+  .trilho{order:1;width:100%;flex-direction:row;justify-content:flex-start;padding:4px;overflow-x:auto;flex-shrink:0}
+  .areas{flex-direction:row;width:auto;border-bottom:0;border-right:1px solid #ffffff1a;padding:0 6px 0 0;margin:0 6px 0 0}
+  .area{width:auto;min-width:52px;padding:6px;flex-shrink:0}
+  .r-item{width:64px;flex-shrink:0;padding:6px 0;font-size:10px}.r-item span{font-size:19px}
+  .miolo{padding:14px}
+  .cab h1{font-size:20px}
+  .cab-dir{margin-left:0;width:100%}.cab-dir .avatar{margin-left:auto}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .quadro-k{grid-template-columns:repeat(4,85%)}
+}
+</style>
+</head>
+<body>
+<div class="faixa-proto">PRÉVIA VISUAL (LAYOUT C). DADOS FICTÍCIOS, NADA É GRAVADO. AS TELAS FINAIS SÃO A ETAPA 2.</div>
+<div id="quadro">
+  <nav class="trilho" id="trilho" aria-label="Menu"></nav>
+  <main class="area-principal"><div class="miolo">
+    <div class="cab">
+      <div><h1 id="titulo"></h1><div class="sub" id="subtitulo"></div></div>
+      <div class="cab-dir">
+        <label for="perfil">Simular perfil</label>
+        <select id="perfil"></select>
+        <button class="tema" id="tema" aria-label="Tema claro" aria-pressed="false"><span aria-hidden="true">🌙</span><span class="tema-trilho"><span class="tema-bola"></span></span><span aria-hidden="true">☀️</span></button>
+        <div class="avatar" title="Usuário Exemplo" aria-hidden="true">UE</div>
+      </div>
+    </div>
+    <div class="abas" id="abas" role="group" aria-label="Submenus"></div>
+    <div id="corpo"></div>
+  </div></main>
+</div>
+<script>
+"use strict";
+const GER = ["administrador", "proprietario", "gerente", "subgerente"];
+const ROTULO = { administrador: "Administrador", proprietario: "Proprietário", gerente: "Gerente", subgerente: "Subgerente", atendente: "Atendente", massa: "Massa", pizzaiolo: "Pizzaiolo", acabamento: "Acabamento" };
+const PERFIS = [...GER, "atendente", "massa", "pizzaiolo", "acabamento"];
+const ENTRADA = { atendente: "vendas", massa: "producao", pizzaiolo: "producao", acabamento: "producao" };
+
+// ---------- pedaços reutilizáveis (todo texto é fixo e fictício) ----------
+const kpi = (ic, rot, val, varr, cor) => `<div class="kpi" style="--c:var(--${cor})"><div class="topo-k"><div class="bolha">${ic}</div><div class="rot">${rot}</div></div><div class="val mono">${val}</div><div class="var">${varr}</div></div>`;
+const alerta = (ic, t, s, crit) => `<div class="alerta${crit ? " crit" : ""}"><span class="ic" aria-hidden="true">${ic}</span><div><b>${t}</b><small>${s}</small></div></div>`;
+const ped = (n, cli, desc, cor, pills, btn) => `<div class="ped" style="--c:var(--${cor})"><div class="l1"><span class="n1 mono">#${n}</span><span class="pill ${pills[0][1]}">${pills[0][0]}</span></div><b>${cli}</b><small>${desc}</small><div class="l3">${pills.slice(1).map(([t, c]) => `<span class="pill ${c}">${t}</span>`).join("")}${btn ? `<button class="btn" style="margin-left:auto">${btn}</button>` : ""}</div></div>`;
+const texto = (h) => String(h).replace(/<[^>]+>/g, "").trim();
+const ehNum = (t) => /^(R\$ )?[\d.,]+( kg| un| min| h)?%?$/.test(t);
+const tabela = (cab, linhas) => {
+  const num = cab.map((_, c) => { const vals = linhas.map((l) => texto(l[c])).filter(Boolean); return vals.length > 0 && vals.every(ehNum); });
+  return `<div class="tab-rolar" tabindex="0" role="region" aria-label="Tabela rolável"><table><thead><tr>${cab.map((c, k) => `<th scope="col"${num[k] ? ' class="num"' : ""}>${c || '<span class="so-leitor">Ação</span>'}</th>`).join("")}</tr></thead><tbody>${linhas.map((l) => `<tr>${l.map((c, k) => `<td${num[k] ? ' class="num mono"' : ""}>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+};
+const bloco = (t, corpo) => `<div class="cartao"><h2>${t}</h2>${corpo}</div>`;
+const graficoBarras = (dados) => { const m = Math.max(...dados.map((d) => d[1])); return `<div class="barras">${dados.map(([r, v]) => `<div><span class="mono">${v}</span><i style="height:${Math.round(v / m * 100)}%"></i>${r}</div>`).join("")}</div>`; };
+const tel = (conteudo) => `<div class="tablet">${conteudo}</div>`;
+
+// ---------- telas ----------
+const TELAS = {
+  // PRODUÇÃO
+  massa: () => tel(bloco("Massa aberta", tabela(["Tamanho", "Pizzas esperando", "Saldo de massa aberta", "Falta fazer"], [["Grande", "9", "6", "3"], ["Broto", "5", "3", "2"]]) + `<p class="nota">Saldo = última contagem + lotes menos massas usadas e perdidas depois dela. Esperando = pizzas ainda na lista.</p>`)
+    + bloco("Lançar", `<div class="barra-acoes"><label>Tamanho <select aria-label="Tamanho"><option>Grande</option><option>Broto</option></select></label><label>Quantidade <input inputmode="numeric" aria-label="Quantidade" style="width:90px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--txt)"></label></div><div class="barra-acoes" style="margin-top:12px"><button class="btn grande principal">Lançar lote de massa</button><button class="btn grande">Informar contagem de massa aberta</button><button class="btn grande perigo">Perda de massa (escolha o motivo)</button></div>`)),
+  montagem: () => tel(`<div class="cartao pizza-atual"><div class="disco" aria-hidden="true">🍕</div><div class="info"><span class="pill ro">Em montagem · sua pizza</span><h2>Sabor Exemplo 1 · Grande</h2><p>Pedido #12 · Cliente Exemplo A</p><p class="nota">Adicionais: Borda Exemplo · Obs.: sem cebola</p></div><span class="pill crit">⚡ URGENTE</span></div>
+    <div class="acoes-t"><button class="btn grande principal">Produzida (vai ao forno)</button><button class="btn grande">Retroceder (motivo obrigatório)</button><button class="btn grande perigo">Perdeu a pizza (motivo)</button></div>
+    <p class="nota">Retroceder e perder pedem um motivo da lista. Perder pede confirmação: "Registrar a perda desta pizza?". Sem pizza em mãos, aparece o botão "Pegar a próxima pizza".</p>`
+    + bloco("Fila <small>3 na lista</small>", tabela(["Pedido", "Pizza", "Observação"], [["#13", "Sabor Exemplo 2 · Broto", ""], ["#14 ⚡", "Sabor Exemplo 3 · Grande", "Borda Exemplo"], ["#15", "Calzone Exemplo", "sem azeitona"]]))),
+  forno: () => tel(`<div class="cartao"><h2>Forno: 3 de 4 pizza(s)</h2><p class="nota">Tempo de forno: 12 min por pizza (valor de exemplo; vem dos parâmetros da loja). Acima da capacidade o sistema só avisa.</p></div>`
+    + bloco("No forno", tabela(["Pedido", "Pizza", ""], [["#9", "Sabor Exemplo 4 · Grande", '<button class="btn principal">Saiu do forno</button>'], ["#10", "Sabor Exemplo 1 · Grande", '<button class="btn principal">Saiu do forno</button>'], ["#11", "Sabor Exemplo 2 · Broto", '<button class="btn principal">Saiu do forno</button>']]))),
+  acabamento: () => tel(`<div class="grade g2"><div class="cartao"><h2>Saíram do forno</h2>${tabela(["Pedido", "Pizza", ""], [["#8 Cliente Exemplo B", "Sabor Exemplo 2 · Grande", '<button class="btn principal">Acabada e etiqueta</button> <button class="btn">Refazer (motivo)</button>'], ["#7 Balcão", "Calzone Exemplo", '<button class="btn principal">Acabada e etiqueta</button> <button class="btn">Refazer (motivo)</button>']])}</div>
+    <div class="cartao"><h2>Etiqueta <small>prévia da impressão</small></h2><div class="etiqueta"><b>Cliente Exemplo B · Id 8</b>Sabor Exemplo 2 (Grande)</div><div class="barra-acoes" style="margin-top:12px"><button class="btn">Imprimir</button><button class="btn">Fechar</button></div></div></div>`
+    + bloco("Pedidos em aberto", tabela(["Pedido", "Cliente", "Pizzas", "Situação", ""], [["#6", "Cliente Exemplo C", "2 de 2", '<span class="pill ok">pronto</span>', '<button class="btn principal">Marcar pedido acabado</button>'], ["#8", "Cliente Exemplo B", "0 de 1", '<span class="pill al">em produção</span>', ""]]) + `<p class="nota">Bebida e acompanhamento não entram nesta lista. Refazer: a pizza atual vira perda e uma nova entra na fila.</p>`)),
+  andamento: () => tel(bloco("Pedidos em aberto", tabela(["Pedido", "Cliente", "Tipo", "Pizzas acabadas", "Situação", "Entrega calculada"], [
+      ["#6", "Cliente Exemplo C", "Retirada", "2 de 2", '<span class="pill ok">acabado</span>', "19:35"],
+      ["#9", "Cliente Exemplo D", "Entrega", "0 de 1", '<span class="pill al">no forno</span>', "19:55"],
+      ["#12", "Cliente Exemplo A", "Entrega", "0 de 1", '<span class="pill in">em montagem</span>', "20:10"],
+      ["#13", "Cliente Exemplo E", "Retirada", "0 de 2", '<span class="pill">na lista</span>', "20:20"]]) + `<p class="nota">A hora de entrega é calculada pelo sistema a partir da fila e do forno.</p>`)),
+  perdas: () => `<div class="grade g3">${kpi("♻️", "Perdas hoje", "2", "pizzas", "crit")}${kpi("🔁", "Refações", "1", "pizza", "alerta")}${kpi("🥣", "Perda de massa", "1", "unidade", "info")}</div>` + bloco("Perdas e refações <small>(consulta da gerência)</small>", tabela(["Hora", "Pedido", "Fase", "Motivo", "Quem"], [["19:05", "#4", "Montagem", "Motivo Exemplo 1", "Pizzaiolo Exemplo"], ["19:31", "#7", "Acabamento", "Motivo Exemplo 2", "Acabamento Exemplo"]])),
+  // VENDAS
+  painelv: () => `<div class="alertas">${alerta("⏱️", "1 pedido atrasado", "Nº 6, há mais de 35 min.", true)}${alerta("🛵", "1 entrega sem entregador", "Pedido #8")}</div>
+    <div class="grade g3">${kpi("🧾", "Pedidos abertos", "5", "3 entrega · 2 retirada", "info")}${kpi("💰", "Caixa do dia", "Aberto", "desde 18:00", "ok")}${kpi("🛵", "Entregas de hoje", "8", "3 na rua agora", "roxo")}</div>
+    <p class="nota">Os três indicadores reúnem o que já existe em Pedidos, Caixa e Entregas. Metas e gráficos de pagamento ficam no Administrativo, no Painel.</p>`,
+  novo: () => `<div class="grade g21"><div><div class="barra-acoes"><button class="chip-f ativo">🛵 Entrega</button><button class="chip-f">🏪 Retirada</button><div class="busca"><input placeholder="Buscar cliente por nome ou telefone" aria-label="Buscar cliente"></div></div>
+    ${bloco("Cliente", `<p><b>Cliente Exemplo A</b> · (00) 00000-0000</p><p class="nota">Rua Exemplo, 100 · Bairro Exemplo</p>`)}
+    ${bloco("Itens", `<div class="barra-acoes"><button class="chip-f ativo">🍕 Grande</button><button class="chip-f">Broto</button><button class="chip-f">Calzone</button><button class="chip-f">Bebidas</button></div>${tabela(["Item", "Qtd", "R$ Preço"], [["Sabor Exemplo 1 (Grande, Tradicional)", "1", "R$ 35,00"], ["Borda Exemplo", "1", "R$ 10,00"]])}`)}</div>
+    <div class="cartao"><h2>Resumo</h2>${tabela(["", "R$ Valor"], [["Itens", "R$ 45,00"], ["Entrega", "R$ 6,00"], ["<b>Total</b>", "<b>R$ 51,00</b>"]])}<div class="barra-acoes" style="margin-top:14px"><button class="btn principal grande" style="width:100%">Confirmar pedido</button></div><p class="nota">Pagamento: Pix · Pedido nº 17 do dia.</p></div></div>`,
+  pedidos: () => `<div class="barra-acoes"><div class="busca"><input placeholder="Buscar cliente ou número" aria-label="Buscar pedido"></div><button class="chip-f ativo">Todos</button><button class="chip-f">🛵 Entrega</button><button class="chip-f">🏪 Retirada</button><button class="btn principal">+ Novo pedido</button></div>
+    <div class="quadro-k" tabindex="0" role="region" aria-label="Quadro de pedidos por situação">
+    <div class="coluna"><h3><i style="--c:var(--info)"></i>Novos <span class="n">2</span></h3>${ped(15, "Cliente Exemplo F", "2 pizzas · Anota Ai", "info", [["novo", "in"], ["🛵 entrega", "ro"]])}${ped(16, "Cliente Exemplo G", "1 pizza · balcão", "info", [["novo", "in"], ["🏪 retirada", "al"]])}</div>
+    <div class="coluna"><h3><i style="--c:var(--alerta)"></i>Em produção <span class="n">2</span></h3>${ped(12, "Cliente Exemplo A", "1 pizza · montagem", "alerta", [["produção", "al"], ["🛵 entrega", "ro"]])}${ped(6, "Cliente Exemplo C", "2 pizzas · 38 min", "crit", [["atrasado", "crit"], ["🏪 retirada", "al"]])}</div>
+    <div class="coluna"><h3><i style="--c:var(--ok)"></i>Prontos <span class="n">1</span></h3>${ped(8, "Cliente Exemplo B", "1 pizza · etiqueta feita", "ok", [["pronto", "ok"], ["🛵 entrega", "ro"]])}</div>
+    <div class="coluna"><h3><i style="--c:var(--txt3)"></i>Finalizados <span class="n">1</span></h3>${ped(5, "Cliente Exemplo H", "3 pizzas · pago Pix", "txt3", [["entregue", "ok"]])}</div></div>`,
+  entregas: () => `<div class="grade g3">${kpi("🛵", "Entregas hoje", "25", "3 na rua agora", "roxo")}${kpi("⏱️", "Tempo médio", "35 min", "exemplo", "info")}${kpi("⚠️", "Sem entregador", "1", "pedido #12", "crit")}</div>`
+    + `<div class="alerta" style="margin-bottom:14px"><span class="ic" aria-hidden="true">ℹ️</span><div><b>Regra do sistema</b><small>Com o caixa fechado não dá para atribuir nem acertar entregas.</small></div></div>` + bloco("Entregas de hoje", tabela(["Pedido", "Situação", "R$ Total", "Entregador"], [["#8", '<span class="pill crit">aguardando</span>', "R$ 51,00", '<select aria-label="Entregador"><option>Entregador Exemplo 1</option></select> <button class="btn">Atribuir</button>'], ["#5", '<span class="pill ro">na rua</span>', "R$ 40,00", "Entregador Exemplo 2 (R$ 6,00)"], ["#3", '<span class="pill ok">entregue</span>', "R$ 70,00", "Entregador Exemplo 1 · acertado"]]))
+    + bloco("Acerto do entregador", `<div class="barra-acoes"><select aria-label="Entregador do acerto"><option>Entregador Exemplo 2</option></select><input placeholder="Diária (R$, vazio usa o padrão)" aria-label="Diária" style="padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--txt)"><button class="btn principal">Acertar</button></div><p class="nota">O entregador devolve o dinheiro recebido e recebe as entregas mais a diária (uma vez por dia). Só entram pedidos já marcados como entregues.</p>`),
+  retiradas: () => `<div class="grade g2"><div class="cartao"><h2>🏪 Prontas para retirar <small>2</small> <span class="pill al">Proposta</span></h2>${ped(6, "Cliente Exemplo C", "2 pizzas · retirada", "ok", [["pronto", "ok"]])}${ped(9, "Cliente Exemplo D", "1 pizza · retirada", "ok", [["pronto", "ok"]])}</div>
+    <div class="cartao"><h2>Aviso ao cliente <span class="pill al">Proposta</span></h2><p class="nota">Para pedido de balcão: link de WhatsApp de 1 clique. O envio automático fica para depois do beta (decisão C5).</p><button class="btn grande">Abrir WhatsApp do pedido #16</button></div></div>`,
+  caixa: () => `<div class="grade g3">${kpi("🔓", "Caixa", "Aberto", "desde 18:00 · Atendente Exemplo", "ok")}${kpi("💵", "Fundo de troco", "R$ 100", "informado na abertura", "info")}${kpi("📥", "Sangrias", "R$ 50", "1 lançada", "alerta")}</div>
+    <div class="grade g2">${bloco("Movimentos", tabela(["Hora", "Tipo", "R$ Valor", "Motivo"], [["18:00", "Abertura", "R$ 100,00", "Fundo de troco"], ["19:20", "Sangria", "R$ 50,00", "Motivo Exemplo"]]))}
+    ${bloco("Fim do dia: contagem cega", `<p class="nota">Conte cada forma de pagamento <b>sem ver o valor esperado</b>. O esperado só aparece depois de confirmar, e a contagem não pode ser refeita. Acerte os entregadores antes de contar.</p>${tabela(["Forma", "R$ Contado"], [["Dinheiro", '<input aria-label="Dinheiro contado" style="width:110px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--txt)">'], ["Pix", '<input aria-label="Pix contado" style="width:110px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--txt)">'], ["Maquininha Exemplo", '<input aria-label="Maquininha contada" style="width:110px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--txt)">']])}<div class="barra-acoes" style="margin-top:12px"><button class="btn principal grande">Confirmar contagem</button></div><p class="nota">Depois: resultado (contado, esperado, diferença) e "Fechar caixa", com justificativa se a diferença passar da tolerância. Aprovam: gerente, proprietário e administrador.</p>`)}</div>`,
+  canais: () => `<div class="grade g3"><div class="cartao"><h2>🔌 Anota Ai</h2><span class="pill al">aguardando token</span><p class="nota">Teste com pedido de exemplo enquanto não há token. Configurar: só administrador.</p></div><div class="cartao"><h2>🛍️ iFood</h2><span class="pill">futuro</span><p class="nota">O desenho é o mesmo de qualquer canal.</p></div><div class="cartao"><h2>🏪 Balcão</h2><span class="pill ok">ativo</span><p class="nota">Pedido digitado no sistema.</p></div></div>`
+    + bloco("Fila de entrada <small>(exemplo)</small>", tabela(["Hora", "Canal", "Pedido externo", "Situação"], [["19:40", "Anota Ai", "AX-0001", '<span class="pill in">recebido</span>'], ["19:44", "Anota Ai", "AX-0002", '<span class="pill crit">produto sem ID externo</span>']])),
+  // ADMINISTRATIVO
+  painela: () => `<div class="alertas">${alerta("📦", "3 insumos abaixo do mínimo", "Insumo Exemplo 1, 2 e 3", true)}${alerta("🏦", "2 contas a pagar vencem hoje", "R$ 1.200,00 no total (exemplo)", true)}</div>
+    <div class="grade g4">${kpi("💰", "Vendas do mês", "R$ 28.400", "+8% sobre o mês anterior", "ok")}${kpi("🍕", "Pizzas", "812", "+5%", "info")}${kpi("🎟️", "Ticket médio", "R$ 52,00", "-2%", "alerta")}${kpi("📉", "CMV", "31%", "meta 30%", "crit")}</div>
+    <div class="grade g2">${bloco("Vendas por dia da semana", graficoBarras([["Seg", 12], ["Ter", 15], ["Qua", 18], ["Qui", 22], ["Sex", 41], ["Sáb", 55], ["Dom", 48]]))}${bloco("🍕 Mais vendidos", tabela(["Sabor", "Qtd"], [["Sabor Exemplo 1", "120"], ["Sabor Exemplo 2", "96"], ["Calzone Exemplo", "40"]]))}</div>`,
+  cardapio: () => bloco("Sabores de pizza", `<div class="barra-acoes"><div class="busca"><input placeholder="Buscar sabor" aria-label="Buscar sabor"></div><button class="chip-f ativo">Todos</button><button class="chip-f">Tradicionais</button><button class="chip-f">Especiais</button><button class="btn principal">+ Novo sabor</button></div>`
+    + tabela(["Sabor", "Categoria", "R$ Grande", "R$ Broto", "Situação"], [["Sabor Exemplo 1", "Tradicional", "R$ 35,00", "R$ 25,00", '<span class="pill ok">ativo</span>'], ["Sabor Exemplo 2", "Especial", "R$ 50,00", "R$ 25,00", '<span class="pill ok">ativo</span>'], ["Sabor Exemplo 3", "Especial", "R$ 50,00", "R$ 25,00", '<span class="pill">inativo</span>']]) + `<p class="nota">Cadastro único, enviado também aos canais (Anota Ai, iFood).</p>`),
+  estoque: () => `<div class="alertas">${alerta("📦", "3 insumos abaixo do mínimo", "Insumo Exemplo 1, 2 e 3", true)}</div>` + bloco("Saldos", `<div class="barra-acoes"><div class="busca"><input placeholder="Buscar insumo" aria-label="Buscar insumo"></div><button class="btn principal">Lançar movimento</button></div>` + tabela(["Insumo", "Local", "Saldo", "Mín", "Situação"], [["Insumo Exemplo 1", "Câmara", "2 kg", "5 kg", '<span class="pill crit">abaixo do mínimo</span>'], ["Insumo Exemplo 2", "Estoque seco", "18 kg", "10 kg", '<span class="pill ok">ok</span>'], ["Insumo Exemplo 3", "Câmara", "4 un", "6 un", '<span class="pill crit">abaixo do mínimo</span>']])),
+  financeiro: () => `<div class="grade g3">${kpi("🏦", "Saldo previsto", "R$ 8.900", "fim do mês (exemplo)", "ok")}${kpi("📤", "A pagar 7 dias", "R$ 3.200", "4 títulos", "alerta")}${kpi("📥", "A receber 7 dias", "R$ 5.100", "cartão e Anota Ai", "info")}</div>` + bloco("Fluxo de caixa", graficoBarras([["S1", 22], ["S2", 18], ["S3", 25], ["S4", 21]])) + bloco("A pagar", tabela(["Vence", "Fornecedor", "R$ Valor", "Situação"], [["05/11", "Fornecedor Exemplo 1", "R$ 1.200,00", '<span class="pill crit">vence hoje</span>'], ["08/11", "Fornecedor Exemplo 2", "R$ 800,00", '<span class="pill al">em 5 dias</span>']])),
+  rh: () => bloco("Equipe", tabela(["Nome", "Função", "Turno hoje", "Ponto", "Banco de horas"], [["Pessoa Exemplo 1", "Pizzaiolo", "18:00 às 23:00", '<span class="pill ok">presente</span>', "+2h"], ["Pessoa Exemplo 2", "Massa", "17:00 às 22:00", '<span class="pill ok">presente</span>', "0h"], ["Pessoa Exemplo 3", "Atendente", "folga", '<span class="pill">folga</span>', "-1h"]])),
+};
+
+// ---------- menus: cada submenu aponta para uma tela; sem tela = lista de espera ----------
+const MODULOS = [
+  { id: "producao", nome: "Produção", curto: "Produção", ic: "🍕", menus: [
+    { nome: "Massa", ic: "🥣", perfis: [...GER, "massa"], subs: [["Massa e necessidade", "massa"]] },
+    { nome: "Montagem", ic: "👨‍🍳", perfis: [...GER, "pizzaiolo"], subs: [["Fila de montagem", "montagem"]] },
+    { nome: "Forno", ic: "🔥", perfis: [...GER, "pizzaiolo", "acabamento"], subs: [["Forno", "forno"]] },
+    { nome: "Acabamento", ic: "📦", perfis: [...GER, "acabamento"], subs: [["Acabamento e etiqueta", "acabamento"]] },
+    { nome: "Andamento", ic: "⏱️", perfis: [...GER, "atendente", "massa", "pizzaiolo", "acabamento"], subs: [["Andamento", "andamento"]] },
+    { nome: "Perdas", ic: "♻️", perfis: GER, subs: [["Perdas e refações", "perdas"]] },
+  ] },
+  { id: "vendas", nome: "Vendas", curto: "Vendas", ic: "🧾", menus: [
+    { nome: "Painel", ic: "📊", perfis: [...GER, "atendente"], subs: [["Painel do turno", "painelv"]] },
+    { nome: "Novo pedido", ic: "➕", perfis: [...GER, "atendente"], subs: [["Novo pedido", "novo"]] },
+    { nome: "Pedidos", ic: "🧾", perfis: [...GER, "atendente"], subs: [["Quadro por situação", "pedidos"]] },
+    { nome: "Entregas", ic: "🛵", perfis: [...GER, "atendente"], subs: [["Entregas de hoje", "entregas"]] },
+    { nome: "Retiradas", ic: "🏪", perfis: [...GER, "atendente"], subs: [["Prontas para retirar", "retiradas"]] },
+    { nome: "Caixa", ic: "💰", perfis: [...GER, "atendente"], subs: [["Caixa do dia", "caixa"]] },
+    { nome: "Canais", ic: "🔌", perfis: GER, subs: [["Canais e fila de entrada", "canais"]] },
+  ] },
+  { id: "admin", nome: "Administrativo", curto: "Admin", ic: "🏢", menus: [
+    { nome: "Painel", ic: "📊", perfis: GER, subs: [["Painel do dia", "painela"]] },
+    { nome: "Cardápio", ic: "🍕", perfis: [...GER, "atendente"], subs: [["Sabores de pizza", "cardapio"]] },
+    { nome: "Estoque", ic: "📦", perfis: GER, subs: [["Saldos", "estoque"]] },
+    { nome: "Financeiro", ic: "🏦", perfis: GER, subs: [["Fluxo de caixa e a pagar", "financeiro"]] },
+    { nome: "RH", ic: "🪪", perfis: GER, subs: [["Equipe", "rh"]] },
+  ] },
+];
+
+const SITUACAO = { massa: "Existe hoje", montagem: "Existe hoje", forno: "Existe hoje", acabamento: "Existe hoje", andamento: "Existe hoje", perdas: "Novo", painelv: "Novo", novo: "Existe hoje (visual novo)", pedidos: "Quadro novo; lista do dia existe", entregas: "Existe hoje", retiradas: "Novo", caixa: "Existe hoje", canais: "Aprovado, a construir", painela: "Existe hoje (BI)", cardapio: "Existe hoje", estoque: "Existe hoje", financeiro: "Existe hoje", rh: "Existe hoje" };
+const FORA = { producao: "Configurar (motivos, etapas de produção).", vendas: "Clientes e Configurar (entregadores, motivos e maquininhas).", admin: "Fichas, Compras, Custos, Imobilizado e Sistema (usuários, parâmetros, auditoria, backup). Todos seguem o mesmo padrão de tabela e cartões." };
+const estado = { perfil: "gerente", area: null, menu: 0, sub: 0 };
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs, ...filhos) => {
+  const n = document.createElement(tag);
+  if (tag === "button") n.type = "button";
+  for (const [k, v] of Object.entries(attrs || {})) { if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v); }
+  for (const f of filhos) n.append(f);
+  return n;
+};
+const menusVisiveis = (mod) => mod.menus.filter((m) => m.perfis.includes(estado.perfil));
+const areasVisiveis = () => MODULOS.filter((mod) => menusVisiveis(mod).length);
+
+function desenhar() {
+  document.querySelector(".area-principal").scrollTop = 0;
+  const areas = areasVisiveis();
+  if (!areas.some((a) => a.id === estado.area)) {
+    const pref = ENTRADA[estado.perfil];
+    estado.area = (areas.find((a) => a.id === pref) || areas[0]).id; estado.menu = 0; estado.sub = 0;
+  }
+  const mod = areas.find((a) => a.id === estado.area);
+  const menus = menusVisiveis(mod);
+  if (estado.menu >= menus.length) estado.menu = 0;
+  const menu = menus[estado.menu];
+  if (estado.sub >= menu.subs.length) estado.sub = 0;
+
+  const trilho = $("trilho"); trilho.replaceChildren();
+  if (areas.length > 1) {
+    trilho.append(el("div", { class: "areas", role: "group", "aria-label": "Área" }, ...areas.map((a) =>
+      el("button", { class: "area" + (a.id === estado.area ? " ativo" : ""), "aria-pressed": String(a.id === estado.area),
+        onclick: () => { estado.area = a.id; estado.menu = 0; estado.sub = 0; desenhar(); $("trilho").querySelector(".area.ativo").focus(); } },
+        el("span", { "aria-hidden": "true" }, a.ic), a.curto))));
+  }
+  menus.forEach((m, i) => trilho.append(el("button", { class: "r-item" + (i === estado.menu ? " ativo" : ""), "aria-current": i === estado.menu ? "page" : "false",
+    onclick: () => { estado.menu = i; estado.sub = 0; desenhar(); $("trilho").querySelector(".r-item.ativo").focus(); } },
+    el("span", { "aria-hidden": "true" }, m.ic), m.nome)));
+
+  $("titulo").textContent = menu.nome;
+  $("subtitulo").textContent = mod.nome + " · perfil " + ROTULO[estado.perfil];
+  $("abas").replaceChildren(...menu.subs.map(([nome], i) => el("button", { class: "aba" + (i === estado.sub ? " ativo" : ""), "aria-pressed": String(i === estado.sub),
+    onclick: () => { estado.sub = i; desenhar(); $("abas").querySelector(".aba.ativo").focus(); } }, nome)));
+  const id = menu.subs[estado.sub][1];
+  $("corpo").innerHTML = `<p class="nota" style="margin:0 0 12px"><span class="pill ${/^Existe/.test(SITUACAO[id]) ? "ok" : "al"}">${SITUACAO[id]}</span></p>` + TELAS[id]() + `<p class="nota">Fora desta prévia, mas previstos no menu de ${mod.nome}: ${FORA[mod.id]}</p>`;   // HTML fixo deste arquivo, sem dado externo
+}
+
+$("perfil").append(...PERFIS.map((p) => el("option", { value: p }, ROTULO[p])));
+$("perfil").value = estado.perfil;
+$("perfil").addEventListener("change", (e) => { estado.perfil = e.target.value; estado.area = null; desenhar(); });
+$("tema").addEventListener("click", () => {
+  const raiz = document.documentElement;
+  if (raiz.getAttribute("data-theme") === "light") raiz.removeAttribute("data-theme"); else raiz.setAttribute("data-theme", "light");
+  $("tema").setAttribute("aria-pressed", String(raiz.getAttribute("data-theme") === "light"));
+});
+const hash = location.hash.slice(1);
+if (MODULOS.some((m) => m.id === hash)) estado.area = hash;
+desenhar();
+</script>
+</body>
+</html>
