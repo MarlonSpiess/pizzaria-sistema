@@ -148,7 +148,7 @@ p.nota{color:var(--txt3);font-size:13px;margin-top:8px}
 </style>
 </head>
 <body>
-<div class="faixa-proto">PRÉVIA VISUAL (LAYOUT C). DADOS FICTÍCIOS, NADA É GRAVADO. AS TELAS FINAIS SÃO A ETAPA 2.</div>
+<div class="faixa-proto">PRÉVIA VISUAL (LAYOUT C). DADOS FICTÍCIOS, NADA É GRAVADO. AMOSTRA DE TELAS, NÃO É O MAPA COMPLETO (VER Menus_3_Modulos.html).</div>
 <div id="quadro">
   <nav class="trilho" id="trilho" aria-label="Menu"></nav>
   <main class="area-principal"><div class="miolo">
@@ -200,6 +200,8 @@ const TELAS = {
   acabamento: () => tel(`<div class="grade g2"><div class="cartao"><h2>Saíram do forno</h2>${tabela(["Pedido", "Pizza", ""], [["#8 Cliente Exemplo B", "Sabor Exemplo 2 · Grande", '<button class="btn principal">Acabada e etiqueta</button> <button class="btn">Refazer (motivo)</button>'], ["#7 Balcão", "Calzone Exemplo", '<button class="btn principal">Acabada e etiqueta</button> <button class="btn">Refazer (motivo)</button>']])}</div>
     <div class="cartao"><h2>Etiqueta <small>prévia da impressão</small></h2><div class="etiqueta"><b>Cliente Exemplo B · Id 8</b>Sabor Exemplo 2 (Grande)</div><div class="barra-acoes" style="margin-top:12px"><button class="btn">Imprimir</button><button class="btn">Fechar</button></div></div></div>`
     + bloco("Pedidos em aberto", tabela(["Pedido", "Cliente", "Pizzas", "Situação", ""], [["#6", "Cliente Exemplo C", "2 de 2", '<span class="pill ok">pronto</span>', '<button class="btn principal">Marcar pedido acabado</button>'], ["#8", "Cliente Exemplo B", "0 de 1", '<span class="pill al">em produção</span>', ""]]) + `<p class="nota">Bebida e acompanhamento não entram nesta lista. Refazer: a pizza atual vira perda e uma nova entra na fila.</p>`)),
+  despacho: () => tel(`<div class="alerta" style="margin-bottom:14px"><span class="ic" aria-hidden="true">ℹ️</span><div><b>Proposta</b><small>O acabamento atribui o entregador ao pedido pronto. Hoje isso é da recepção; exige a permissão nova "entregas.despachar".</small></div></div>`
+    + bloco("Prontos para despachar", tabela(["Pedido", "Cliente", "Situação", "Entregador"], [["#8", "Cliente Exemplo B", '<span class="pill ok">pronto</span>', '<select aria-label="Entregador"><option>Entregador Exemplo 1</option></select> <button class="btn principal">Despachar</button>']]))),
   andamento: () => tel(bloco("Pedidos em aberto", tabela(["Pedido", "Cliente", "Tipo", "Pizzas acabadas", "Situação", "Entrega calculada"], [
       ["#6", "Cliente Exemplo C", "Retirada", "2 de 2", '<span class="pill ok">acabado</span>', "19:35"],
       ["#9", "Cliente Exemplo D", "Entrega", "0 de 1", '<span class="pill al">no forno</span>', "19:55"],
@@ -246,9 +248,8 @@ const MODULOS = [
   { id: "producao", nome: "Produção", curto: "Produção", ic: "🍕", menus: [
     { nome: "Massa", ic: "🥣", perfis: [...GER, "massa"], subs: [["Massa e necessidade", "massa"]] },
     { nome: "Montagem", ic: "👨‍🍳", perfis: [...GER, "pizzaiolo"], subs: [["Fila de montagem", "montagem"]] },
-    { nome: "Forno", ic: "🔥", perfis: [...GER, "pizzaiolo", "acabamento"], subs: [["Forno", "forno"]] },
-    { nome: "Acabamento", ic: "📦", perfis: [...GER, "acabamento"], subs: [["Acabamento e etiqueta", "acabamento"]] },
-    { nome: "Andamento", ic: "⏱️", perfis: [...GER, "atendente", "massa", "pizzaiolo", "acabamento"], subs: [["Andamento", "andamento"]] },
+    { nome: "Acabamento", ic: "📦", perfis: [...GER, "acabamento"], subs: [["Saiu do forno", "forno"], ["Acabamento e etiqueta", "acabamento"], ["Despacho", "despacho"]] },
+    { nome: "Andamento", ic: "⏱️", perfis: GER, subs: [["Andamento", "andamento"]] },
     { nome: "Perdas", ic: "♻️", perfis: GER, subs: [["Perdas e refações", "perdas"]] },
   ] },
   { id: "vendas", nome: "Vendas", curto: "Vendas", ic: "🧾", menus: [
@@ -269,7 +270,7 @@ const MODULOS = [
   ] },
 ];
 
-const SITUACAO = { massa: "Existe hoje", montagem: "Existe hoje", forno: "Existe hoje", acabamento: "Existe hoje", andamento: "Existe hoje", perdas: "Novo", painelv: "Novo", novo: "Existe hoje (visual novo)", pedidos: "Quadro novo; lista do dia existe", entregas: "Existe hoje", retiradas: "Novo", caixa: "Existe hoje", canais: "Aprovado, a construir", painela: "Existe hoje (BI)", cardapio: "Existe hoje", estoque: "Existe hoje", financeiro: "Existe hoje", rh: "Existe hoje" };
+const SITUACAO = { massa: "Existe hoje", montagem: "Existe hoje", forno: "Existe hoje (agora dentro de Acabamento)", acabamento: "Existe hoje", despacho: "Proposta", andamento: "Existe hoje", perdas: "Novo", painelv: "Novo", novo: "Existe hoje (visual novo)", pedidos: "Quadro novo; lista do dia existe", entregas: "Existe hoje", retiradas: "Novo", caixa: "Existe hoje", canais: "Aprovado, a construir", painela: "Existe hoje (BI)", cardapio: "Existe hoje", estoque: "Existe hoje", financeiro: "Existe hoje", rh: "Existe hoje" };
 const FORA = { producao: "Configurar (motivos, etapas de produção).", vendas: "Clientes e Configurar (entregadores, motivos e maquininhas).", admin: "Fichas, Compras, Custos, Imobilizado e Sistema (usuários, parâmetros, auditoria, backup). Todos seguem o mesmo padrão de tabela e cartões." };
 const estado = { perfil: "gerente", area: null, menu: 0, sub: 0 };
 const $ = (id) => document.getElementById(id);
@@ -280,12 +281,18 @@ const el = (tag, attrs, ...filhos) => {
   for (const f of filhos) n.append(f);
   return n;
 };
-const menusVisiveis = (mod) => mod.menus.filter((m) => m.perfis.includes(estado.perfil));
+const subsVisiveis = (m) => m.subs.filter(([, , p]) => (p || m.perfis).includes(estado.perfil));
+const menusVisiveis = (mod) => mod.menus.filter((m) => m.perfis.includes(estado.perfil) && subsVisiveis(m).length);
 const areasVisiveis = () => MODULOS.filter((mod) => menusVisiveis(mod).length);
 
 function desenhar() {
   document.querySelector(".area-principal").scrollTop = 0;
   const areas = areasVisiveis();
+  if (!areas.length) {
+    $("trilho").replaceChildren(); $("abas").replaceChildren(); $("titulo").textContent = "Sem acesso"; $("subtitulo").textContent = "";
+    $("corpo").textContent = "Nenhum menu para este perfil."; estado.area = null;
+    return;
+  }
   if (!areas.some((a) => a.id === estado.area)) {
     const pref = ENTRADA[estado.perfil];
     estado.area = (areas.find((a) => a.id === pref) || areas[0]).id; estado.menu = 0; estado.sub = 0;
@@ -294,7 +301,8 @@ function desenhar() {
   const menus = menusVisiveis(mod);
   if (estado.menu >= menus.length) estado.menu = 0;
   const menu = menus[estado.menu];
-  if (estado.sub >= menu.subs.length) estado.sub = 0;
+  const subs = subsVisiveis(menu);
+  if (estado.sub >= subs.length) estado.sub = 0;
 
   const trilho = $("trilho"); trilho.replaceChildren();
   if (areas.length > 1) {
@@ -309,10 +317,10 @@ function desenhar() {
 
   $("titulo").textContent = menu.nome;
   $("subtitulo").textContent = mod.nome + " · perfil " + ROTULO[estado.perfil];
-  $("abas").replaceChildren(...menu.subs.map(([nome], i) => el("button", { class: "aba" + (i === estado.sub ? " ativo" : ""), "aria-pressed": String(i === estado.sub),
+  $("abas").replaceChildren(...subs.map(([nome], i) => el("button", { class: "aba" + (i === estado.sub ? " ativo" : ""), "aria-pressed": String(i === estado.sub),
     onclick: () => { estado.sub = i; desenhar(); $("abas").querySelector(".aba.ativo").focus(); } }, nome)));
-  const id = menu.subs[estado.sub][1];
-  $("corpo").innerHTML = `<p class="nota" style="margin:0 0 12px"><span class="pill ${/^Existe/.test(SITUACAO[id]) ? "ok" : "al"}">${SITUACAO[id]}</span></p>` + TELAS[id]() + `<p class="nota">Fora desta prévia, mas previstos no menu de ${mod.nome}: ${FORA[mod.id]}</p>`;   // HTML fixo deste arquivo, sem dado externo
+  const id = subs[estado.sub][1];
+  $("corpo").innerHTML = `<p class="nota" style="margin:0 0 12px"><span class="pill ${/^Existe/.test(SITUACAO[id]) ? "ok" : "al"}">${SITUACAO[id]}</span></p>` + TELAS[id]() + (GER.includes(estado.perfil) || estado.perfil === "atendente" ? `<p class="nota">Fora desta prévia, mas previstos no menu de ${mod.nome}: ${FORA[mod.id]}</p>` : "");   // HTML fixo deste arquivo, sem dado externo
 }
 
 $("perfil").append(...PERFIS.map((p) => el("option", { value: p }, ROTULO[p])));

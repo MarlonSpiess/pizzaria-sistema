@@ -113,9 +113,8 @@ const MODULOS = [
   { id: "producao", nome: "Produção", curto: "Produção", ic: "🍕", menus: [
     { nome: "Massa", ic: "🥣", perfis: [...GER, "massa"], subs: [["Massa e necessidade do dia", "E"]] },
     { nome: "Montagem", ic: "👨‍🍳", perfis: [...GER, "pizzaiolo"], subs: [["Fila de montagem", "E"]] },
-    { nome: "Forno", ic: "🔥", perfis: [...GER, "pizzaiolo", "acabamento"], subs: [["Fila do forno", "E"]] },
-    { nome: "Acabamento", ic: "📦", perfis: [...GER, "acabamento"], subs: [["Acabamento e etiqueta", "E"]] },
-    { nome: "Andamento", ic: "⏱️", perfis: [...GER, "atendente", "massa", "pizzaiolo", "acabamento"], subs: [["Andamento", "E"]] },
+    { nome: "Acabamento", ic: "📦", perfis: [...GER, "acabamento"], subs: [["Saiu do forno", "E"], ["Acabamento e etiqueta", "E"], ["Despacho", "N"]] },
+    { nome: "Andamento", ic: "⏱️", perfis: GER, subs: [["Andamento", "E"]] },
     { nome: "Perdas", ic: "♻️", perfis: GER, subs: [["Perdas e refações", "N"]] },
     { nome: "Configurar", ic: "⚙️", perfis: GER, subs: [["Motivos", "E"], ["Etapas de produção", "E"]] },
   ] },
@@ -163,7 +162,7 @@ const areasVisiveis = () => MODULOS.filter((mod) => menusVisiveis(mod).length);
 function desenhar() {
   const areas = areasVisiveis();
   if (!areas.length) {
-    $("trilho").replaceChildren(); $("abas").replaceChildren(); $("titulo").textContent = "Sem acesso";
+    $("trilho").replaceChildren(); $("abas").replaceChildren(); $("titulo").textContent = "Sem acesso"; $("subtitulo").textContent = ""; estado.area = null;
     $("corpo").replaceChildren(el("div", { class: "vazio" }, "Nenhum menu para este perfil."));
     return;
   }

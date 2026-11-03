@@ -4,7 +4,7 @@ Versão 0.2, 03/11/2026, revisada por dois revisores (um sem contexto, outro con
 
 **Critério de sucesso:** todo item que existe hoje em `sistema/` tem lugar em um dos 3 módulos; nenhum item novo aparece sem fonte (decisão de Marlon, documento aprovado ou boa prática citada); cada item tem os perfis que o veem; Marlon aprova ou aponta o que mudar.
 
-Marcações: **[Existe]** já está construído em `sistema/` (aba e submenu indicados); **[Aprovado]** está num documento de módulo já aprovado, mas ainda não construído; **[Novo]** é proposta deste documento, com a fonte; **[Suposição]** precisa da confirmação de Marlon.
+Marcações: **[Existe]** já está construído em `sistema/` (aba e submenu indicados); **[Aprovado]** está num documento de módulo já aprovado, mas ainda não construído; **[Novo]** é proposta deste documento, com a fonte; **[Suposição]** precisa da confirmação de Marlon; **[Proposta]** é mudança sugerida a partir de pedido de Marlon, ainda sem aprovação.
 
 Protótipo navegável: [`planejamento/prototipos/Menus_3_Modulos.html`](../prototipos/Menus_3_Modulos.html). Abra no navegador, troque o perfil no topo e veja o menu mudar.
 
@@ -56,9 +56,8 @@ Uso: 4 tablets (1 massa, 2 pizzaiolo, 1 acabamento) e a gerência. A unidade de 
 |---|---|---|---|
 | 🥣 Massa | Massa e necessidade do dia (necessidade, saldo e falta por tamanho) | [Existe] aba Produção, sub Massa | gerência, massa |
 | 👨‍🍳 Montagem | Fila de montagem | [Existe] sub Montagem | gerência, pizzaiolo |
-| 🔥 Forno | Fila do forno | [Existe] sub Forno | gerência, pizzaiolo, acabamento |
-| 📦 Acabamento | Acabamento e etiqueta | [Existe] sub Acabamento, botão "Acabada e etiqueta"; só o teste da impressora térmica está pendente | gerência, acabamento |
-| ⏱️ Andamento | Andamento (todas as pizzas por fase e tempo) | [Existe] sub Andamento | gerência, atendente, massa, pizzaiolo, acabamento |
+| 📦 Acabamento | Saiu do forno, Acabamento e etiqueta, Despacho (tela única da função) | Saiu do forno e Acabamento [Existe] (hoje a sub Forno e a sub Acabamento); a tela única é [Proposta], pedida por Marlon em 03/11/2026 ("acabamento só vai ver a tela de acabamento/despacho"). Despacho (atribuir entregador) hoje é da recepção, em Entregas, e exige permissão nova (seção 7.1). Teste da impressora térmica pendente | gerência, acabamento |
+| ⏱️ Andamento | Andamento (visão geral da cozinha) | [Existe] sub Andamento | gerência. Para o atendente, a hora de entrega calculada passa a aparecer em Vendas > Pedidos, e as 3 funções de produção deixam de ver esta tela [Proposta, aguarda confirmação de Marlon] |
 | ♻️ Perdas | Perdas e refações (consulta) | [Novo] tela de consulta para a gerência. O registro já existe dentro das filas (perda e refação na montagem e no acabamento, perda de massa na massa); fonte da regra: 02_Producao 5.6 e 8 (refações vão ao BI) | gerência |
 | ⚙️ Configurar | Motivos, Etapas de produção | [Existe] sub Motivos; Etapas [Existe] em Fichas e etapas, sub Etapas de produção | gerência |
 
@@ -121,12 +120,49 @@ Vendas (9 itens) e Administrativo (10 itens) passam do que cabe no trilho do cel
 | proprietário | tudo | tudo | tudo | última área |
 | gerente | tudo | tudo, menos configurar canais | tudo, menos Usuários, Folha gerencial, editar Parâmetros, aprovar em Financeiro e em Imobilizado | última área |
 | subgerente | tudo | tudo, menos configurar canais e aprovar diferença de caixa | o mesmo do gerente, e também menos aprovar em RH | última área |
-| atendente | Andamento | tudo, menos Canais e aprovar diferença de caixa; Entregadores e Motivos e maquininhas só consulta | Cardápio (só consulta) | Vendas |
-| massa | Massa, Andamento | nada | nada | Produção |
-| pizzaiolo | Montagem, Forno, Andamento | nada | nada | Produção |
-| acabamento | Forno, Acabamento, Andamento | nada | nada | Produção |
+| atendente | nada (a entrega calculada aparece em Vendas > Pedidos) | tudo, menos Canais e aprovar diferença de caixa; Entregadores e Motivos e maquininhas só consulta | Cardápio (só consulta) | Vendas |
+| massa | só Massa | nada | nada | Produção |
+| pizzaiolo | só Montagem | nada | nada | Produção |
+| acabamento | só a tela Acabamento (saiu do forno, acabamento e etiqueta, despacho) | nada | nada | Produção |
 
 Todos os perfis têm **Meus dados** (escala, ponto, banco de horas) no avatar.
+
+### 7.1 Controle de acesso rígido (pedido de Marlon, 03/11/2026)
+
+Regra: **cada função só vê e só acessa a tela que é dela**. O pizzaiolo vê só Montagem; o acabamento vê só Acabamento e Despacho; a massa vê só Massa. Atendente: só Vendas, mais consulta de Cardápio.
+
+**A regra vale no servidor, não só no menu.** Esconder o botão não protege nada: o código das telas (`/static/app.js`) é público e quem sabe o endereço da API chama a rota direto. Boa prática (princípio do menor privilégio; controle de acesso no servidor, OWASP): toda rota confere a permissão do perfil de quem chama.
+
+**Situação medida em `sistema/api` (03/11/2026)**
+
+- Toda rota exige permissão por `requer(...)`; só `/auth/*` e `/health` fogem, por natureza. Massa, pizzaiolo e acabamento têm só `rh.proprio` e `producao.*` (`security.py:46-48`), então já recebem 403 em `/vendas`, `/cardapio`, `/clientes`, `/entregadores`, `/caixa`, `/auditoria` e `/rh` (exceto os próprios dados). Falta apenas o teste que prove isso para cada perfil (hoje há testes de escrita por função em `test_producao.py` e de 4 leituras administrativas em `test_permissoes_usuarios.py`).
+- Escritas de produção: oito permissões (`massa`, `montagem`, `forno`, `acabamento`, `perda`, `perda_massa`, `refazer`, `gerir`). Estão certas, com uma exceção: `producao.forno` é do pizzaiolo e do acabamento (`security.py:47-48`).
+
+**Brechas de leitura a fechar (propostas)**
+
+| Rota | Hoje | Proposta |
+|---|---|---|
+| `GET /producao/fila` (`producao.py:68`) | `producao.ver`, que atendente, massa, pizzaiolo e acabamento têm; o parâmetro `situacao` deixa o pizzaiolo ler pizzas de qualquer etapa, e a resposta traz o estado do forno | A rota força o conjunto por permissão: montagem vê só "na lista" e "em montagem"; acabamento vê "no forno", "saiu do forno" e "acabada" e o estado do forno; gerência vê tudo. Situação fora do conjunto recebe 403 |
+| `GET /producao/fila` e `/pedidos` (`producao.py:11`, `:90`) | Devolvem o nome do cliente a todas as funções (endereço e telefone não vão nessas rotas) | Só quem tem acabamento ou gerência recebe `cliente`, porque só a etiqueta o usa (`app.js:921`) |
+| `GET /producao/pedidos` (`producao.py:87`) | `producao.ver` | Só acabamento (usa para "Marcar pedido acabado") e gerência. Deixa de ser a tela Andamento para as funções de produção |
+| `GET /producao/massa` (`producao.py:262`) | `producao.ver` | Só massa e gerência |
+| `GET /producao/motivos` (`producao.py:297`) | `producao.ver` | Quem tem a permissão de escrita que usa o motivo (`perda`, `perda_massa`, `refazer`, `montagem`) e gerência |
+| `GET /rh/escalados` (`rh.py:309`) | `producao.ver`: massa, pizzaiolo, acabamento e atendente leem nome, função e horário de toda a escala. O `app.js` não chama esta rota | Exigir `rh.ver` (gerência); ajustar `test_rh.py:114`, que hoje lê como pizzaiolo |
+| Atendente em Produção | Tem `producao.ver` (`security.py:44`) e lê todas as rotas acima | Retirar. A hora de entrega calculada hoje só existe em `/producao/pedidos`; passar a devolvê-la em `/vendas` é mudança de código, a conferir |
+
+Para isso **não é preciso criar permissões de leitura novas**: a rota filtra pela permissão de escrita que o perfil já tem. Menos permissões, menos erro.
+
+**Mudanças de permissão que alteram o fluxo (aguardam Marlon)**
+
+- **Forno:** retirar `producao.forno` do pizzaiolo; "Saiu do forno" fica só com o acabamento, e a leitura do forno com ele. Os testes de `test_producao.py` já usam o acabamento para esse passo.
+- **Despacho no acabamento:** a tela precisa de três leituras que ele não tem (`GET /caixa/entregas`, `GET /entregadores` ativos, `GET /caixa/hoje`) e de uma escrita (`POST /caixa/entregas/{id}`, hoje `caixa.operar`). Proposta: uma permissão nova `entregas.despachar` que cubra a escrita e as leituras de entregas e entregadores ativos, sem dar `caixa.ver` (que abriria motivos, maquininhas, taxas e relatório do caixa). `GET /caixa/entregas` devolve o total do pedido, então o acabamento passaria a ver valor; ou se filtra o total, ou se aceita expressamente. Atribuir entregador só funciona com o caixa aberto pela recepção (`exigir_aberto`): dependência a confirmar.
+- **Perdas e refações** (seção 4, [Novo]) não tem rota de consulta hoje; a rota nova exigiria `producao.gerir` ou `bi.ver`, a decidir.
+
+**Testes a escrever** (Etapa 3, com os dois revisores): para massa, pizzaiolo, acabamento e atendente, uma matriz rota x perfil que confirma 403 fora da própria tela e 200 dentro; e o menu mostrando só a tela do perfil. Conferir também que `DOCS_ENABLED` está desligado em produção, porque `/docs` e `/openapi.json` listam todas as rotas.
+
+O menu continua só repetindo a regra, para não mostrar o que daria erro. Esta etapa registra a regra e a proposta; mudar `security.py` e as rotas é código e entra na Etapa 3.
+
+Pergunta aberta (cartão enviado a Marlon): onde ficam o Forno, o Andamento e o Despacho. A recomendação registrada é uma tela por função.
 
 ---
 
