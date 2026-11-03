@@ -21,7 +21,7 @@ _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ve
           "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir",
           "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
           "producao.refazer", "producao.gerir", "producao.perda_massa",
-          "caixa.ver", "caixa.operar", "caixa.aprovar", "caixa.gerir",
+          "caixa.ver", "caixa.operar", "caixa.aprovar", "caixa.gerir", "entregas.despachar",
           "estoque.ver", "estoque.mover", "estoque.gerir", "compras.ver", "compras.operar", "compras.aprovar",
           "contas.ver", "contas.operar", "contas.aprovar", "custos.ver", "custos.gerir", "imobilizado.ver", "imobilizado.operar", "imobilizado.aprovar",
           "rh.ver", "rh.operar", "rh.aprovar", "rh.salarios", "rh.proprio", "bi.ver"}
@@ -30,7 +30,7 @@ _GERENCIA = {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.b
              "vendas.ver", "vendas.criar", "vendas.gerir",
              "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
              "producao.refazer", "producao.gerir", "producao.perda_massa",
-             "caixa.ver", "caixa.operar", "caixa.gerir",
+             "caixa.ver", "caixa.operar", "caixa.gerir", "entregas.despachar",
              "estoque.ver", "estoque.mover", "estoque.gerir", "compras.ver", "compras.operar", "compras.aprovar",
              "contas.ver", "contas.operar", "custos.ver", "custos.gerir", "imobilizado.ver", "imobilizado.operar", "rh.ver", "rh.operar", "rh.proprio", "bi.ver"}  # subgerente: tudo do gerente, menos aprovar diferença de caixa
 PERMISSOES = {
@@ -45,7 +45,7 @@ PERMISSOES = {
     # Funções de produção: cada tablet só enxerga e faz o que é da sua função (login pessoal).
     "massa": {"rh.proprio", "producao.massa", "producao.perda_massa"},
     "pizzaiolo": {"rh.proprio", "producao.montagem", "producao.perda"},  # forno é do acabamento (decisão de Marlon, 03/11/2026)
-    "acabamento": {"rh.proprio", "producao.forno", "producao.acabamento", "producao.perda", "producao.refazer"},
+    "acabamento": {"rh.proprio", "entregas.despachar", "producao.forno", "producao.acabamento", "producao.perda", "producao.refazer"},
 }
 
 

@@ -121,6 +121,39 @@ def test_limites_do_atendente(client, cardapio):
     client.post(f"/api/pedidos/{ped['id']}/cancelar", json={"motivo": "Teste de limites"}, headers=hg)  # sai da lista de acertos pendentes
 
 
+def test_despacho_do_acabamento_sem_valores_e_sem_o_resto_do_caixa(client, cardapio):
+    _, ha = entrar(client, "atendente")
+    _, hg = entrar(client, "gerente")
+    _, hac = entrar(client, "acabamento")
+    _, hp = entrar(client, "pizzaiolo")
+    assert client.post("/api/caixa/abrir", json={"fundo_troco": "100,00"}, headers=ha).status_code in (201, 409)
+    cli = client.post("/api/clientes", json={"nome": "Despacho", "telefone": "5559" + novo_login("")[-4:].rjust(4, "0"), "endereco": "Rua D, 4"}, headers=ha).json()
+    ped = _pedido(client, ha, [_pizza_item(cardapio)], [{"forma": "pix", "valor": "41,00"}], tipo="entrega", cliente_id=cli["id"]).json()
+    ent = client.post("/api/entregadores", json={"nome": novo_login("Moto"), "telefone": "5550001111"}, headers=hg).json()
+    # lê só o necessário: sem total do pedido e sem telefone do entregador
+    d = client.get("/api/caixa/despacho", headers=hac).json()
+    assert d["caixa_aberto"] is True
+    mine = next(p for p in d["pedidos"] if p["pedido_id"] == ped["id"])
+    assert set(mine) == {"pedido_id", "id_dia", "situacao", "entregador"}
+    lista = client.get("/api/caixa/despacho/entregadores", headers=hac).json()
+    assert any(e["id"] == ent["id"] for e in lista) and all(set(e) == {"id", "nome"} for e in lista)
+    # não pode definir valor da entrega
+    assert client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"], "valor_entrega": "1,00"}, headers=hac).status_code == 403
+    ok = client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"]}, headers=hac)
+    assert ok.status_code == 201 and "valor_entrega" not in (ok.json() or {})
+    assert client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"]}, headers=hac).status_code == 409
+    # e continua sem o resto do Caixa
+    assert client.get("/api/caixa/entregas", headers=hac).status_code == 403
+    assert client.get("/api/caixa/hoje", headers=hac).status_code == 403
+    assert client.get("/api/entregadores", headers=hac).status_code == 403
+    assert client.post(f"/api/caixa/entregas/{ped['id']}", json={"entregador_id": ent["id"]}, headers=hac).status_code == 403
+    # quem não é do despacho não entra
+    for h in (hp, entrar(client, "massa")[1]):
+        assert client.get("/api/caixa/despacho", headers=h).status_code == 403
+        assert client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"]}, headers=h).status_code == 403
+    client.post(f"/api/pedidos/{ped['id']}/cancelar", json={"motivo": "Teste de despacho"}, headers=hg)  # sai da lista de acertos pendentes
+
+
 def test_dia_completo_contagem_cega_entregador_estorno_e_fechamento(client, cardapio, conn_teste):
     base = _esperado_base()
     _, ha = entrar(client, "atendente")
@@ -200,7 +233,8 @@ def test_dia_completo_contagem_cega_entregador_estorno_e_fechamento(client, card
     assert r.status_code == 200 and r.json()["caixa"]["situacao"] == "fechado" and r.json()["caixa"]["aprovado_por"] is not None
     assert client.post("/api/caixa/fechar", json={"justificativa": "x"}, headers=hg).status_code == 409
     rel = client.get("/api/caixa/hoje", headers=ha).json()
-    assert sorted(e["valor"] for e in rel["estornos"]) == ["35.00", "41.00"] and {e["forma"] for e in rel["estornos"]} == {"pix"}
+    valores = [e["valor"] for e in rel["estornos"]]  # outros testes do módulo também cancelam pedidos de 41,00 (limites, despacho)
+    assert valores.count("35.00") == 1 and set(valores) == {"35.00", "41.00"} and {e["forma"] for e in rel["estornos"]} == {"pix"}
     assert {m["tipo"] for m in rel["movimentos"]} == {"sangria", "suprimento"}
     assert [x["id_dia"] for x in rel["pedidos_sem_cf"]].count(a["id_dia"]) == 1
     assert client.patch(f"/api/pedidos/{a['id']}/cf", json={"numero_cf": "12345"}, headers=ha).json()["numero_cf"] == "12345"

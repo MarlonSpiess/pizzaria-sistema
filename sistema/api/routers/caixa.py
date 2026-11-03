@@ -371,6 +371,40 @@ def entregas(sessao=Depends(requer("caixa.ver")), conn=Depends(get_db)):
 
 @router.post("/entregas/{pedido_id}", status_code=201)
 def atribuir_entrega(pedido_id: int, d: EntregaIn, sessao=Depends(requer("caixa.operar")), conn=Depends(get_db)):
+    return _atribuir(conn, sessao, pedido_id, d)
+
+
+# Despacho feito pelo acabamento: só pedido, situação e entregador (sem valores) e só a lista mínima de entregadores.
+@router.get("/despacho")
+def despacho(sessao=Depends(requer("entregas.despachar")), conn=Depends(get_db)):
+    c = _em_uso(conn)
+    if not c or c["situacao"] != "aberto":
+        return {"caixa_aberto": False, "pedidos": []}
+    fx = svc.faixa(conn, LOJA_ID, c)
+    pedidos = conn.execute(
+        "SELECT ped.id AS pedido_id, ped.id_dia, ped.situacao, ent.nome AS entregador "
+        "FROM pedido ped LEFT JOIN entrega e ON e.pedido_id = ped.id LEFT JOIN entregador ent ON ent.id = e.entregador_id "
+        "WHERE ped.loja_id = %s AND ped.data >= %s AND ped.data < %s AND ped.tipo = 'entrega' AND ped.situacao <> 'cancelado' ORDER BY ped.data, ped.id_dia",
+        (LOJA_ID, fx[0], fx[1])).fetchall()
+    return {"caixa_aberto": True, "pedidos": pedidos}
+
+
+@router.get("/despacho/entregadores")
+def despacho_entregadores(sessao=Depends(requer("entregas.despachar")), conn=Depends(get_db)):
+    return conn.execute("SELECT id, nome FROM entregador WHERE loja_id = %s AND ativo ORDER BY nome", (LOJA_ID,)).fetchall()
+
+
+@router.post("/despacho/{pedido_id}", status_code=201)
+def despachar(pedido_id: int, d: EntregaIn, sessao=Depends(requer("entregas.despachar")), conn=Depends(get_db)):
+    if d.valor_entrega is not None:
+        raise HTTPException(status_code=403, detail="O valor da entrega é definido pela recepção ou pela gerência.")
+    r = _atribuir(conn, sessao, pedido_id, d)
+    if isinstance(r, dict):
+        r.pop("valor_entrega", None)  # o acabamento não vê valores
+    return r
+
+
+def _atribuir(conn, sessao, pedido_id: int, d: EntregaIn):
     quando = agora()
     c = svc.exigir_aberto(conn, LOJA_ID)
     p = conn.execute("SELECT id, data, tipo, situacao FROM pedido WHERE id = %s AND loja_id = %s FOR SHARE", (pedido_id, LOJA_ID)).fetchone()

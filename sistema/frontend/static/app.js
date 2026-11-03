@@ -856,6 +856,7 @@ const SUBS_PRODUCAO = [
   ["montagem", "Montagem", [...GER, "pizzaiolo"]],
   ["forno", "Forno", [...GER, "acabamento"]],
   ["acabamento", "Acabamento", [...GER, "acabamento"]],
+  ["despacho", "Despacho", [...GER, "acabamento"]],
   ["andamento", "Andamento", [...GER, "atendente"]],
   ["motivos", "Motivos", GER],
 ];
@@ -893,7 +894,7 @@ async function abaProducao() {
     const nav = h("div", { class: "subnav" }, subs.map(([id, nome]) => h("button", { class: id === estado.subp ? "ativo" : "", onclick: () => { estado.subp = id; etiquetaAberta = null; msg.replaceChildren(); desenharSub(); } }, nome)),
       h("button", { class: "sec", onclick: () => desenharSub() }, "Atualizar"));
     let corpo;
-    try { corpo = await ({ massa: subMassa, montagem: subMontagem, forno: subForno, acabamento: subAcabamento, andamento: subAndamento, motivos: subMotivos }[estado.subp])(); }
+    try { corpo = await ({ massa: subMassa, montagem: subMontagem, forno: subForno, acabamento: subAcabamento, despacho: subDespacho, andamento: subAndamento, motivos: subMotivos }[estado.subp])(); }
     catch (e) { corpo = aviso("erro", e.message); }
     alvo.replaceChildren(nav, msg, corpo);
   }
@@ -959,6 +960,20 @@ async function abaProducao() {
         h("td", {}, p.cliente || "Balcão"), h("td", {}, p.acabadas + " de " + p.pizzas), h("td", {}, rotuloSit[p.situacao]),
         h("td", {}, p.situacao !== "acabado" && p.acabadas === p.pizzas ? h("button", { class: "principal", onclick: () => acao("POST", "/producao/pedidos/" + p.id + "/acabado", undefined, "Pedido acabado.") }, "Marcar pedido acabado") : null))))) : h("p", { class: "pequeno" }, "Nenhum pedido em aberto.")),
       h("p", { class: "pequeno" }, "Bebida e acompanhamento não entram nesta lista."));
+  }
+
+  async function subDespacho() {
+    const [d, entregadores] = await Promise.all([api("GET", "/caixa/despacho"), api("GET", "/caixa/despacho/entregadores")]);
+    if (!d.caixa_aberto) return h("div", {}, aviso("alerta", "O caixa do dia não está aberto. A recepção abre o caixa antes de despachar."));
+    if (!entregadores.length) return h("div", {}, aviso("alerta", "Nenhum entregador ativo. A recepção ou a gerência cadastra."));
+    const linhas = d.pedidos.map((e) => {
+      const sel = h("select", { "aria-label": "Entregador do pedido " + e.id_dia }, entregadores.map((x) => h("option", { value: x.id }, x.nome)));
+      return h("tr", {}, h("td", {}, "#" + e.id_dia), h("td", {}, rotuloSit[e.situacao] || e.situacao),
+        h("td", {}, e.entregador ? e.entregador : h("div", { class: "acoes-linha" }, sel,
+          h("button", { class: "principal", onclick: () => acao("POST", "/caixa/despacho/" + e.pedido_id, { entregador_id: Number(sel.value) }, "Entregador atribuído.") }, "Despachar"))));
+    });
+    return h("div", {}, h("div", { class: "cartao tabela" }, h("h2", {}, "Entregas de hoje"),
+      d.pedidos.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Pedido", "Situação", "Entregador"].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nenhuma entrega hoje.")));
   }
 
   async function subAndamento() {
