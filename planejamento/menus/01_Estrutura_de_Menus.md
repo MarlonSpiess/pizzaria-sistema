@@ -57,7 +57,7 @@ Uso: 4 tablets (1 massa, 2 pizzaiolo, 1 acabamento) e a gerência. A unidade de 
 | 🥣 Massa | Massa e necessidade do dia (necessidade, saldo e falta por tamanho) | [Existe] aba Produção, sub Massa | gerência, massa |
 | 👨‍🍳 Montagem | Fila de montagem | [Existe] sub Montagem | gerência, pizzaiolo |
 | 📦 Acabamento | Saiu do forno, Acabamento e etiqueta, Despacho (tela única da função) | Saiu do forno e Acabamento [Existe] (hoje a sub Forno e a sub Acabamento); a tela única é [Proposta], pedida por Marlon em 03/11/2026 ("acabamento só vai ver a tela de acabamento/despacho"). Despacho (atribuir entregador) hoje é da recepção, em Entregas, e exige permissão nova (seção 7.1). Teste da impressora térmica pendente | gerência, acabamento |
-| ⏱️ Andamento | Andamento (visão geral da cozinha) | [Existe] sub Andamento | gerência. Para o atendente, a hora de entrega calculada passa a aparecer em Vendas > Pedidos, e as 3 funções de produção deixam de ver esta tela [Proposta, aguarda confirmação de Marlon] |
+| ⏱️ Andamento | Andamento (visão geral da cozinha) | [Existe] sub Andamento | gerência. Para o atendente, a hora de entrega calculada passa a aparecer em Vendas > Pedidos, e as 3 funções de produção deixam de ver esta tela [Decidido por Marlon em 03/11/2026] |
 | ♻️ Perdas | Perdas e refações (consulta) | [Novo] tela de consulta para a gerência. O registro já existe dentro das filas (perda e refação na montagem e no acabamento, perda de massa na massa); fonte da regra: 02_Producao 5.6 e 8 (refações vão ao BI) | gerência |
 | ⚙️ Configurar | Motivos, Etapas de produção | [Existe] sub Motivos; Etapas [Existe] em Fichas e etapas, sub Etapas de produção | gerência |
 
@@ -152,7 +152,7 @@ Regra: **cada função só vê e só acessa a tela que é dela**. O pizzaiolo v�
 
 Para isso **não é preciso criar permissões de leitura novas**: a rota filtra pela permissão de escrita que o perfil já tem. Menos permissões, menos erro.
 
-**Mudanças de permissão que alteram o fluxo (aguardam Marlon)**
+**Mudanças de permissão que alteram o fluxo (Marlon escolheu "cada função só a sua tela" em 03/11/2026; o valor do pedido no despacho e o caixa aberto seguem em aberto)**
 
 - **Forno:** retirar `producao.forno` do pizzaiolo; "Saiu do forno" fica só com o acabamento, e a leitura do forno com ele. Os testes de `test_producao.py` já usam o acabamento para esse passo.
 - **Despacho no acabamento:** a tela precisa de três leituras que ele não tem (`GET /caixa/entregas`, `GET /entregadores` ativos, `GET /caixa/hoje`) e de uma escrita (`POST /caixa/entregas/{id}`, hoje `caixa.operar`). Proposta: uma permissão nova `entregas.despachar` que cubra a escrita e as leituras de entregas e entregadores ativos, sem dar `caixa.ver` (que abriria motivos, maquininhas, taxas e relatório do caixa). `GET /caixa/entregas` devolve o total do pedido, então o acabamento passaria a ver valor; ou se filtra o total, ou se aceita expressamente. Atribuir entregador só funciona com o caixa aberto pela recepção (`exigir_aberto`): dependência a confirmar.
@@ -162,7 +162,7 @@ Para isso **não é preciso criar permissões de leitura novas**: a rota filtra 
 
 O menu continua só repetindo a regra, para não mostrar o que daria erro. Esta etapa registra a regra e a proposta; mudar `security.py` e as rotas é código e entra na Etapa 3.
 
-Pergunta aberta (cartão enviado a Marlon): onde ficam o Forno, o Andamento e o Despacho. A recomendação registrada é uma tela por função.
+Decidido por Marlon em 03/11/2026: uma tela por função. Forno e Despacho ficam dentro da tela do acabamento; o Andamento fica só para a gerência.
 
 ---
 
