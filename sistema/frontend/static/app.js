@@ -85,6 +85,7 @@ const ABAS = [
   ["producao", "Produção", [...GERENCIA_PERFIS, "massa", "pizzaiolo", "acabamento", "atendente"], "", "👨‍🍳", "producao"],
   ["vendas", "Pedidos", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "🧾", "vendas"],
   ["caixa", "Caixa e entregas", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "💰", "vendas"],
+  ["canais", "Canais", GERENCIA_PERFIS, "", "🔌", "vendas"],
   ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "👥", "vendas"],
   ["entregadores", "Entregadores", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "🛵", "vendas"],
   ["painel", "Painel", GERENCIA_PERFIS, "", "📊", "admin"],
@@ -472,6 +473,31 @@ async function abaClientes() {
   q.oninput = () => { clearTimeout(espera); espera = setTimeout(listar, 300); };
   alvo.replaceChildren(msg, form, h("div", { class: "cartao" }, q), tabela);
   await listar();
+}
+
+async function abaCanais() {
+  const alvo = h("div"); moldura(alvo);
+  const msg = h("div");
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  let canais;
+  try { canais = await api("GET", "/canais"); } catch (e) { alvo.replaceChildren(aviso("erro", e.message)); return; }
+  if (!canais.length) { alvo.replaceChildren(aviso("erro", "Nenhum canal cadastrado.")); return; }
+  if (!estado.canalId || !canais.some((c) => c.id === estado.canalId)) estado.canalId = canais[0].id;
+  const atual = canais.find((c) => c.id === estado.canalId);
+  const nav0 = () => h("div", { class: "subnav" }, canais.map((c) => h("button", { onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome)));
+  let fila = [], mapa = [];
+  try { [fila, mapa] = await Promise.all([api("GET", "/canais/" + atual.id + "/fila"), api("GET", "/canais/" + atual.id + "/produtos")]); } catch (e) { alvo.replaceChildren(nav0(), aviso("erro", e.message)); return; }
+  const nav = h("div", { class: "subnav" }, canais.map((c) => h("button", { class: c.id === atual.id ? "ativo" : "", onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome + (c.pendentes ? " (" + c.pendentes + ")" : ""))));
+  const estadoCartao = h("div", { class: "cartao" }, h("h2", {}, atual.nome), h("p", { class: "pequeno" }, "Integração ainda não conectada: falta o token do canal. Aqui ficam só a estrutura, a fila de entrada e o mapa de produtos."),
+    h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/canais/" + atual.id + "/ativo", { ativo: !atual.ativo }); abaCanais(); } catch (e) { falha(e); } } }, atual.ativo ? "Desativar canal" : "Ativar canal"),
+    h("p", {}, atual.ativo ? "Canal ativo." : "Canal desativado."));
+  const filaCartao = h("div", { class: "cartao" }, h("h2", {}, "Fila de entrada"), fila.length ? tabela(["Pedido no canal", "Situação", "Recebido", ""], fila.map((e) => h("tr", {},
+    h("td", {}, e.id_externo), h("td", {}, e.situacao + (e.motivo ? ": " + e.motivo : "")), h("td", {}, new Date(e.recebido_em).toLocaleString("pt-BR")),
+    h("td", {}, e.situacao === "pendente" ? h("button", { class: "sec", onclick: async (ev) => { const m = prompt("Motivo da recusa"); if (!m) return; ev.target.disabled = true; try { await api("POST", "/canais/fila/" + e.id + "/recusar", { motivo: m }); abaCanais(); } catch (x) { falha(x); } } }, "Recusar") : "")))) : h("p", {}, "Nenhum pedido recebido."));
+  const mapaCartao = h("div", { class: "cartao" }, h("h2", {}, "Mapa de produtos"), h("p", { class: "pequeno" }, "ID Externo de cada produto no canal. Sem ele o produto não é exportado."),
+    tabela(["Produto", "ID Externo", ""], mapa.map((m) => { const i = h("input", { value: m.id_externo || "", placeholder: "ID no canal" });
+      return h("tr", {}, h("td", {}, m.nome), h("td", {}, i), h("td", {}, h("button", { class: "sec", onclick: async () => { try { await api("PUT", "/canais/" + atual.id + "/produtos", { produto_id: m.produto_id, id_externo: i.value }); msg.replaceChildren(aviso("ok", "Mapeado.")); } catch (x) { falha(x); } } }, "Salvar"))); })));
+  alvo.replaceChildren(nav, msg, estadoCartao, filaCartao, mapaCartao);
 }
 
 async function abaEntregadores() {
@@ -1850,7 +1876,7 @@ async function desenhar() {
   }
   if (estado.eu.deve_trocar_senha) return telaTrocaSenha();
   if (!abasDoPerfil().some(([id]) => id === estado.aba)) estado.aba = abaInicial();
-  const abas = { painel: abaPainel, vendas: abaVendas, producao: abaProducao, caixa: abaCaixa, estoque: abaEstoque, compras: abaCompras, contas: abaContas, custos: abaCustos, bi: abaBi, imobilizado: abaImobilizado, rh: abaRh, meusdados: abaMeusDados, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
+  const abas = { painel: abaPainel, vendas: abaVendas, producao: abaProducao, caixa: abaCaixa, estoque: abaEstoque, compras: abaCompras, contas: abaContas, custos: abaCustos, bi: abaBi, imobilizado: abaImobilizado, rh: abaRh, meusdados: abaMeusDados, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, canais: abaCanais, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
   await (abas[estado.aba] || abaPainel)();
 }
 

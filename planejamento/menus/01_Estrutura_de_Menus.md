@@ -192,3 +192,8 @@ O pedido nasce em **Vendas** (balcão ou canal), vira pizzas na fila de **Produ�
 Com os menus aprovados, a Etapa 2 revisa cada tela no padrão do Layout C, começando por Vendas > Pedidos (quadro por situação) e Produção (filas por função), que são as de maior uso no pico.
 
 **Recomendação:** aprovar o desenho com um login e três áreas, porque reaproveita tudo o que está construído e testado (188 testes) e deixa a separação real para onde ela importa, que é o servidor de integração com os canais na Etapa 3.
+
+
+## Canais: estado em 03/11/2026
+
+Tela Vendas > Canais criada (estrutura apenas): um canal por aba (Anota Ai, iFood desativado), fila de entrada com recusa, mapa de ID Externo por produto. Acesso: só gerência (vendas.gerir); isto difere da restrição anterior de configurar canal só pelo administrador (B10), a confirmar com Marlon. Pendentes: aceitar pedido da fila e criar o pedido, Erros de integração, guarda do token (variável de ambiente, nunca no banco), integração real quando o Anota Ai liberar o token.
