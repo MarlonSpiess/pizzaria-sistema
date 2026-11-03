@@ -18,7 +18,7 @@ PERFIS = ("administrador", "proprietario", "gerente", "subgerente", "atendente",
 # administrador e proprietário têm tudo; as demais permissões entram nas fatias seguintes.
 _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar",
           "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar",
-          "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir",
+          "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir", "canais.configurar",
           "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
           "producao.refazer", "producao.gerir", "producao.perda_massa",
           "caixa.ver", "caixa.operar", "caixa.aprovar", "caixa.gerir", "entregas.despachar",

@@ -485,17 +485,19 @@ async function abaCanais() {
   if (!estado.canalId || !canais.some((c) => c.id === estado.canalId)) estado.canalId = canais[0].id;
   const atual = canais.find((c) => c.id === estado.canalId);
   const nav0 = () => h("div", { class: "subnav" }, canais.map((c) => h("button", { onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome)));
+  const podeConfigurar = ["administrador", "proprietario"].includes(estado.eu.perfil);
   let fila = [], mapa = [];
   try { [fila, mapa] = await Promise.all([api("GET", "/canais/" + atual.id + "/fila"), api("GET", "/canais/" + atual.id + "/produtos")]); } catch (e) { alvo.replaceChildren(nav0(), aviso("erro", e.message)); return; }
   const nav = h("div", { class: "subnav" }, canais.map((c) => h("button", { class: c.id === atual.id ? "ativo" : "", onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome + (c.pendentes ? " (" + c.pendentes + ")" : ""))));
   const estadoCartao = h("div", { class: "cartao" }, h("h2", {}, atual.nome), h("p", { class: "pequeno" }, "Integração ainda não conectada: falta o token do canal. Aqui ficam só a estrutura, a fila de entrada e o mapa de produtos."),
-    h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/canais/" + atual.id + "/ativo", { ativo: !atual.ativo }); abaCanais(); } catch (e) { falha(e); } } }, atual.ativo ? "Desativar canal" : "Ativar canal"),
+    !podeConfigurar ? null : h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/canais/" + atual.id + "/ativo", { ativo: !atual.ativo }); abaCanais(); } catch (e) { falha(e); } } }, atual.ativo ? "Desativar canal" : "Ativar canal"),
     h("p", {}, atual.ativo ? "Canal ativo." : "Canal desativado."));
   const filaCartao = h("div", { class: "cartao" }, h("h2", {}, "Fila de entrada"), fila.length ? tabela(["Pedido no canal", "Situação", "Recebido", ""], fila.map((e) => h("tr", {},
     h("td", {}, e.id_externo), h("td", {}, e.situacao + (e.motivo ? ": " + e.motivo : "")), h("td", {}, new Date(e.recebido_em).toLocaleString("pt-BR")),
     h("td", {}, e.situacao === "pendente" ? h("button", { class: "sec", onclick: async (ev) => { const m = prompt("Motivo da recusa"); if (!m) return; ev.target.disabled = true; try { await api("POST", "/canais/fila/" + e.id + "/recusar", { motivo: m }); abaCanais(); } catch (x) { falha(x); } } }, "Recusar") : "")))) : h("p", {}, "Nenhum pedido recebido."));
   const mapaCartao = h("div", { class: "cartao" }, h("h2", {}, "Mapa de produtos"), h("p", { class: "pequeno" }, "ID Externo de cada produto no canal. Sem ele o produto não é exportado."),
     tabela(["Produto", "ID Externo", ""], mapa.map((m) => { const i = h("input", { value: m.id_externo || "", placeholder: "ID no canal" });
+      if (!podeConfigurar) { i.disabled = true; return h("tr", {}, h("td", {}, m.nome), h("td", {}, m.id_externo || "sem ID"), h("td", {})); }
       return h("tr", {}, h("td", {}, m.nome), h("td", {}, i), h("td", {}, h("button", { class: "sec", onclick: async () => { try { await api("PUT", "/canais/" + atual.id + "/produtos", { produto_id: m.produto_id, id_externo: i.value }); msg.replaceChildren(aviso("ok", "Mapeado.")); } catch (x) { falha(x); } } }, "Salvar"))); })));
   alvo.replaceChildren(nav, msg, estadoCartao, filaCartao, mapaCartao);
 }

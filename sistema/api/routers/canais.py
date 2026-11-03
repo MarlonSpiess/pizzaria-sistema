@@ -51,7 +51,7 @@ def listar(sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
 
 
 @router.patch("/{cid}/ativo")
-def ativar(cid: int, d: AtivoIn, sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
+def ativar(cid: int, d: AtivoIn, sessao=Depends(requer("canais.configurar")), conn=Depends(get_db)):
     ativo = d.ativo
     c = _canal(conn, cid)
     conn.execute("UPDATE canal_venda SET ativo = %s WHERE id = %s AND loja_id = %s", (ativo, cid, LOJA_ID))
@@ -90,7 +90,7 @@ def mapa(cid: int, sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db))
 
 
 @router.put("/{cid}/produtos")
-def mapear(cid: int, d: MapaIn, sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
+def mapear(cid: int, d: MapaIn, sessao=Depends(requer("canais.configurar")), conn=Depends(get_db)):
     _canal(conn, cid)
     ext = _texto(d.id_externo, 80)
     if not conn.execute("SELECT 1 FROM produto WHERE id = %s AND loja_id = %s AND ativo", (d.produto_id, LOJA_ID)).fetchone():

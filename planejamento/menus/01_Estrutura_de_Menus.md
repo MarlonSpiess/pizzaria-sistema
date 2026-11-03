@@ -196,4 +196,4 @@ Com os menus aprovados, a Etapa 2 revisa cada tela no padrão do Layout C, come�
 
 ## Canais: estado em 03/11/2026
 
-Tela Vendas > Canais criada (estrutura apenas): um canal por aba (Anota Ai, iFood desativado), fila de entrada com recusa, mapa de ID Externo por produto. Acesso: só gerência (vendas.gerir); isto difere da restrição anterior de configurar canal só pelo administrador (B10), a confirmar com Marlon. Pendentes: aceitar pedido da fila e criar o pedido, Erros de integração, guarda do token (variável de ambiente, nunca no banco), integração real quando o Anota Ai liberar o token.
+Tela Vendas > Canais criada (estrutura apenas): um canal por aba (Anota Ai, iFood desativado), fila de entrada com recusa, mapa de ID Externo por produto. Acesso: gerência vê a fila, recusa entradas e consulta o mapa; ATIVAR canal e EDITAR o mapa é só do administrador e do proprietário (permissão canais.configurar), conforme a decisão B10. Pendentes: aceitar pedido da fila e criar o pedido, Erros de integração, guarda do token (variável de ambiente, nunca no banco), integração real quando o Anota Ai liberar o token.
