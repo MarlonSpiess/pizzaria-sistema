@@ -12,6 +12,8 @@ from api.security import requer
 from api.services.dinheiro import fmt
 from api.services.preco import calcular_pizza
 
+from api.services.ingredientes import produtos_fechados
+
 router = APIRouter(tags=["cardapio"])
 
 _P_ATUAL = "(SELECT valor FROM preco_produto WHERE produto_id = p.id AND tamanho = '{t}' ORDER BY id DESC LIMIT 1)"
@@ -89,7 +91,9 @@ def listar_produtos(tipo: Optional[str] = Query(default=None), ativo: Optional[b
         sql, params = sql + " AND p.tipo = %s", params + [tipo]
     if ativo is not None:
         sql, params = sql + " AND p.ativo = %s", params + [ativo]
-    return [_precos_em_texto(r) for r in conn.execute(sql + " ORDER BY p.tipo, c.nome NULLS LAST, p.nome", params).fetchall()]
+    fech = produtos_fechados(conn)  # venda fechada por ingrediente em falta
+    return [_precos_em_texto(r) | {"venda_fechada": r["id"] in fech, "motivo_fechada": ", ".join(fech.get(r["id"], []))}
+            for r in conn.execute(sql + " ORDER BY p.tipo, c.nome NULLS LAST, p.nome", params).fetchall()]
 
 
 def _produto(conn, pid: int) -> dict:
