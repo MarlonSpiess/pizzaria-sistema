@@ -569,7 +569,7 @@ class ItemPedidoIn(Base):
     @model_validator(mode="after")
     def _avulsa(self):
         if self.avulsa_id is not None and (self.tipo not in ("pizza", "calzone") or self.quantidade != 1 or self.adicional_ids):
-            raise ValueError("Pizza avulsa é uma pizza ou calzone, quantidade 1, sem adicionais.")
+            raise ValueError("Pizza avulsa é uma pizza ou calzone, quantidade 1; borda e adicionais vêm do item de origem.")
         return self
 
     @field_validator("tipo")
@@ -738,6 +738,9 @@ class MotivoRef(Base):
 
 class MontagemErradaIn(Base):
     tipo: str  # "sabor" ou "formato" (problemas no formato/esteira)
+    observacao: Optional[str] = None  # o que quem apontou o erro vê na pizza; vai junto na venda avulsa
+
+    _o = field_validator("observacao")(_texto_opcional(120))
 
     @field_validator("tipo")
     @classmethod

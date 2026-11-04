@@ -59,13 +59,24 @@ def _resolver_avulsas(conn, d, travar: bool = False) -> list[int]:
     for it in d.itens:
         if it.avulsa_id is None:
             continue
-        a = conn.execute("SELECT p.id, p.situacao, ip.tipo, ip.produto_id, ip.sabor2_id, ip.tamanho FROM pizza_producao p JOIN item_pedido ip ON ip.id = p.item_id "
+        a = conn.execute("SELECT p.id, p.situacao, ip.id AS item_id, ip.observacoes, ip.tipo, ip.produto_id, ip.sabor2_id, ip.tamanho FROM pizza_producao p JOIN item_pedido ip ON ip.id = p.item_id "
                          "WHERE p.id = %s AND p.loja_id = %s", (it.avulsa_id, LOJA_ID)).fetchone()
         if not a or a["situacao"] != "avulsa":
             raise HTTPException(status_code=404, detail="Pizza avulsa não encontrada.")
         if conn.execute("SELECT 1 FROM pizza_avulsa_destino WHERE pizza_id = %s", (a["id"],)).fetchone():
             raise HTTPException(status_code=409, detail="Esta pizza avulsa já foi vendida ou descartada.")
+        # a avulsa assume TODAS as características do item do pedido (sabores, tamanho, borda, adicionais, observações) mais as do acabamento
         it.tipo, it.produto_id, it.sabor2_id, it.tamanho = a["tipo"], a["produto_id"], a["sabor2_id"], a["tamanho"]
+        indisponiveis = []
+        it.adicional_ids = []
+        for x in conn.execute("SELECT i.adicional_id, i.nome FROM item_adicional i WHERE i.item_id = %s AND i.adicional_id IS NOT NULL ORDER BY i.id", (a["item_id"],)).fetchall():
+            ok = conn.execute("SELECT 1 FROM adicional ad WHERE ad.id = %s AND ad.ativo AND EXISTS (SELECT 1 FROM preco_adicional pa WHERE pa.adicional_id = ad.id AND pa.tamanho = %s)",
+                              (x["adicional_id"], a["tamanho"])).fetchone() if a["tamanho"] else None
+            (it.adicional_ids if ok else indisponiveis).append(x["adicional_id"] if ok else x["nome"])  # o que saiu do cardápio não impede a venda: vai anotado
+        obs_ac = conn.execute("SELECT observacao FROM aviso_producao WHERE pizza_id = %s AND tipo IN ('sabor_errado','formato') ORDER BY id DESC LIMIT 1", (a["id"],)).fetchone()
+        partes = [x for x in (a["observacoes"], ("Acabamento: " + obs_ac["observacao"]) if obs_ac and obs_ac["observacao"] else None,
+                              ("Fora do cardápio, sem cobrança: " + ", ".join(indisponiveis)) if indisponiveis else None) if x]
+        it.observacoes = " | ".join(partes) or None
     return ids
 
 
@@ -73,7 +84,8 @@ def _resolver_avulsas(conn, d, travar: bool = False) -> list[int]:
 def avulsas_disponiveis(sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
     """Pizzas avulsas à espera de venda: o balcão as lança como pedido, com o preço do cardápio."""
     rows = conn.execute(
-        "SELECT p.id, p.sabores, p.tipo, p.tamanho, ip.produto_id, ip.sabor2_id FROM pizza_producao p JOIN item_pedido ip ON ip.id = p.item_id "
+        "SELECT p.id, p.sabores, p.tipo, p.tamanho, p.adicionais, p.observacoes, ip.produto_id, ip.sabor2_id, "
+        "(SELECT a.observacao FROM aviso_producao a WHERE a.pizza_id = p.id AND a.tipo IN ('sabor_errado','formato') ORDER BY a.id DESC LIMIT 1) AS observacao_acabamento FROM pizza_producao p JOIN item_pedido ip ON ip.id = p.item_id "
         "WHERE p.loja_id = %s AND p.situacao = 'avulsa' AND NOT EXISTS (SELECT 1 FROM pizza_avulsa_destino d WHERE d.pizza_id = p.id) ORDER BY p.id", (LOJA_ID,)).fetchall()
     return rows
 
@@ -175,6 +187,7 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
             if it.avulsa_id:
                 conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, usuario_id, criado_em, pedido_id) VALUES (%s,'vendida',%s,%s,%s)",
                              (it.avulsa_id, sessao["usuario_id"], quando, ped["id"]))
+                estoque.baixar_pizza(conn, LOJA_ID, it.avulsa_id, "acabada", sessao["usuario_id"], quando)  # consumo da ficha inteira, como saída de venda
             for a in calc["adicionais"]:
                 conn.execute("INSERT INTO item_adicional (item_id, adicional_id, nome, valor) VALUES (%s,%s,%s,%s)",
                              (item["id"], a["id"], a["nome"], a["valor"]))

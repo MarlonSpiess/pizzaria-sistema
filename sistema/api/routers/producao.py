@@ -310,7 +310,7 @@ def montagem_errada(pid: int, d: MontagemErradaIn, sessao=Depends(requer_alguma(
     quando = agora()
     estava_na_montagem = p["situacao"] == "em montagem"
     svc.mover(conn, pid, "avulsa", sessao["usuario_id"], quando)
-    estoque.baixar_pizza(conn, LOJA_ID, pid, "perdida", sessao["usuario_id"], quando, "Pizza avulsa (montagem errada)")
+    # o consumo de estoque da avulsa só é baixado quando ela tiver destino: vendida (ficha inteira, saída de venda) ou descartada (perda)
     conn.execute("SELECT pg_advisory_xact_lock(5, %s)", (LOJA_ID,))
     frente = conn.execute("SELECT COALESCE(min(ordem), 1) - 1 AS o FROM pizza_producao WHERE loja_id = %s AND situacao = 'na lista'", (LOJA_ID,)).fetchone()["o"]
     novo = conn.execute(
@@ -321,8 +321,8 @@ def montagem_errada(pid: int, d: MontagemErradaIn, sessao=Depends(requer_alguma(
     if estava_na_montagem:
         svc.evento(conn, novo["id"], "em montagem", sessao["usuario_id"], quando)
     tipo_aviso = "sabor_errado" if d.tipo == "sabor" else "formato"
-    conn.execute("INSERT INTO aviso_producao (loja_id, tipo, pizza_id, nova_pizza_id, criado_por, criado_em) VALUES (%s,%s,%s,%s,%s,%s)",
-                 (LOJA_ID, tipo_aviso, pid, novo["id"], sessao["usuario_id"], quando))
+    conn.execute("INSERT INTO aviso_producao (loja_id, tipo, pizza_id, nova_pizza_id, criado_por, criado_em, observacao) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                 (LOJA_ID, tipo_aviso, pid, novo["id"], sessao["usuario_id"], quando, d.observacao))
     auditar(conn, sessao, "montagem_errada", "pizza_producao", pid, depois={"nova": novo["id"], "tipo": d.tipo, "de": p["situacao"]})
     conn.commit()
     return {"id": novo["id"], "original_id": pid, "situacao": "em montagem" if estava_na_montagem else "na lista", "original": "avulsa"}
@@ -358,7 +358,9 @@ def sem_ingredientes(pid: int, sessao=Depends(requer("producao.montagem")), conn
 def avulsas(sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
     """Pizzas avulsas (montagem errada) ainda sem destino. Sem valores: quem vende é o balcão (Vendas), como pedido; aqui só se descarta."""
     return conn.execute(
-        "SELECT p.id, ped.id_dia, p.tipo, p.tamanho, p.sabores, p.criado_em FROM pizza_producao p JOIN pedido ped ON ped.id = p.pedido_id "
+        "SELECT p.id, ped.id_dia, p.tipo, p.tamanho, p.sabores, p.adicionais, p.observacoes, p.criado_em, "
+        "(SELECT a.observacao FROM aviso_producao a WHERE a.pizza_id = p.id AND a.tipo IN ('sabor_errado','formato') ORDER BY a.id DESC LIMIT 1) AS observacao_acabamento "
+        "FROM pizza_producao p JOIN pedido ped ON ped.id = p.pedido_id "
         "WHERE p.loja_id = %s AND p.situacao = 'avulsa' AND NOT EXISTS (SELECT 1 FROM pizza_avulsa_destino d WHERE d.pizza_id = p.id) ORDER BY p.id", (LOJA_ID,)).fetchall()
 
 
@@ -377,6 +379,8 @@ def avulsa_descartada(pid: int, d: MotivoRef, sessao=Depends(requer_alguma("prod
     m = _motivo(conn, "motivo_perda", d.motivo_id)
     quando = agora()
     svc.registrar_perda_pizza(conn, LOJA_ID, p, m["id"], sessao["usuario_id"], quando)
+    foi_ao_forno = conn.execute("SELECT 1 FROM evento_producao WHERE pizza_id = %s AND situacao = 'no forno' LIMIT 1", (pid,)).fetchone() is not None
+    estoque.baixar_pizza(conn, LOJA_ID, pid, "perdida", sessao["usuario_id"], quando, "Pizza avulsa descartada", ficha_inteira=foi_ao_forno)  # já assada: perde a ficha inteira
     try:
         conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, motivo_id, usuario_id, criado_em) VALUES (%s,'perda',%s,%s,%s)", (pid, m["id"], sessao["usuario_id"], quando))
     except psycopg.errors.UniqueViolation:

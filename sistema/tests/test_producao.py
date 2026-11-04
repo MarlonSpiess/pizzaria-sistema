@@ -452,3 +452,26 @@ def test_avulsa_duplo_clique_devolve_o_mesmo_pedido_e_cancelar_a_venda_vira_perd
     assert r.status_code == 200, r.text
     assert conn_teste.execute("SELECT count(*) FROM perda WHERE pizza_id = %s", (p["id"],)).fetchone()[0] == 1  # venda caiu: perda
     assert p["id"] not in [x["id"] for x in client.get("/api/pedidos/avulsas-disponiveis", headers=hs["atendente"]).json()]
+
+
+def test_avulsa_assume_borda_adicionais_e_observacoes_do_item_mais_as_do_acabamento(client, cardapio, hs, conn_teste):
+    _pagar(client, hs["atendente"], [_g(cardapio, adicional_ids=[cardapio["borda"]["id"], cardapio["extra"]["id"]], observacoes="Sem cebola")])
+    p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    client.post(f"/api/producao/pizzas/{p['id']}/produzida", headers=hs["pizzaiolo"])
+    r = client.post(f"/api/producao/pizzas/{p['id']}/montagem-errada", json={"tipo": "sabor", "observacao": "Veio com azeitona"}, headers=hs["acabamento"])
+    assert r.status_code == 201
+    # nada de estoque foi baixado ainda: o destino define se vira venda ou perda
+    assert conn_teste.execute("SELECT count(*) FROM movimento_estoque WHERE origem_tipo = 'pizza' AND origem_id = %s", (p["id"],)).fetchone()[0] == 0
+    av = {x["id"]: x for x in client.get("/api/producao/avulsas", headers=hs["acabamento"]).json()}[p["id"]]
+    assert "Sem cebola" in av["observacoes"] and av["observacao_acabamento"] == "Veio com azeitona" and av["adicionais"]
+    assert "preco" not in str(av).lower()  # sem valores para o acabamento
+    disp = {x["id"]: x for x in client.get("/api/pedidos/avulsas-disponiveis", headers=hs["atendente"]).json()}[p["id"]]
+    item = {"tipo": "pizza", "produto_id": disp["produto_id"], "tamanho": disp["tamanho"], "avulsa_id": p["id"], "quantidade": 1}
+    calc = client.post("/api/pedidos/calcular", json={"itens": [item]}, headers=hs["atendente"]).json()
+    assert calc["total"] == "49.00"  # 35 da pizza + 8 da borda + 6 do adicional
+    venda = client.post("/api/pedidos", json={"itens": [item], "pagamentos": [{"forma": "pix", "valor": "49,00"}]}, headers=hs["atendente"])
+    assert venda.status_code == 201, venda.text
+    obs = conn_teste.execute("SELECT observacoes FROM item_pedido WHERE pedido_id = %s", (venda.json()["id"],)).fetchone()[0]
+    assert "Sem cebola" in obs and "Acabamento: Veio com azeitona" in obs
+    assert conn_teste.execute("SELECT count(*) FROM item_adicional WHERE item_id = (SELECT id FROM item_pedido WHERE pedido_id = %s)", (venda.json()["id"],)).fetchone()[0] == 2
+    assert conn_teste.execute("SELECT count(*) FROM movimento_estoque WHERE tipo = 'perda' AND origem_tipo = 'pizza' AND origem_id = %s", (p["id"],)).fetchone()[0] == 0  # vendida: não é perda

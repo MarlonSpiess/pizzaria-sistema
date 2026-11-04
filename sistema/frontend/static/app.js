@@ -252,7 +252,13 @@ async function abaParametros() {
     } }, "Salvar");
     return h("tr", {}, h("td", {}, p.descricao, h("div", { class: "pequeno" }, p.definido ? "alterado " + fmtData(p.vigente_desde) : "valor padrão")), h("td", {}, campo), h("td", {}, salvar));
   });
-  alvo.replaceChildren(msg, h("div", { class: "cartao tabela" }, h("h2", {}, "Parâmetros da loja"),
+  let canaisP = [];
+  try { canaisP = await api("GET", "/canais"); } catch (e) { /* sem permissão de Vendas: sem o cartão */ }
+  const cartaoAceite = canaisP.length ? h("div", { class: "cartao" }, h("h2", {}, "Aceite automático de pedidos dos canais"),
+    h("p", { class: "pequeno" }, "Ligado: o sistema aceita sozinho o pedido quando TODOS os critérios forem atendidos (canal ativo, loja aberta, caixa de hoje aberto, todos os itens no mapa de produtos e nenhum sabor com venda fechada). Desligado: os pedidos são aceitos um a um pelo balconista. ATENÇÃO: nem o aceite automático nem o um a um funcionam ainda; dependem da integração com a API do Anota Ai."),
+    canaisP.map((c) => h("div", { class: "acoes-linha" }, h("b", {}, c.nome), " · ", c.aceitar_sozinho ? "aceita automaticamente" : "aceite um a um", " ",
+      podeEditar ? h("button", { class: "sec", onclick: async (ev) => { ev.target.disabled = true; try { await api("PATCH", "/canais/" + c.id + "/aceitar-sozinho", { ativo: !c.aceitar_sozinho }); abaParametros(); } catch (e) { msg.replaceChildren(aviso("erro", e.message)); ev.target.disabled = false; } } }, c.aceitar_sozinho ? "Desligar" : "Ligar") : null))) : null;
+  alvo.replaceChildren(msg, ...(cartaoAceite ? [cartaoAceite] : []), h("div", { class: "cartao tabela" }, h("h2", {}, "Parâmetros da loja"),
     podeEditar ? null : h("p", { class: "pequeno" }, "Só o administrador e o proprietário alteram parâmetros."),
     h("table", {}, h("tbody", {}, linhas))));
 }
@@ -498,7 +504,7 @@ async function abaCanais() {
   const estadoCartao = h("div", { class: "cartao" }, h("h2", {}, atual.nome), h("p", { class: "pequeno" }, "Integração ainda não conectada: falta o token do canal. Aqui ficam só a estrutura, a fila de entrada e o mapa de produtos."),
     !podeConfigurar ? null : h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/canais/" + atual.id + "/ativo", { ativo: !atual.ativo }); abaCanais(); } catch (e) { falha(e); } } }, atual.ativo ? "Desativar canal" : "Ativar canal"),
     h("p", {}, atual.ativo ? "Canal ativo." : "Canal desativado."),
-    h("p", {}, "Aceitar sozinho: " + (atual.aceitar_sozinho ? "LIGADO (regra: loja aberta, caixa de hoje aberto e todos os itens no mapa de produtos). Vale quando a integração for conectada; hoje nada é aceito automaticamente." : "desligado. A gerência aceita cada pedido explicitamente.")),
+    h("p", {}, "Aceitar sozinho: " + (atual.aceitar_sozinho ? "LIGADO (regra: loja aberta, caixa de hoje aberto e todos os itens no mapa de produtos). Vale quando a integração for conectada; hoje nada é aceito automaticamente." : "desligado. A gerência aceita cada pedido explicitamente (o botão Aceitar chega com a integração).")),
     !podeConfigurar ? null : h("button", { class: "sec", onclick: async (ev) => { ev.target.disabled = true; try { await api("PATCH", "/canais/" + atual.id + "/aceitar-sozinho", { ativo: !atual.aceitar_sozinho }); abaCanais(); } catch (e) { falha(e); } } }, atual.aceitar_sozinho ? "Desligar aceitar sozinho" : "Ligar aceitar sozinho"));
   const filaCartao = h("div", { class: "cartao" }, h("h2", {}, "Fila de entrada"), fila.length ? tabela(["Pedido no canal", "Situação", "Recebido", ""], fila.map((e) => h("tr", {},
     h("td", {}, e.id_externo), h("td", {}, ({ pendente: "na fila", importando: "importando…", importada: "importada", bloqueada: "BLOQUEADA, aguarda a gerência", recusada: "recusada" }[e.situacao] || e.situacao) + (e.motivo ? ": " + e.motivo : "")), h("td", {}, new Date(e.recebido_em).toLocaleString("pt-BR"), ["pendente", "importando", "bloqueada"].includes(e.situacao) ? (() => { const t = new Date(e.recebido_em).getTime(), min = Number.isFinite(t) ? Math.max(0, Math.floor((Date.now() - t) / 60000)) : null;
@@ -807,8 +813,8 @@ async function abaVendas() {
     const usadas = new Set(r.itens.map((i) => i.dados.avulsa_id).filter(Boolean));
     const livres = avulsasDisp.filter((x) => !usadas.has(x.id));
     const cartaoAvulsas = livres.length ? h("div", { class: "cartao" }, h("h2", {}, "Pizzas avulsas prontas"),
-      h("p", { class: "pequeno" }, "Sobraram da montagem errada. A venda é um pedido de balcão, com o preço do cardápio (e desconto, se couber)."),
-      livres.map((x) => h("div", { class: "acoes-linha" }, (x.tipo === "pizza" ? (x.tamanho === "grande" ? "Grande · " : "Broto · ") : "Calzone · ") + x.sabores, " ",
+      h("p", { class: "pequeno" }, "Sobraram da montagem errada e levam o tamanho, os sabores, a borda, os adicionais e as observações do pedido de origem, mais as do acabamento. A venda é um pedido de balcão, com o preço do cardápio (e desconto, se couber)."),
+      livres.map((x) => h("div", { class: "acoes-linha" }, (x.tipo === "pizza" ? (x.tamanho === "grande" ? "Grande · " : "Broto · ") : "Calzone · ") + x.sabores + (x.adicionais ? " + " + x.adicionais : "") + (x.observacoes ? " · Obs.: " + x.observacoes : "") + (x.observacao_acabamento ? " · Acabamento: " + x.observacao_acabamento : ""), " ",
         h("button", { class: "sec", onclick: () => { r.itens.push({ dados: { tipo: x.tipo, produto_id: x.produto_id, tamanho: x.tamanho === "unico" ? null : x.tamanho, quantidade: 1, avulsa_id: x.id } }); redesenhar(); } }, "Adicionar ao pedido")))) : null;
     const cartaoItem = h("div", { class: "cartao" }, h("h2", {}, "2. Itens"), campo("Tipo", tipo), blocoPizza, blocoOutro,
       h("div", { class: "linha" }, campo("Quantidade", qtd), campo("Observação do item", obsItem)), h("button", { class: "principal", onclick: adicionar }, "Adicionar ao pedido"));
@@ -960,7 +966,8 @@ async function abaProducao() {
   const linhaPizza = (p) => p.tipo === "pizza" ? (p.tamanho === "grande" ? "Grande" : "Broto") + " · " + p.sabores : "Calzone · " + p.sabores;
   const grande = (t) => h("div", { class: "resultado" }, h("div", { class: "total" }, t));
   const botoesErro = (p) => [["sabor", "Montagem errada no sabor"], ["formato", "Problemas no formato/esteira"]].map(([tipo, nome]) => h("button", { class: "sec",
-    onclick: () => { if (window.confirm(nome + "? Esta pizza vira avulsa e a pizza do pedido volta ao topo da lista.")) acao("POST", "/producao/pizzas/" + p.id + "/montagem-errada", { tipo }, "Pizza errada virou avulsa. A certa voltou ao topo da lista."); } }, nome));
+    onclick: () => { if (!window.confirm(nome + "? Esta pizza vira avulsa e a pizza do pedido volta ao topo da lista.")) return; const obs = window.prompt("Observações sobre a pizza (opcional, até 120 caracteres; vão junto na venda avulsa):", "");
+      if (obs === null) return; if (obs.trim().length > 120) { falha(new Error("A observação passa de 120 caracteres.")); return; } acao("POST", "/producao/pizzas/" + p.id + "/montagem-errada", { tipo, observacao: obs.trim() || null }, "Pizza errada virou avulsa. A certa voltou ao topo da lista."); } }, nome));
 
   async function desenharSub() {
     if (desenhandoProducao) return;  // atualizações não se sobrepõem
@@ -1005,8 +1012,8 @@ async function abaProducao() {
       topo = h("div", { class: "cartao" }, h("h2", {}, "Pizza atual"), grande(linhaPizza(minha)),
         h("p", {}, "Pedido #" + minha.id_dia + (minha.urgente ? " · URGENTE" : "")), minha.adicionais ? h("p", {}, "Adicionais: " + minha.adicionais) : null, minha.observacoes ? h("p", {}, "Obs.: " + minha.observacoes) : null,
         h("div", { class: "acoes-linha" }, h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/" + minha.id + "/produzida", undefined, "Pizza foi ao forno.") }, "Finalizada a montagem (vai ao forno)"), " ",
-          h("button", { class: "sec", onclick: () => { if (window.confirm("Montagem errada no sabor? Esta pizza vira avulsa e você recomeça a pizza do pedido.")) acao("POST", "/producao/pizzas/" + minha.id + "/montagem-errada", { tipo: "sabor" }, "Pizza errada virou avulsa. Refaça a pizza do pedido."); } }, "Montagem errada no sabor"), " ",
-          h("button", { class: "sec", onclick: () => { if (window.confirm("Problema no formato/esteira? Esta pizza vira avulsa e você recomeça a pizza do pedido.")) acao("POST", "/producao/pizzas/" + minha.id + "/montagem-errada", { tipo: "formato" }, "Pizza com problema virou avulsa. Refaça a pizza do pedido."); } }, "Problemas no formato/esteira"), " ",
+          h("button", { class: "sec", onclick: () => { if (!window.confirm("Montagem errada no sabor? Esta pizza vira avulsa e você recomeça a pizza do pedido.")) return; const obs = window.prompt("Observações sobre a pizza errada (opcional):", ""); if (obs === null) return; acao("POST", "/producao/pizzas/" + minha.id + "/montagem-errada", { tipo: "sabor", observacao: obs.trim() || null }, "Pizza errada virou avulsa. Refaça a pizza do pedido."); } }, "Montagem errada no sabor"), " ",
+          h("button", { class: "sec", onclick: () => { if (!window.confirm("Problema no formato/esteira? Esta pizza vira avulsa e você recomeça a pizza do pedido.")) return; const obs = window.prompt("Observações sobre a pizza com problema (opcional):", ""); if (obs === null) return; acao("POST", "/producao/pizzas/" + minha.id + "/montagem-errada", { tipo: "formato", observacao: obs.trim() || null }, "Pizza com problema virou avulsa. Refaça a pizza do pedido."); } }, "Problemas no formato/esteira"), " ",
           h("button", { class: "sec", onclick: () => { if (window.confirm("Sem ingredientes? A pizza vai para o fim da lista e a gerência é avisada.")) acao("POST", "/producao/pizzas/" + minha.id + "/sem-ingredientes", undefined, "Pizza foi para o fim da lista. A gerência foi avisada."); } }, "Sem ingredientes"), " ",
           seletorMotivo(mot.perda, "Perdeu a pizza (motivo)", (id) => acao("POST", "/producao/pizzas/" + minha.id + "/perder", { motivo_id: id }, "Perda registrada."), "Registrar a perda desta pizza?")));
     } else {
@@ -1041,7 +1048,7 @@ async function abaProducao() {
         h("td", {}, seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."), "Refazer esta pizza? A nova entra no começo da fila."))))))) : null;
     const cartaoAvulsas = avulsas.length ? h("div", { class: "cartao tabela" }, h("h2", {}, "Pizzas avulsas (montagem errada)"),
       h("p", { class: "pequeno" }, "O balcão vende a avulsa como pedido (em Vendas); vendida, ela não vira perda e some desta lista. Sem venda, descarte com o motivo e ela entra nas perdas."),
-      h("table", {}, h("tbody", {}, avulsas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia), h("td", {}, linhaPizza(p)),
+      h("table", {}, h("tbody", {}, avulsas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia), h("td", {}, linhaPizza(p), p.adicionais ? h("div", { class: "pequeno" }, "Adicionais: " + p.adicionais) : null, p.observacoes ? h("div", { class: "pequeno" }, "Obs.: " + p.observacoes) : null, p.observacao_acabamento ? h("div", { class: "pequeno" }, "Acabamento: " + p.observacao_acabamento) : null),
         h("td", {}, seletorMotivo(mot.perda, "Descartar (motivo)", (id) => acao("POST", "/producao/avulsas/" + p.id + "/descartar", { motivo_id: id }, "Avulsa descartada: registrada como perda."), "Descartar esta pizza avulsa? Ela vira perda."))))))) : null;
     return h("div", {}, box, cartaoAvulsas, cartaoPerdidas, h("div", { class: "cartao tabela" }, h("h2", {}, "Saíram do forno"), prontas.length ? h("table", {}, h("tbody", {}, prontas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
       h("td", {}, h("button", { class: "principal", onclick: async () => { const r = await acao("POST", "/producao/pizzas/" + p.id + "/acabada"); if (r) { etiquetaAberta = r.etiqueta; await desenharSub(); } } }, "Acabada e etiqueta"), " ",
