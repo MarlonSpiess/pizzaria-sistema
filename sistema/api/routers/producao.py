@@ -106,8 +106,7 @@ def fila(situacao: Optional[str] = None,
 
 
 @router.get("/pedidos")
-def pedidos_abertos(sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir", "vendas.ver")), conn=Depends(get_db)):
-    # vendas.ver: ponte para o Andamento do atendente, até a hora de entrega aparecer em Vendas > Pedidos.
+def pedidos_abertos(sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
     """Todos os pedidos em aberto com o andamento das pizzas (só consulta; o pedido só vira acabado à mão)."""
     rows = conn.execute(
         "SELECT ped.id, ped.id_dia, ped.tipo, ped.urgente, ped.situacao, c.nome AS cliente, ped.entrega_calculada, "

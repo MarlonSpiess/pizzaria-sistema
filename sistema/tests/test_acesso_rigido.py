@@ -8,7 +8,7 @@ from tests.test_vendas import cardapio  # noqa: F401  (fixture)
 # rota -> perfis que PODEM ler (os outros recebem 403)
 LEITURAS = {
     "/api/producao/massa": {"massa", "gerente", "subgerente"},
-    "/api/producao/pedidos": {"acabamento", "atendente", "gerente", "subgerente"},  # atendente: ponte do Andamento (vendas.ver)
+    "/api/producao/pedidos": {"acabamento", "gerente", "subgerente"},
     "/api/producao/motivos": {"massa", "pizzaiolo", "acabamento", "gerente", "subgerente"},
     "/api/producao/fila": {"pizzaiolo", "acabamento", "gerente", "subgerente"},
     "/api/rh/escalados?data=2026-01-05": {"gerente", "subgerente"},
@@ -105,3 +105,9 @@ def test_atendente_le_so_formas_de_pagamento(client, hs2):
     assert client.get("/api/parametros/formas-pagamento").status_code == 401
     for perfil in ("massa", "pizzaiolo", "acabamento"):
         assert client.get("/api/parametros/formas-pagamento", headers=hs2[perfil]).status_code == 403, perfil
+
+
+def test_atendente_ve_hora_de_entrega_em_vendas(client, hs2):
+    r = client.get("/api/pedidos", headers=hs2["atendente"])
+    assert r.status_code == 200
+    assert all("entrega_calculada" in p for p in r.json())

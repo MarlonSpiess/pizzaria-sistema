@@ -82,7 +82,7 @@ const GERENCIA_PERFIS = ["administrador", "proprietario", "gerente", "subgerente
 const AREAS = [["producao", "Produção", "🍕"], ["vendas", "Vendas", "🧾"], ["admin", "Admin", "🏢"]];
 const ABAS = [
   // [id, nome, perfis (null = todos), grupo (não usado no trilho), ícone, área]
-  ["producao", "Produção", [...GERENCIA_PERFIS, "massa", "pizzaiolo", "acabamento", "atendente"], "", "👨‍🍳", "producao"],
+  ["producao", "Produção", [...GERENCIA_PERFIS, "massa", "pizzaiolo", "acabamento"], "", "👨‍🍳", "producao"],
   ["vendas", "Pedidos", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "🧾", "vendas"],
   ["caixa", "Caixa e entregas", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "💰", "vendas"],
   ["canais", "Canais", GERENCIA_PERFIS, "", "🔌", "vendas"],
@@ -842,6 +842,7 @@ async function abaVendas() {
     const lista = await api("GET", "/pedidos");
     const gerente = ehGerencia();
     const painel = h("div", {});
+    const horaEntrega = (p) => p.entrega_calculada && ["recebido", "em producao", "acabado"].includes(p.situacao) ? new Date(p.entrega_calculada).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
     const acoesDe = (p) => {
       const acoes = [];
       const passo = async (nova) => { msg.replaceChildren(); try { await api("POST", "/pedidos/" + p.id + "/situacao", { situacao: nova }); desenharSub(); } catch (e) { falha(e); } };
@@ -855,13 +856,13 @@ async function abaVendas() {
     const linhasLista = () => lista.map((p) => {
       const acoes = acoesDe(p);
       return h("tr", { class: p.situacao === "cancelado" ? "inativo" : "" }, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), h("td", {}, p.tipo), h("td", {}, p.cliente_nome || "Balcão"),
-        h("td", {}, brl(p.total)), h("td", {}, rotuloSit[p.situacao]), h("td", {}, acoes.flatMap((a) => [a, " "])));
+        h("td", {}, brl(p.total)), h("td", {}, rotuloSit[p.situacao]), h("td", {}, horaEntrega(p)), h("td", {}, acoes.flatMap((a) => [a, " "])));
     });
     const colunas = Object.keys(rotuloSit);
     const desenharQuadro = () => h("div", { class: "quadro" }, colunas.map((sit) => {
       const ps = lista.filter((p) => p.situacao === sit).sort((a, b) => (Number(b.urgente) - Number(a.urgente)) || (a.id_dia - b.id_dia));
       return h("div", { class: "cartao coluna" }, h("h2", {}, rotuloSit[sit] + " (" + ps.length + ")"),
-        ps.length ? ps.map((p) => h("div", { class: "cartao-pedido" }, h("strong", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), " ", p.tipo, h("div", { class: "pequeno" }, (p.cliente_nome || "Balcão") + " · " + brl(p.total)), h("div", { class: "acoes-pedido" }, acoesDe(p)))) : h("p", { class: "pequeno" }, "Vazio"));
+        ps.length ? ps.map((p) => h("div", { class: "cartao-pedido" }, h("strong", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), " ", p.tipo, h("div", { class: "pequeno" }, (p.cliente_nome || "Balcão") + " · " + brl(p.total) + (horaEntrega(p) ? " · entrega " + horaEntrega(p) : "")), h("div", { class: "acoes-pedido" }, acoesDe(p)))) : h("p", { class: "pequeno" }, "Vazio"));
     }));
     function formCancelar(p) {
       const motivo = h("input", { placeholder: "Motivo obrigatório" }), aut = entradaAutorizacao();
@@ -887,7 +888,7 @@ async function abaVendas() {
     const alterna = h("div", { class: "modo-vista" }, h("span", { class: "pequeno" }, "Ver como:"), [["quadro", "Quadro"], ["lista", "Lista"]].map(([id, nome]) => h("button", { class: id === modo ? "ativo" : "", onclick: () => { estado.modoPedidos = id; msg.replaceChildren(); desenharSub(); } }, nome)));
     if (modo === "quadro") return h("div", {}, painel, alterna, desenharQuadro());
     return h("div", {}, painel, alterna, h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos de hoje (" + lista.length + ")"),
-      lista.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Id", "Tipo", "Cliente", "Total", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhasLista())) : h("p", {}, "Nenhum pedido hoje.")));
+      lista.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Id", "Tipo", "Cliente", "Total", "Situação", "Entrega", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhasLista())) : h("p", {}, "Nenhum pedido hoje.")));
   }
   await desenharSub();
 }
@@ -900,7 +901,7 @@ const SUBS_PRODUCAO = [
   ["forno", "Forno", [...GER, "acabamento"]],
   ["acabamento", "Acabamento", [...GER, "acabamento"]],
   ["despacho", "Despacho", [...GER, "acabamento"]],
-  ["andamento", "Andamento", [...GER, "atendente"]],
+  ["andamento", "Andamento", GER],
   ["motivos", "Motivos", GER],
 ];
 let relogioProducao = null, etiquetaAberta = null, desenhandoProducao = false;
@@ -910,6 +911,7 @@ async function abaProducao() {
   const alvo = h("div"); moldura(alvo);
   const msg = h("div");
   const subs = SUBS_PRODUCAO.filter(([, , perfis]) => perfis.includes(estado.eu.perfil));
+  if (!subs.length) { alvo.replaceChildren(aviso("erro", "Sem telas de Produção para o seu perfil.")); return; }
   if (!subs.some(([id]) => id === estado.subp)) estado.subp = subs[0][0];
   const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
   const ok = (t) => msg.replaceChildren(aviso("ok", t));
