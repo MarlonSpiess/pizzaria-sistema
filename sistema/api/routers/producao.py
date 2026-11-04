@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import Optional
 
 import psycopg
+import psycopg.errors
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
@@ -355,7 +356,7 @@ def sem_ingredientes(pid: int, sessao=Depends(requer("producao.montagem")), conn
 
 @router.get("/avulsas")
 def avulsas(sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
-    """Pizzas avulsas (montagem errada) ainda sem destino: vender ou descartar. Sem valores: o preço da avulsa é da Vendas."""
+    """Pizzas avulsas (montagem errada) ainda sem destino. Sem valores: quem vende é o balcão (Vendas), como pedido; aqui só se descarta."""
     return conn.execute(
         "SELECT p.id, ped.id_dia, p.tipo, p.tamanho, p.sabores, p.criado_em FROM pizza_producao p JOIN pedido ped ON ped.id = p.pedido_id "
         "WHERE p.loja_id = %s AND p.situacao = 'avulsa' AND NOT EXISTS (SELECT 1 FROM pizza_avulsa_destino d WHERE d.pizza_id = p.id) ORDER BY p.id", (LOJA_ID,)).fetchall()
@@ -369,16 +370,6 @@ def _avulsa(conn, pid: int) -> dict:
     return p
 
 
-@router.post("/avulsas/{pid}/vender")
-def avulsa_vendida(pid: int, sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
-    """A avulsa foi vendida: não vira perda. (A receita da venda avulsa ainda será ligada à Vendas.)"""
-    _avulsa(conn, pid)
-    conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, usuario_id, criado_em) VALUES (%s,'vendida',%s,%s)", (pid, sessao["usuario_id"], agora()))
-    auditar(conn, sessao, "avulsa_vendida", "pizza_producao", pid)
-    conn.commit()
-    return {"id": pid, "destino": "vendida"}
-
-
 @router.post("/avulsas/{pid}/descartar")
 def avulsa_descartada(pid: int, d: MotivoRef, sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
     """Sem venda: a avulsa vira perda, com motivo."""
@@ -386,7 +377,11 @@ def avulsa_descartada(pid: int, d: MotivoRef, sessao=Depends(requer_alguma("prod
     m = _motivo(conn, "motivo_perda", d.motivo_id)
     quando = agora()
     svc.registrar_perda_pizza(conn, LOJA_ID, p, m["id"], sessao["usuario_id"], quando)
-    conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, motivo_id, usuario_id, criado_em) VALUES (%s,'perda',%s,%s,%s)", (pid, m["id"], sessao["usuario_id"], quando))
+    try:
+        conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, motivo_id, usuario_id, criado_em) VALUES (%s,'perda',%s,%s,%s)", (pid, m["id"], sessao["usuario_id"], quando))
+    except psycopg.errors.UniqueViolation:
+        conn.rollback()
+        raise HTTPException(status_code=409, detail="Esta pizza avulsa já tem destino.")
     auditar(conn, sessao, "avulsa_descartada", "pizza_producao", pid, depois={"motivo": m["nome"]})
     conn.commit()
     return {"id": pid, "destino": "perda"}

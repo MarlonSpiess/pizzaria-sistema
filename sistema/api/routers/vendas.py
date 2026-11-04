@@ -49,9 +49,38 @@ def _precisa_autorizacao(sessao, t, lim) -> bool:
     return excede_limite(t["desconto"], t["subtotal"], lim) or (t["tipo"] == "entrega" and t["taxa"] < t["taxa_padrao"] and not _gerencia(sessao))
 
 
-def _sabor_fechado(conn, d) -> Optional[str]:
+def _resolver_avulsas(conn, d, travar: bool = False) -> list[int]:
+    """Itens com avulsa_id: confere que a pizza está avulsa, sem destino, e copia dela produto, sabor 2 e tamanho (o preço é o do cardápio)."""
+    ids = [it.avulsa_id for it in d.itens if it.avulsa_id is not None]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(status_code=400, detail="A mesma pizza avulsa aparece duas vezes no pedido.")
+    if travar and ids:  # sempre em ordem de id: dois pedidos com várias avulsas nunca travam um ao outro
+        conn.execute("SELECT id FROM pizza_producao WHERE id = ANY(%s) ORDER BY id FOR UPDATE", (ids,)).fetchall()
+    for it in d.itens:
+        if it.avulsa_id is None:
+            continue
+        a = conn.execute("SELECT p.id, p.situacao, ip.tipo, ip.produto_id, ip.sabor2_id, ip.tamanho FROM pizza_producao p JOIN item_pedido ip ON ip.id = p.item_id "
+                         "WHERE p.id = %s AND p.loja_id = %s", (it.avulsa_id, LOJA_ID)).fetchone()
+        if not a or a["situacao"] != "avulsa":
+            raise HTTPException(status_code=404, detail="Pizza avulsa não encontrada.")
+        if conn.execute("SELECT 1 FROM pizza_avulsa_destino WHERE pizza_id = %s", (a["id"],)).fetchone():
+            raise HTTPException(status_code=409, detail="Esta pizza avulsa já foi vendida ou descartada.")
+        it.tipo, it.produto_id, it.sabor2_id, it.tamanho = a["tipo"], a["produto_id"], a["sabor2_id"], a["tamanho"]
+    return ids
+
+
+@router.get("/avulsas-disponiveis")
+def avulsas_disponiveis(sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
+    """Pizzas avulsas à espera de venda: o balcão as lança como pedido, com o preço do cardápio."""
+    rows = conn.execute(
+        "SELECT p.id, p.sabores, p.tipo, p.tamanho, ip.produto_id, ip.sabor2_id FROM pizza_producao p JOIN item_pedido ip ON ip.id = p.item_id "
+        "WHERE p.loja_id = %s AND p.situacao = 'avulsa' AND NOT EXISTS (SELECT 1 FROM pizza_avulsa_destino d WHERE d.pizza_id = p.id) ORDER BY p.id", (LOJA_ID,)).fetchall()
+    return rows
+
+
+def _sabor_fechado(conn, d, ignorar_avulsas: bool = False) -> Optional[str]:
     """Texto dos sabores com venda FECHADA (ingrediente em falta) no pedido, ou None. Estoque baixo apenas não fecha."""
-    ids = {x for it in d.itens for x in (it.produto_id, it.sabor2_id) if x}
+    ids = {x for it in d.itens if not (ignorar_avulsas and it.avulsa_id) for x in (it.produto_id, it.sabor2_id) if x}  # a avulsa já está pronta
     fech = produtos_fechados(conn)
     ruins = [i for i in ids if i in fech]
     if ruins:
@@ -60,9 +89,9 @@ def _sabor_fechado(conn, d) -> Optional[str]:
     return None
 
 
-def _recusar_sabor_fechado(conn, d) -> None:
+def _recusar_sabor_fechado(conn, d, ignorar_avulsas: bool = False) -> None:
     """Sabor com venda FECHADA não vende, nem no balcão."""
-    txt = _sabor_fechado(conn, d)
+    txt = _sabor_fechado(conn, d, ignorar_avulsas)
     if txt:
         raise HTTPException(status_code=409, detail=txt)
 
@@ -71,12 +100,13 @@ def _recusar_sabor_fechado(conn, d) -> None:
 def calcular(d: PedidoCalcular, sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
     """Simulação: mesmos preços e regras do pedido, sem gravar. Sabor fechado não derruba o cálculo: volta em aviso_venda_fechada,
     para a tela deixar remover o item; quem recusa é a criação do pedido."""
+    _resolver_avulsas(conn, d)
     t = totais(conn, LOJA_ID, d)
     lim = limite_desconto(conn, LOJA_ID, sessao["perfil"])
     r = _resumo_calculo(t)
     r["limite_desconto_pct"] = None if lim is None else fmt(lim)
     r["precisa_autorizacao"] = _precisa_autorizacao(sessao, t, lim)
-    r["aviso_venda_fechada"] = _sabor_fechado(conn, d)
+    r["aviso_venda_fechada"] = _sabor_fechado(conn, d, ignorar_avulsas=True)
     return r
 
 
@@ -87,7 +117,15 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
         if antigo:
             response.status_code = 200
             return antigo
-    _recusar_sabor_fechado(conn, d)
+    try:
+        avulsas = _resolver_avulsas(conn, d, travar=True)
+    except HTTPException:
+        antigo = _por_chave(conn, d.chave) if d.chave else None  # duplo clique: o outro envio acabou de vender a avulsa
+        if antigo:
+            response.status_code = 200
+            return antigo
+        raise
+    _recusar_sabor_fechado(conn, d, ignorar_avulsas=True)
     t = totais(conn, LOJA_ID, d)
     if t["total"] <= 0:
         raise HTTPException(status_code=400, detail="O total do pedido deve ser maior que zero.")
@@ -130,10 +168,13 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
              d.taxa_motivo, t["total"], d.observacoes, d.chave, quando, sessao["usuario_id"])).fetchone()
         for seq, (it, calc) in enumerate(zip(d.itens, t["itens"]), start=1):
             item = conn.execute(
-                "INSERT INTO item_pedido (pedido_id, seq, tipo, produto_id, sabor2_id, tamanho, descricao, preco_unit, quantidade, observacoes) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                "INSERT INTO item_pedido (pedido_id, seq, tipo, produto_id, sabor2_id, tamanho, descricao, preco_unit, quantidade, observacoes, avulsa_pizza_id) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                 (ped["id"], seq, it.tipo, it.produto_id, it.sabor2_id, calc["tamanho"], calc["descricao"], calc["preco_unit"],
-                 it.quantidade, it.observacoes)).fetchone()
+                 it.quantidade, it.observacoes, it.avulsa_id)).fetchone()
+            if it.avulsa_id:
+                conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, usuario_id, criado_em, pedido_id) VALUES (%s,'vendida',%s,%s,%s)",
+                             (it.avulsa_id, sessao["usuario_id"], quando, ped["id"]))
             for a in calc["adicionais"]:
                 conn.execute("INSERT INTO item_adicional (item_id, adicional_id, nome, valor) VALUES (%s,%s,%s,%s)",
                              (item["id"], a["id"], a["nome"], a["valor"]))
@@ -148,13 +189,16 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
         conn.execute("INSERT INTO evento_pedido (pedido_id, situacao, usuario_id, criado_em) VALUES (%s,'recebido',%s,%s)",
                      (ped["id"], sessao["usuario_id"], quando))
         novas = svc_producao.gerar_pizzas(conn, LOJA_ID, ped["id"], sessao["usuario_id"], quando)
+        if avulsas and not novas:  # só pizza já pronta: o pedido nasce acabado, pronto para o balcão entregar
+            ped = mudar_situacao(conn, sessao, _pedido(conn, ped["id"], travar=True), "em producao")
+            ped = mudar_situacao(conn, sessao, ped, "acabado")
         if novas:
             prev = svc_producao.estimativa_entrega(conn, LOJA_ID, d.tipo, quando, novas)
             if prev is not None:
                 conn.execute("UPDATE pedido SET entrega_calculada = %s WHERE id = %s", (prev, ped["id"]))
                 ped["entrega_calculada"] = prev
         auditar(conn, sessao, "criar", "pedido", ped["id"],
-                depois={"id_dia": id_dia, "total": fmt(t["total"]), "tipo": d.tipo, "autorizado_por": autorizador})
+                depois={"id_dia": id_dia, "total": fmt(t["total"]), "tipo": d.tipo, "autorizado_por": autorizador, "avulsas": avulsas or None})
         conn.commit()
     except psycopg.errors.UniqueViolation as e:
         conn.rollback()

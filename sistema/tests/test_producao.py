@@ -403,7 +403,7 @@ def test_sem_ingredientes_manda_a_pizza_para_o_fim_e_avisa_a_gerencia(client, ca
     assert client.post(url, headers=hs["pizzaiolo"]).status_code == 409  # já não está em montagem
 
 
-def test_avulsa_vendida_nao_vira_perda_e_descartada_vira(client, cardapio, hs, conn_teste):
+def test_avulsa_vendida_no_balcao_nao_vira_perda_e_descartada_vira(client, cardapio, hs, conn_teste):
     m = _motivos(client, hs["gerente"])
     _pagar(client, hs["atendente"], [_g(cardapio, 2)])
     ids = []
@@ -413,14 +413,42 @@ def test_avulsa_vendida_nao_vira_perda_e_descartada_vira(client, cardapio, hs, c
         client.post(f"/api/producao/pizzas/{p['id']}/produzida", headers=hs["pizzaiolo"])  # a nova segue; a avulsa fica
         ids.append(p["id"])
     assert client.get("/api/producao/avulsas", headers=hs["pizzaiolo"]).status_code == 403
-    lista = [x["id"] for x in client.get("/api/producao/avulsas", headers=hs["acabamento"]).json()]
-    assert set(ids) <= set(lista)
+    assert client.get("/api/pedidos/avulsas-disponiveis", headers=hs["acabamento"]).status_code == 403  # acabamento não lança valor
+    assert set(ids) <= {x["id"] for x in client.get("/api/producao/avulsas", headers=hs["acabamento"]).json()}
     a, b = ids
-    assert client.post(f"/api/producao/avulsas/{a}/vender", headers=hs["pizzaiolo"]).status_code == 403
-    assert client.post(f"/api/producao/avulsas/{a}/vender", headers=hs["acabamento"]).status_code == 200
-    assert client.post(f"/api/producao/avulsas/{a}/vender", headers=hs["acabamento"]).status_code == 409  # já tem destino
+    assert client.post(f"/api/producao/avulsas/{a}/vender", headers=hs["acabamento"]).status_code in (404, 405)  # venda só pelo balcão
+    disp = {x["id"]: x for x in client.get("/api/pedidos/avulsas-disponiveis", headers=hs["atendente"]).json()}
+    assert a in disp
+    item = {"tipo": "pizza", "produto_id": disp[a]["produto_id"], "tamanho": disp[a]["tamanho"], "avulsa_id": a, "quantidade": 1}
+    assert client.post("/api/pedidos/calcular", json={"itens": [item, item]}, headers=hs["atendente"]).status_code == 400  # duas vezes
+    assert client.post("/api/pedidos/calcular", json={"itens": [{**item, "quantidade": 2}]}, headers=hs["atendente"]).status_code == 422
+    calc = client.post("/api/pedidos/calcular", json={"itens": [item]}, headers=hs["atendente"])
+    assert calc.status_code == 200 and calc.json()["total"] == "35.00"  # preço do cardápio
+    venda = client.post("/api/pedidos", json={"itens": [item], "pagamentos": [{"forma": "pix", "valor": "35,00"}]}, headers=hs["atendente"])
+    assert venda.status_code == 201, venda.text
+    assert venda.json()["situacao"] == "acabado"  # só pizza pronta: nasce acabado
+    assert conn_teste.execute("SELECT count(*) FROM pizza_producao WHERE pedido_id = %s", (venda.json()["id"],)).fetchone()[0] == 0  # não vai à produção
+    assert client.post("/api/pedidos", json={"itens": [item], "pagamentos": [{"forma": "pix", "valor": "35,00"}]}, headers=hs["atendente"]).status_code == 409  # já vendida
     assert client.post(f"/api/producao/avulsas/{b}/descartar", json={"motivo_id": m["perda"]}, headers=hs["gerente"]).status_code == 200
     n = lambda pid: conn_teste.execute("SELECT count(*) FROM perda WHERE pizza_id = %s", (pid,)).fetchone()[0]
     assert n(a) == 0 and n(b) == 1  # perda só se não houve venda
-    assert a not in [x["id"] for x in client.get("/api/producao/avulsas", headers=hs["acabamento"]).json()]
-    assert client.post(f"/api/producao/avulsas/{ids[0]}/descartar", json={"motivo_id": m["perda"]}, headers=hs["gerente"]).status_code == 409
+    assert client.post(f"/api/producao/avulsas/{a}/descartar", json={"motivo_id": m["perda"]}, headers=hs["gerente"]).status_code == 409
+    lista = [x["id"] for x in client.get("/api/producao/avulsas", headers=hs["acabamento"]).json()]
+    assert a not in lista and b not in lista
+    assert client.get("/api/bi/producao", headers=hs["gerente"]).json()["avulsas"]["vendidas"] >= 1
+
+
+def test_avulsa_duplo_clique_devolve_o_mesmo_pedido_e_cancelar_a_venda_vira_perda(client, cardapio, hs, conn_teste):
+    _pagar(client, hs["atendente"], [_g(cardapio)])
+    p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    client.post(f"/api/producao/pizzas/{p['id']}/montagem-errada", json={"tipo": "formato"}, headers=hs["pizzaiolo"])
+    disp = {x["id"]: x for x in client.get("/api/pedidos/avulsas-disponiveis", headers=hs["atendente"]).json()}
+    item = {"tipo": "pizza", "produto_id": disp[p["id"]]["produto_id"], "tamanho": disp[p["id"]]["tamanho"], "avulsa_id": p["id"], "quantidade": 1}
+    corpo = {"itens": [item], "pagamentos": [{"forma": "pix", "valor": "35,00"}], "chave": "avulsa-dc-1"}
+    r1 = client.post("/api/pedidos", json=corpo, headers=hs["atendente"])
+    r2 = client.post("/api/pedidos", json=corpo, headers=hs["atendente"])  # mesmo envio repetido
+    assert r1.status_code == 201 and r2.status_code == 200 and r2.json()["id"] == r1.json()["id"]
+    r = client.post(f"/api/pedidos/{r1.json()['id']}/cancelar", json={"motivo": "Cliente desistiu"}, headers=hs["gerente"])
+    assert r.status_code == 200, r.text
+    assert conn_teste.execute("SELECT count(*) FROM perda WHERE pizza_id = %s", (p["id"],)).fetchone()[0] == 1  # venda caiu: perda
+    assert p["id"] not in [x["id"] for x in client.get("/api/pedidos/avulsas-disponiveis", headers=hs["atendente"]).json()]

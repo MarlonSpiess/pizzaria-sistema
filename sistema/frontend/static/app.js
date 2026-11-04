@@ -741,7 +741,7 @@ async function abaVendas() {
 
   // ---- novo pedido: o servidor calcula preço, limite e troco; a tela só mostra o que ele devolve
   async function novoPedido() {
-    const [produtos, adicionais, param] = await Promise.all([api("GET", "/produtos?ativo=true"), api("GET", "/adicionais?ativo=true"), api("GET", "/parametros/formas-pagamento")]);
+    const [produtos, adicionais, param, avulsasDisp] = await Promise.all([api("GET", "/produtos?ativo=true"), api("GET", "/adicionais?ativo=true"), api("GET", "/parametros/formas-pagamento"), api("GET", "/pedidos/avulsas-disponiveis").catch((e) => { setTimeout(() => falha(e), 0); return []; })]);
     const formas = param.formas;
     const r = estado.rascunho || (estado.rascunho = { chave: novaChave(), tipo: "retirada", cliente: null, itens: [], ajuste: null, pagamentos: [], taxa: "", taxaMotivo: "", obs: "", urgente: false });
     const corpoCalculo = () => ({ tipo: r.tipo, itens: r.itens.map((i) => i.dados), ajuste: r.ajuste, taxa_entrega: r.tipo === "entrega" && r.taxa.trim() ? r.taxa.trim() : null });
@@ -804,6 +804,12 @@ async function abaVendas() {
       if (!dados.produto_id) { falha(new Error("Nenhum sabor ou produto disponível: todos estão com venda fechada.")); return; }
       r.itens.push({ dados }); redesenhar();
     };
+    const usadas = new Set(r.itens.map((i) => i.dados.avulsa_id).filter(Boolean));
+    const livres = avulsasDisp.filter((x) => !usadas.has(x.id));
+    const cartaoAvulsas = livres.length ? h("div", { class: "cartao" }, h("h2", {}, "Pizzas avulsas prontas"),
+      h("p", { class: "pequeno" }, "Sobraram da montagem errada. A venda é um pedido de balcão, com o preço do cardápio (e desconto, se couber)."),
+      livres.map((x) => h("div", { class: "acoes-linha" }, (x.tipo === "pizza" ? (x.tamanho === "grande" ? "Grande · " : "Broto · ") : "Calzone · ") + x.sabores, " ",
+        h("button", { class: "sec", onclick: () => { r.itens.push({ dados: { tipo: x.tipo, produto_id: x.produto_id, tamanho: x.tamanho === "unico" ? null : x.tamanho, quantidade: 1, avulsa_id: x.id } }); redesenhar(); } }, "Adicionar ao pedido")))) : null;
     const cartaoItem = h("div", { class: "cartao" }, h("h2", {}, "2. Itens"), campo("Tipo", tipo), blocoPizza, blocoOutro,
       h("div", { class: "linha" }, campo("Quantidade", qtd), campo("Observação do item", obsItem)), h("button", { class: "principal", onclick: adicionar }, "Adicionar ao pedido"));
 
@@ -821,7 +827,10 @@ async function abaVendas() {
     const total = calc ? Number(calc.total) : 0;
     const pago = r.pagamentos.reduce((a, p) => a + Number(String(p.valor).replace(",", ".")), 0);
     const cartaoResumo = h("div", { class: "cartao" }, h("h2", {}, "3. Resumo"),
-      calc ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, linhasResumo))) : h("p", { class: "pequeno" }, "Nenhum item ainda."),
+      calc ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, linhasResumo)))
+        : r.itens.length ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, r.itens.map((i, ix) => h("tr", {}, h("td", {}, i.dados.quantidade + "x item " + (ix + 1) + (i.dados.avulsa_id ? " (avulsa)" : "")),
+          h("td", {}, h("button", { class: "sec", onclick: () => { r.itens.splice(ix, 1); redesenhar(); } }, "Remover")))))))
+        : h("p", { class: "pequeno" }, "Nenhum item ainda."),
       h("h3", {}, "Desconto ou acréscimo"), h("div", { class: "linha" }, campo("Tipo", ajTipo), campo("Valor (R$)", ajValor), campo("Motivo", ajMotivo)),
       h("button", { class: "sec", onclick: aplicarAjuste }, "Aplicar ajuste"),
       r.tipo === "entrega" ? h("div", { class: "linha" }, campo("Taxa de entrega (padrão " + (calc ? brl(calc.taxa_entrega_padrao) : "") + ")", taxa), campo("Motivo da taxa", taxaMotivo)) : null,
@@ -855,7 +864,7 @@ async function abaVendas() {
     } }, "Confirmar pedido");
     const cartaoFim = h("div", { class: "cartao" }, campo("Observações", obs), h("label", { class: "inline" }, urg, " Pedido urgente"), h("div", {}, confirmar, " ",
       h("button", { class: "sec", onclick: () => { estado.rascunho = null; estado.modoPedidos = null; redesenhar(); } }, "Limpar")));
-    return h("div", {}, cartaoCliente, h("div", { class: "grade" }, cartaoItem, h("div", {}, cartaoResumo, cartaoPag, cartaoFim)));
+    return h("div", {}, cartaoCliente, h("div", { class: "grade" }, h("div", {}, ...[cartaoAvulsas, cartaoItem].filter(Boolean)), h("div", {}, cartaoResumo, cartaoPag, cartaoFim)));
   }
 
   // ---- pedidos do dia
@@ -1031,10 +1040,9 @@ async function abaProducao() {
       h("table", {}, h("tbody", {}, perdidas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
         h("td", {}, seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."), "Refazer esta pizza? A nova entra no começo da fila."))))))) : null;
     const cartaoAvulsas = avulsas.length ? h("div", { class: "cartao tabela" }, h("h2", {}, "Pizzas avulsas (montagem errada)"),
-      h("p", { class: "pequeno" }, "Se for vendida, não vira perda. Se não houver venda, descarte com o motivo e ela entra nas perdas."),
+      h("p", { class: "pequeno" }, "O balcão vende a avulsa como pedido (em Vendas); vendida, ela não vira perda e some desta lista. Sem venda, descarte com o motivo e ela entra nas perdas."),
       h("table", {}, h("tbody", {}, avulsas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia), h("td", {}, linhaPizza(p)),
-        h("td", {}, h("button", { class: "principal", onclick: () => acao("POST", "/producao/avulsas/" + p.id + "/vender", undefined, "Avulsa vendida: sem perda.") }, "Vendida"), " ",
-          seletorMotivo(mot.perda, "Descartar (motivo)", (id) => acao("POST", "/producao/avulsas/" + p.id + "/descartar", { motivo_id: id }, "Avulsa descartada: registrada como perda."), "Descartar esta pizza avulsa? Ela vira perda."))))))) : null;
+        h("td", {}, seletorMotivo(mot.perda, "Descartar (motivo)", (id) => acao("POST", "/producao/avulsas/" + p.id + "/descartar", { motivo_id: id }, "Avulsa descartada: registrada como perda."), "Descartar esta pizza avulsa? Ela vira perda."))))))) : null;
     return h("div", {}, box, cartaoAvulsas, cartaoPerdidas, h("div", { class: "cartao tabela" }, h("h2", {}, "Saíram do forno"), prontas.length ? h("table", {}, h("tbody", {}, prontas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
       h("td", {}, h("button", { class: "principal", onclick: async () => { const r = await acao("POST", "/producao/pizzas/" + p.id + "/acabada"); if (r) { etiquetaAberta = r.etiqueta; await desenharSub(); } } }, "Acabada e etiqueta"), " ",
         seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."), "Refazer esta pizza? A atual vira perda."), " ", botoesErro(p)))))) : h("p", { class: "pequeno" }, "Nenhuma pizza esperando acabamento.")),
