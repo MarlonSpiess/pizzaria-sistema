@@ -729,6 +729,17 @@ class MotivoRef(Base):
     motivo_id: int
 
 
+class MontagemErradaIn(Base):
+    tipo: str  # "sabor" ou "formato" (problemas no formato/esteira)
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("sabor", "formato"):
+            raise ValueError("Tipo deve ser sabor ou formato.")
+        return v
+
+
 class LoteMassaIn(Base):
     tamanho: str
     quantidade: int

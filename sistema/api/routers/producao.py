@@ -1,4 +1,5 @@
 """Produção: fila de pizzas, montagem, forno, acabamento, massa, perdas e motivos. Cada função tem a sua permissão."""
+from datetime import timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -8,9 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, traduzir_erro
 from api.routers.vendas import _pedido, mudar_situacao
-from api.schemas import ContagemMassaIn, LoteMassaIn, MotivoIn, MotivoRef, MotivoUpdate, PerdaMassaIn
+from api.schemas import ContagemMassaIn, LoteMassaIn, MontagemErradaIn, MotivoIn, MotivoRef, MotivoUpdate, PerdaMassaIn
 from api.security import PERMISSOES, requer, requer_alguma
-from api.services import producao as svc
+from api.services import estoque, producao as svc
 from api.services.parametros import vigentes
 
 router = APIRouter(prefix="/producao", tags=["producao"])
@@ -118,7 +119,7 @@ def pedidos_abertos(sessao=Depends(requer_alguma("producao.acabamento", "produca
     """Todos os pedidos em aberto com o andamento das pizzas (só consulta; o pedido só vira acabado à mão)."""
     rows = conn.execute(
         "SELECT ped.id, ped.id_dia, ped.tipo, ped.urgente, ped.situacao, c.nome AS cliente, ped.entrega_calculada, "
-        "count(p.id) FILTER (WHERE p.situacao <> 'cancelada' AND NOT (p.situacao = 'perdida' AND rf.refeita IS TRUE)) AS pizzas, "
+        "count(p.id) FILTER (WHERE p.situacao <> 'cancelada' AND NOT (p.situacao IN ('perdida','avulsa') AND rf.refeita IS TRUE)) AS pizzas, "
         "count(p.id) FILTER (WHERE p.situacao = 'acabada') AS acabadas "
         "FROM pedido ped LEFT JOIN cliente c ON c.id = ped.cliente_id LEFT JOIN pizza_producao p ON p.pedido_id = ped.id "
         "LEFT JOIN LATERAL (SELECT true AS refeita FROM pizza_producao r WHERE r.original_id = p.id LIMIT 1) rf ON true "
@@ -136,8 +137,10 @@ def pegar_proxima(sessao=Depends(requer("producao.montagem")), conn=Depends(get_
     if atual:
         conn.rollback()
         return _out(atual)
-    alvo = conn.execute(f"SELECT p.id {_BASE} AND p.situacao = 'na lista' AND ped.situacao <> 'cancelado' {_ORDEM} LIMIT 1 FOR UPDATE OF p, ped SKIP LOCKED",
-                        (LOJA_ID,)).fetchone()
+    # a pizza que este pizzaiolo devolveu há pouco ("sem ingredientes") só volta a ele se não houver outra
+    alvo = conn.execute(f"SELECT p.id {_BASE} AND p.situacao = 'na lista' AND ped.situacao <> 'cancelado' "
+                        "ORDER BY EXISTS (SELECT 1 FROM retrocesso r WHERE r.pizza_id = p.id AND r.usuario_id = %s AND r.criado_em > %s), ped.urgente DESC, p.ordem, p.id "
+                        "LIMIT 1 FOR UPDATE OF p, ped SKIP LOCKED", (LOJA_ID, sessao["usuario_id"], agora() - timedelta(minutes=10))).fetchone()
     if not alvo:
         conn.rollback()
         raise HTTPException(status_code=404, detail="Não há pizza na lista.")
@@ -285,6 +288,140 @@ def refazer(pid: int, d: MotivoRef, sessao=Depends(requer("producao.refazer")), 
     auditar(conn, sessao, "refazer", "pizza_producao", pid, depois={"nova": novo["id"], "motivo": m["nome"]})
     conn.commit()
     return {"id": novo["id"], "original_id": pid, "situacao": "na lista"}
+
+
+@router.post("/pizzas/{pid}/montagem-errada", status_code=201)
+def montagem_errada(pid: int, d: MontagemErradaIn, sessao=Depends(requer_alguma("producao.montagem", "producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
+    """Montagem errada no sabor ou no formato/esteira. A pizza errada vira AVULSA (sai do pedido e pode ser vendida à parte; o consumo
+    da montagem fica como custo) e a pizza certa recomeça: na montagem, com o mesmo pizzaiolo, se ele está com ela; no topo da lista
+    se foi o acabamento (ou a gerência) que achou o erro, com a pizza no forno ou fora dele. Massa, montagem e acabamento recebem o aviso."""
+    p, ped = _pizza_travada(conn, pid)
+    _exigir(p, "em montagem", "no forno", "saiu do forno")
+    perms = PERMISSOES.get(sessao["perfil"], set())
+    if p["situacao"] == "em montagem":
+        _minha(p, sessao)
+    elif "producao.acabamento" not in perms and not _gerencia(sessao):
+        raise HTTPException(status_code=403, detail="Depois da montagem, só o acabamento ou a gerência apontam o erro.")
+    if ped["situacao"] not in ("recebido", "em producao"):
+        raise HTTPException(status_code=409, detail=f"Pedido {ped['situacao']}: não há mais o que refazer aqui.")
+    if conn.execute("SELECT 1 FROM pizza_producao WHERE original_id = %s", (pid,)).fetchone():
+        raise HTTPException(status_code=409, detail="Esta pizza já foi refeita.")
+    quando = agora()
+    estava_na_montagem = p["situacao"] == "em montagem"
+    svc.mover(conn, pid, "avulsa", sessao["usuario_id"], quando)
+    estoque.baixar_pizza(conn, LOJA_ID, pid, "perdida", sessao["usuario_id"], quando, "Pizza avulsa (montagem errada)")
+    conn.execute("SELECT pg_advisory_xact_lock(5, %s)", (LOJA_ID,))
+    frente = conn.execute("SELECT COALESCE(min(ordem), 1) - 1 AS o FROM pizza_producao WHERE loja_id = %s AND situacao = 'na lista'", (LOJA_ID,)).fetchone()["o"]
+    novo = conn.execute(
+        "INSERT INTO pizza_producao (loja_id, pedido_id, item_id, tipo, tamanho, sabores, adicionais, observacoes, ordem, original_id, situacao, responsavel_id, criado_em) "
+        "SELECT loja_id, pedido_id, item_id, tipo, tamanho, sabores, adicionais, observacoes, %s, id, %s, %s, %s FROM pizza_producao WHERE id = %s RETURNING id",
+        (frente, "em montagem" if estava_na_montagem else "na lista", p["responsavel_id"] if estava_na_montagem else None, quando, pid)).fetchone()
+    svc.evento(conn, novo["id"], "na lista", sessao["usuario_id"], quando)  # o histórico mostra o caminho completo
+    if estava_na_montagem:
+        svc.evento(conn, novo["id"], "em montagem", sessao["usuario_id"], quando)
+    tipo_aviso = "sabor_errado" if d.tipo == "sabor" else "formato"
+    conn.execute("INSERT INTO aviso_producao (loja_id, tipo, pizza_id, nova_pizza_id, criado_por, criado_em) VALUES (%s,%s,%s,%s,%s,%s)",
+                 (LOJA_ID, tipo_aviso, pid, novo["id"], sessao["usuario_id"], quando))
+    auditar(conn, sessao, "montagem_errada", "pizza_producao", pid, depois={"nova": novo["id"], "tipo": d.tipo, "de": p["situacao"]})
+    conn.commit()
+    return {"id": novo["id"], "original_id": pid, "situacao": "em montagem" if estava_na_montagem else "na lista", "original": "avulsa"}
+
+
+@router.post("/pizzas/{pid}/sem-ingredientes")
+def sem_ingredientes(pid: int, sessao=Depends(requer("producao.montagem")), conn=Depends(get_db)):
+    """Faltou ingrediente: a pizza volta para o FIM da lista e a gerência é avisada para tomar providência."""
+    p, ped = _pizza_travada(conn, pid)
+    _exigir(p, "em montagem")
+    _minha(p, sessao)
+    m = conn.execute("SELECT id, nome FROM motivo_retrocesso WHERE loja_id = %s AND ativo AND avisa_estoque ORDER BY (lower(nome) = 'falta de insumo') DESC, id LIMIT 1", (LOJA_ID,)).fetchone()
+    if not m:
+        raise HTTPException(status_code=400, detail="Cadastre em Motivos um motivo de retrocesso que avisa o estoque (ex.: Falta de insumo).")
+    quando = agora()
+    conn.execute("SELECT pg_advisory_xact_lock(5, %s)", (LOJA_ID,))
+    fim = conn.execute("SELECT COALESCE(max(ordem), 0) + 1 AS o FROM pizza_producao WHERE loja_id = %s", (LOJA_ID,)).fetchone()["o"]
+    try:
+        conn.execute("UPDATE pizza_producao SET ordem = %s WHERE id = %s", (fim, pid))
+        svc.mover(conn, pid, "na lista", sessao["usuario_id"], quando, responsavel=None)
+        conn.execute("INSERT INTO retrocesso (pizza_id, motivo_id, usuario_id, criado_em) VALUES (%s,%s,%s,%s)", (pid, m["id"], sessao["usuario_id"], quando))
+        conn.execute("INSERT INTO aviso_producao (loja_id, tipo, pizza_id, criado_por, criado_em) SELECT %s,'sem_ingredientes',%s,%s,%s "
+                     "WHERE NOT EXISTS (SELECT 1 FROM aviso_producao WHERE pizza_id = %s AND tipo = 'sem_ingredientes' AND resolvido_em IS NULL)", (LOJA_ID, pid, sessao["usuario_id"], quando, pid))
+        auditar(conn, sessao, "sem_ingredientes", "pizza_producao", pid, depois={"motivo": m["nome"]})
+        conn.commit()
+    except psycopg.Error as e:
+        conn.rollback()
+        raise traduzir_erro(e) from e
+    return {"id": pid, "situacao": "na lista", "avisa_estoque": True}
+
+
+@router.get("/avulsas")
+def avulsas(sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
+    """Pizzas avulsas (montagem errada) ainda sem destino: vender ou descartar. Sem valores: o preço da avulsa é da Vendas."""
+    return conn.execute(
+        "SELECT p.id, ped.id_dia, p.tipo, p.tamanho, p.sabores, p.criado_em FROM pizza_producao p JOIN pedido ped ON ped.id = p.pedido_id "
+        "WHERE p.loja_id = %s AND p.situacao = 'avulsa' AND NOT EXISTS (SELECT 1 FROM pizza_avulsa_destino d WHERE d.pizza_id = p.id) ORDER BY p.id", (LOJA_ID,)).fetchall()
+
+
+def _avulsa(conn, pid: int) -> dict:
+    p = _pizza(conn, pid, travar=True)
+    _exigir(p, "avulsa")
+    if conn.execute("SELECT 1 FROM pizza_avulsa_destino WHERE pizza_id = %s", (pid,)).fetchone():
+        raise HTTPException(status_code=409, detail="Esta pizza avulsa já tem destino.")
+    return p
+
+
+@router.post("/avulsas/{pid}/vender")
+def avulsa_vendida(pid: int, sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
+    """A avulsa foi vendida: não vira perda. (A receita da venda avulsa ainda será ligada à Vendas.)"""
+    _avulsa(conn, pid)
+    conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, usuario_id, criado_em) VALUES (%s,'vendida',%s,%s)", (pid, sessao["usuario_id"], agora()))
+    auditar(conn, sessao, "avulsa_vendida", "pizza_producao", pid)
+    conn.commit()
+    return {"id": pid, "destino": "vendida"}
+
+
+@router.post("/avulsas/{pid}/descartar")
+def avulsa_descartada(pid: int, d: MotivoRef, sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
+    """Sem venda: a avulsa vira perda, com motivo."""
+    p = _avulsa(conn, pid)
+    m = _motivo(conn, "motivo_perda", d.motivo_id)
+    quando = agora()
+    svc.registrar_perda_pizza(conn, LOJA_ID, p, m["id"], sessao["usuario_id"], quando)
+    conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, motivo_id, usuario_id, criado_em) VALUES (%s,'perda',%s,%s,%s)", (pid, m["id"], sessao["usuario_id"], quando))
+    auditar(conn, sessao, "avulsa_descartada", "pizza_producao", pid, depois={"motivo": m["nome"]})
+    conn.commit()
+    return {"id": pid, "destino": "perda"}
+
+
+_ROTULO_AVISO = {"sabor_errado": "Montagem errada no sabor", "formato": "Problema no formato/esteira", "sem_ingredientes": "Sem ingredientes"}
+
+
+@router.get("/avisos")
+def avisos(sessao=Depends(requer_alguma("producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
+    """Avisos abertos das últimas 6 horas, para todos os setores da Produção. Só o acabamento e a gerência veem o cliente."""
+    perms = PERMISSOES.get(sessao["perfil"], set())
+    ve_cliente = "producao.acabamento" in perms or "producao.gerir" in perms
+    desde = agora() - timedelta(hours=6) if "producao.gerir" not in perms else agora() - timedelta(days=3)  # a gerência vê o que ninguém resolveu
+    rows = conn.execute(
+        "SELECT a.id, a.tipo, a.criado_em, p.id AS pizza_id, ped.id_dia, p.tipo AS tipo_pizza, p.tamanho, p.sabores, c.nome AS cliente, u.nome AS por "
+        "FROM aviso_producao a JOIN pizza_producao p ON p.id = a.pizza_id JOIN pedido ped ON ped.id = p.pedido_id "
+        "LEFT JOIN cliente c ON c.id = ped.cliente_id LEFT JOIN usuario u ON u.id = a.criado_por "
+        "WHERE a.loja_id = %s AND a.resolvido_em IS NULL AND a.criado_em > %s AND ped.situacao <> 'cancelado' ORDER BY a.id DESC LIMIT 30", (LOJA_ID, desde)).fetchall()
+    for x in rows:
+        x["rotulo"] = _ROTULO_AVISO[x["tipo"]]
+        if not ve_cliente:
+            x.pop("cliente", None)
+    return rows
+
+
+@router.post("/avisos/{aid}/resolver")
+def resolver_aviso(aid: int, sessao=Depends(requer_alguma("producao.gerir", "producao.acabamento")), conn=Depends(get_db)):
+    r = conn.execute("UPDATE aviso_producao SET resolvido_em = %s, resolvido_por = %s WHERE id = %s AND loja_id = %s AND resolvido_em IS NULL RETURNING id",
+                     (agora(), sessao["usuario_id"], aid, LOJA_ID)).fetchone()
+    if not r:
+        raise HTTPException(status_code=404, detail="Aviso não encontrado ou já resolvido.")
+    auditar(conn, sessao, "resolver", "aviso_producao", aid)
+    conn.commit()
+    return {"id": aid, "resolvido": True}
 
 
 # ---------------------------------------------------------------- massa
