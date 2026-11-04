@@ -10,6 +10,7 @@ from typing import Protocol
 from api.config import LOJA_ID
 from api.database import agora, hoje
 from api.services.caixa import ultimo_caixa
+from api.services.ingredientes import produtos_fechados
 
 log = logging.getLogger("pizzaria.canais")
 EVENTOS = ("pronto", "finalizado")
@@ -26,6 +27,12 @@ class Adaptador(Protocol):
 
     def avisar(self, id_externo: str, evento: str) -> None:
         """Informa o status ao canal. Levanta exceção se falhar."""
+
+    def pausar_produto(self, id_externo: str) -> None:
+        """Impede a venda do produto no canal. Levanta exceção se falhar."""
+
+    def reabrir_produto(self, id_externo: str) -> None:
+        """Volta a permitir a venda do produto no canal. Levanta exceção se falhar."""
 
 
 def varrer(conn, canal_id: int, adaptador: Adaptador) -> int:
@@ -50,14 +57,29 @@ def evento_da_situacao(tipo: str, nova: str) -> str | None:
 
     No Anota Ai "Pronto" já diz ao cliente "a caminho" (entrega) ou "disponível para retirada".
     - Retirada: pronta no balcão (acabado) = Pronto; retirada pelo cliente = Finalizado.
-    - Entrega: "Pronto" só quando o entregador sai (despachado), para o cliente não ser avisado antes da hora.
-      Finalizar a entrega (cliente recebeu) fica PENDENTE: o sistema não tem confirmação de entrega.
+    - Entrega: "Pronto" só quando o entregador sai (despachado, com o entregador identificado), para o cliente não ser avisado cedo.
+      "Finalizado" da entrega sai no ACERTO do entregador no caixa (decisão de Marlon, 04/11/2026): ver finalizar_entregas_acertadas.
     """
     if tipo == "retirada":
         return "pronto" if nova == "acabado" else "finalizado" if nova == "despachado ou retirado" else None
     if tipo == "entrega" and nova == "despachado ou retirado":
         return "pronto"
     return None
+
+
+def finalizar_entregas_acertadas(conn, pedido_ids: list[int]) -> None:
+    """No acerto do entregador, os pedidos de canal externo que ele entregou recebem o aviso 'finalizado'.
+    Mesma transação do acerto; falha aqui nunca impede o acerto (savepoint)."""
+    try:
+        with conn.transaction():
+            for evento in ("pronto", "finalizado"):  # "pronto" só entra se faltar (ex.: o canal ainda não existia no despacho)
+                conn.execute(
+                    "INSERT INTO aviso_canal (loja_id, canal_id, pedido_id, evento) "
+                    "SELECT p.loja_id, c.id, p.id, %s FROM pedido p JOIN canal_venda c ON c.loja_id = p.loja_id AND c.codigo = p.canal "
+                    "WHERE p.id = ANY(%s) AND p.canal <> 'balcao' AND p.tipo = 'entrega' AND p.id_canal IS NOT NULL ON CONFLICT DO NOTHING",
+                    (evento, pedido_ids))
+    except Exception:  # noqa: BLE001
+        log.exception("Não foi possível enfileirar o aviso de finalização dos pedidos %s", pedido_ids)
 
 
 def enfileirar_aviso(conn, pedido_id: int, canal: str, tipo: str, nova: str) -> None:
@@ -92,7 +114,8 @@ def enviar_avisos(conn, canal_id: int, adaptador: Adaptador, limite: int = 20) -
     pend = conn.execute(
         "SELECT a.id, a.evento, a.tentativas, p.id_canal FROM aviso_canal a JOIN pedido p ON p.id = a.pedido_id "
         "WHERE a.canal_id = %s AND a.enviado_em IS NULL AND a.proxima_tentativa <= %s AND a.tentativas < %s "
-        "ORDER BY a.id LIMIT %s FOR UPDATE OF a SKIP LOCKED", (canal_id, agora_, MAX_TENTATIVAS, limite)).fetchall()
+        "AND (a.evento <> 'finalizado' OR NOT EXISTS (SELECT 1 FROM aviso_canal x WHERE x.pedido_id = a.pedido_id AND x.evento = 'pronto' AND x.enviado_em IS NULL AND x.tentativas < %s)) "
+        "ORDER BY a.id LIMIT %s FOR UPDATE OF a SKIP LOCKED", (canal_id, agora_, MAX_TENTATIVAS, MAX_TENTATIVAS, limite)).fetchall()
     for a in pend:
         conn.execute("UPDATE aviso_canal SET proxima_tentativa = %s + make_interval(secs => %s) WHERE id = %s", (agora_, RESERVA_S, a["id"]))
     conn.commit()
@@ -169,19 +192,26 @@ def bloquear_importacao(conn, entrada_id: int, motivo: str) -> None:
         raise RuntimeError("A entrada não está mais em importação.")
 
 
-# ------------------------------------------------------------ aceitar sozinho
+# ------------------------------------------------------------ loja aberta (flag manual) e aceitar sozinho
+def loja_aberta(conn) -> bool:
+    r = conn.execute("SELECT loja_aberta FROM loja WHERE id = %s", (LOJA_ID,)).fetchone()
+    return bool(r and r["loja_aberta"])
+
+
+
 def pode_aceitar_sozinho(conn, canal: dict, ids_externos: list[str]) -> tuple[bool, str | None]:
     """Decide se o pedido pode ser aceito sem a gerência. Devolve (pode, motivo se não pode).
 
-    Critérios (decisão de Marlon, 04/11/2026): canal ativo com a flag ligada, caixa DE HOJE aberto e todos os itens no mapa
-    de produtos (produto ativo). PENDENTE: "loja aberta" (não existe esse estado no sistema; falta definir se é o caixa
-    aberto, um horário ou uma pausa). Recebe os identificadores externos dos itens porque o formato do pedido do Anota Ai
+    Critérios (decisão de Marlon, 04/11/2026): canal ativo com a flag ligada, "loja aberta" (flag manual da gerência),
+    caixa DE HOJE aberto e todos os itens no mapa de produtos (produto ativo). Recebe os identificadores externos dos itens porque o formato do pedido do Anota Ai
     ainda não é conhecido. Releia o canal no banco antes de chamar, para a flag não vir desatualizada.
     """
     if not canal.get("ativo", True):
         return False, "Canal desativado."
     if not canal["aceitar_sozinho"]:
         return False, "Aceite automático desligado."
+    if not loja_aberta(conn):
+        return False, "A loja não está marcada como aberta."
     c = ultimo_caixa(conn, LOJA_ID)
     if not c or c["situacao"] != "aberto" or c.get("data") != hoje():
         return False, "O caixa de hoje não está aberto."
@@ -194,4 +224,11 @@ def pode_aceitar_sozinho(conn, canal: dict, ids_externos: list[str]) -> tuple[bo
     faltam = [i for i in ids if i not in mapeados]
     if faltam:
         return False, "Itens fora do mapa de produtos: " + ", ".join(faltam)[:150]
+    fechados = produtos_fechados(conn)
+    if fechados:
+        achados = conn.execute("SELECT m.id_externo, p.nome, m.produto_id FROM mapa_produto_canal m JOIN produto p ON p.id = m.produto_id "
+                               "WHERE m.canal_id = %s AND m.id_externo = ANY(%s)", (canal["id"], ids)).fetchall()
+        bloq = [f"{a['nome']} (falta {', '.join(fechados[a['produto_id']])})" for a in achados if a["produto_id"] in fechados]
+        if bloq:
+            return False, ("Sabor com venda fechada: " + "; ".join(bloq))[:190]
     return True, None

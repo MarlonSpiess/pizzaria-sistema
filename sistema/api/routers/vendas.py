@@ -200,6 +200,10 @@ def mudar_situacao(conn, sessao, p: dict, nova: str) -> dict:
         raise HTTPException(status_code=409, detail=f"Não é possível ir de '{atual}' para '{nova}'.")
     if nova == "acabado" and svc_producao.pizzas_pendentes(conn, p["id"]):
         raise HTTPException(status_code=409, detail="Ainda há pizza para acabar neste pedido.")
+    if nova == "despachado ou retirado" and p["tipo"] == "entrega" and p["canal"] != "balcao" and not conn.execute(
+            "SELECT 1 FROM entrega WHERE pedido_id = %s", (p["id"],)).fetchone():
+        # pedido de canal externo: "saiu para entrega" precisa do entregador, para o acerto dar baixa e finalizar no canal
+        raise HTTPException(status_code=409, detail="Atribua o entregador antes de despachar este pedido (isso exige o caixa de hoje aberto).")
     quando = agora()
     conn.execute("UPDATE pedido SET situacao = %s, entrega_real = CASE WHEN %s = 'despachado ou retirado' THEN %s ELSE entrega_real END "
                  "WHERE id = %s", (nova, nova, quando, p["id"]))

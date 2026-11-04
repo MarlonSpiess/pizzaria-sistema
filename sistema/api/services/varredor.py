@@ -9,7 +9,7 @@ import time
 
 from api.config import LOJA_ID
 from api.database import pool
-from api.services import canais
+from api.services import canais, ingredientes
 from api.services.anotaai import AnotaAi
 
 log = logging.getLogger("pizzaria.varredor")
@@ -52,6 +52,7 @@ def ciclo(adaptadores=None) -> None:
                         if n in (1, 10) or n % 60 == 0:
                             log.warning("Varredura do canal %s falhou (%s seguidas): %s", ad.codigo, n, type(e).__name__)
                 canais.enviar_avisos(conn, c["id"], ad)
+                ingredientes.sincronizar_pausas(conn, c["id"], ad)
             finally:
                 conn.rollback()
                 conn.execute("SELECT pg_advisory_unlock(%s, %s)", (21, c["id"]))

@@ -12,6 +12,7 @@ from api.schemas import (AcertoIn, CaixaAbrir, ContagemIn, EntregaIn, FecharIn, 
                          MotivoMovimentoUpdate, MovimentoIn, RegraRecebimentoIn)
 from api.security import PERMISSOES, requer
 from api.services import caixa as svc
+from api.services import canais
 from api.services.dinheiro import fmt, parse_reais
 from api.services.parametros import vigentes
 from api.services.vendas import autorizar
@@ -467,6 +468,7 @@ def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
                          (LOJA_ID, quando.date(), d.entregador_id, len(ids), recebido, valor_entregas, diaria, devido, recebido - devido,
                           sessao["usuario_id"], quando)).fetchone()
         conn.execute("UPDATE entrega SET acerto_id = %s WHERE pedido_id = ANY(%s)", (a["id"], ids))
+        canais.finalizar_entregas_acertadas(conn, ids)  # pedido de canal externo: avisa "finalizado" (decisão de Marlon)
         auditar(conn, sessao, "acertar", "acerto_entregador", a["id"], depois={"pedidos": len(ids), "total_devido": fmt(devido), "saldo_gaveta": fmt(recebido - devido)})
         conn.commit()
     except psycopg.Error as e:

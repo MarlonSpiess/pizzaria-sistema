@@ -75,7 +75,11 @@ def _alertas(conn, sessao) -> list[dict]:
     if on("bi_alerta_estoque"):
         a = estoque_r.alertas(sessao, conn)
         if a["repor"]:
-            saida.append({"tipo": "estoque", "gravidade": "media", "texto": f"{len(a['repor'])} item(ns) abaixo do mínimo."})
+            graves = [i for i in a["repor"] if i["situacao"] in ("negativo", "zerado")]
+            if graves:
+                saida.append({"tipo": "estoque", "gravidade": "alta", "texto": f"{len(graves)} ingrediente(s) zerado(s) ou negativo(s): trate no estoque e, se preciso, feche a venda dos sabores."})
+            if len(a["repor"]) > len(graves):
+                saida.append({"tipo": "estoque", "gravidade": "media", "texto": f"{len(a['repor']) - len(graves)} item(ns) para repor ou abaixo do mínimo."})
         venc = [v for v in a["validade"] if v["vencido"]]
         if venc:
             saida.append({"tipo": "validade", "gravidade": "alta", "texto": f"{len(venc)} lote(s) vencido(s) com saldo."})

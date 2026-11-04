@@ -4,7 +4,7 @@ from datetime import timedelta
 import pytest
 
 from api.services import canais, varredor
-from tests.conftest import entrar
+from tests.conftest import entrar, novo_login
 from tests.test_producao import _g, _pagar, hs, parametros, fila_limpa  # noqa: F401  (fixtures)
 from tests.test_vendas import cardapio  # noqa: F401  (fixture)
 
@@ -153,6 +153,10 @@ def test_flag_aceitar_sozinho_e_criterios(client, conn_teste, cardapio, monkeypa
         with pool.connection() as conn:
             canal = {"id": c["id"], "ativo": True, "aceitar_sozinho": True}
             aberto = {"situacao": "aberto", "data": hoje()}
+            assert client.patch("/api/canais/loja", json={"ativo": False}, headers=ger).status_code == 200
+            monkeypatch.setattr(canais, "ultimo_caixa", lambda conn, loja: aberto)
+            assert canais.pode_aceitar_sozinho(conn, canal, ["MAPA-OK"]) == (False, "A loja não está marcada como aberta.")
+            assert client.patch("/api/canais/loja", json={"ativo": True}, headers=ger).json()["loja_aberta"] is True  # gerência liga
             monkeypatch.setattr(canais, "ultimo_caixa", lambda conn, loja: aberto)  # o estado real do caixa depende de outros testes
             assert canais.pode_aceitar_sozinho(conn, canal, []) == (False, "Pedido sem itens identificados.")
             assert canais.pode_aceitar_sozinho(conn, canal, ["MAPA-OK", "MAPA-OK"]) == (True, None)  # repetido não atrapalha
@@ -171,3 +175,64 @@ def test_flag_aceitar_sozinho_e_criterios(client, conn_teste, cardapio, monkeypa
     finally:
         conn_teste.execute("UPDATE produto SET ativo = true WHERE id = %s", (pid,))
         client.patch(f"/api/canais/{c['id']}/aceitar-sozinho", json={"ativo": False}, headers=adm)
+        client.patch("/api/canais/loja", json={"ativo": False}, headers=ger)
+
+
+def test_loja_aberta_so_gerencia(client):
+    _, ger = entrar(client, "gerente")
+    _, atd = entrar(client, "atendente")
+    assert client.get("/api/canais/loja", headers=atd).status_code == 403
+    assert client.patch("/api/canais/loja", json={"ativo": True}, headers=atd).status_code == 403
+    r = client.patch("/api/canais/loja", json={"ativo": True}, headers=ger).json()
+    assert r["loja_aberta"] is True and r["desde"]
+    assert client.get("/api/canais/loja", headers=ger).json()["loja_aberta"] is True
+    client.patch("/api/canais/loja", json={"ativo": False}, headers=ger)
+    assert client.get("/api/canais/loja", headers=ger).json()["loja_aberta"] is False
+
+
+def test_finalizado_espera_o_pronto_e_nasce_com_ele(client, conn_teste, cardapio, hs):  # noqa: F811
+    from api.database import pool
+    _, adm = entrar(client, "administrador")
+    c = _canal(client, adm)
+    cli = client.post("/api/clientes", json={"nome": "Entrega Canal", "telefone": "5558" + novo_login("")[-4:].rjust(4, "0"), "endereco": "Rua C, 9"}, headers=hs["atendente"]).json()
+    pid = _pagar(client, hs["atendente"], [_g(cardapio, 1)], tipo="entrega", cliente_id=cli["id"])["id"]
+    conn_teste.execute("SET session_replication_role = replica")  # o gatilho de imutabilidade do pedido impede esta troca; só no teste
+    conn_teste.execute("UPDATE pedido SET canal = 'anotaai', id_canal = %s WHERE id = %s", (f"EXT{pid}", pid))
+    conn_teste.execute("SET session_replication_role = DEFAULT")
+    with pool.connection() as conn:
+        canais.finalizar_entregas_acertadas(conn, [pid])  # sem o "pronto" do despacho: os dois nascem juntos
+        conn.commit()
+        ev = sorted(r["evento"] for r in conn.execute("SELECT evento FROM aviso_canal WHERE pedido_id = %s", (pid,)).fetchall())
+        assert ev == ["finalizado", "pronto"]
+        f = Falso()
+        assert canais.enviar_avisos(conn, c["id"], f) >= 1
+        mine = [a for a in f.avisos if a[0] == f"EXT{pid}"]
+        assert mine == [(f"EXT{pid}", "pronto")]  # finalizado só no ciclo seguinte, depois do pronto enviado
+        assert canais.enviar_avisos(conn, c["id"], f) >= 1
+        assert [a for a in f.avisos if a[0] == f"EXT{pid}"] == [(f"EXT{pid}", "pronto"), (f"EXT{pid}", "finalizado")]
+
+
+def test_entrega_de_canal_so_sai_com_entregador(client, conn_teste, cardapio, hs):  # noqa: F811
+    cli = client.post("/api/clientes", json={"nome": "Saida Canal", "telefone": "5557" + novo_login("")[-4:].rjust(4, "0"), "endereco": "Rua D, 1"}, headers=hs["atendente"]).json()
+    ha, hg = hs["atendente"], hs["gerente"]
+    pid = _pagar(client, ha, [_g(cardapio, 1)], tipo="entrega", cliente_id=cli["id"])["id"]
+    conn_teste.execute("SET session_replication_role = replica")
+    conn_teste.execute("UPDATE pedido SET canal = 'anotaai', id_canal = %s, situacao = 'acabado' WHERE id = %s", (f"SAI{pid}", pid))
+    conn_teste.execute("SET session_replication_role = DEFAULT")
+    r = client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "despachado ou retirado"}, headers=ha)
+    assert r.status_code == 409 and "entregador" in r.json()["detail"]
+    ent = client.post("/api/entregadores", json={"nome": novo_login("Moto"), "telefone": "5550002222"}, headers=hg).json()
+    # a atribuição pela API exige caixa aberto (o estado do caixa depende de outros testes): grava a entrega direto
+    conn_teste.execute("INSERT INTO entrega (pedido_id, loja_id, data, entregador_id, valor_entrega, atribuido_por, atribuido_em) "
+                       "SELECT id, loja_id, data, %s, 5, criado_por, now() FROM pedido WHERE id = %s", (ent["id"], pid))
+    assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "despachado ou retirado"}, headers=ha).status_code == 200
+    # pedido de balcão do tipo entrega não é afetado pela regra (só pedido de canal externo exige entregador)
+    cli2 = client.post("/api/clientes", json={"nome": "Balcao Entrega", "telefone": "5556" + novo_login("")[-4:].rjust(4, "0"), "endereco": "Rua E, 2"}, headers=ha).json()
+    pb = _pagar(client, ha, [_g(cardapio, 1)], tipo="entrega", cliente_id=cli2["id"])["id"]
+    conn_teste.execute("SET session_replication_role = replica")
+    conn_teste.execute("UPDATE pedido SET situacao = 'acabado' WHERE id = %s", (pb,))
+    conn_teste.execute("SET session_replication_role = DEFAULT")
+    assert client.post(f"/api/pedidos/{pb}/situacao", json={"situacao": "despachado ou retirado"}, headers=ha).status_code == 200
+    conn_teste.execute("SET session_replication_role = replica")
+    conn_teste.execute("UPDATE pedido SET situacao = 'cancelado' WHERE id = %s", (pid,))  # sai de qualquer lista de acerto
+    conn_teste.execute("SET session_replication_role = DEFAULT")

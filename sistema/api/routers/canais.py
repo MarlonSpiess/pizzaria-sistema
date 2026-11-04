@@ -50,6 +50,28 @@ def listar(sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
         "FROM canal_venda c WHERE c.loja_id = %s ORDER BY c.id", (LOJA_ID,)).fetchall()
 
 
+@router.get("/loja")
+def estado_loja(sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
+    r = conn.execute("SELECT loja_aberta, loja_aberta_desde FROM loja WHERE id = %s", (LOJA_ID,)).fetchone()
+    return {"loja_aberta": bool(r and r["loja_aberta"]), "desde": r["loja_aberta_desde"] if r else None}
+
+
+@router.patch("/loja")
+def definir_loja(d: AtivoIn, sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
+    """Flag manual da gerência: liga quando a loja já pode receber pedidos dos canais; desliga ao fechar. Não muda sozinha."""
+    r = conn.execute("SELECT loja_aberta FROM loja WHERE id = %s FOR UPDATE", (LOJA_ID,)).fetchone()
+    if not r:
+        raise HTTPException(status_code=404, detail="Loja não encontrada.")
+    if r["loja_aberta"] == d.ativo:  # nada mudou: não regrava a hora da última troca
+        conn.rollback()
+        return {"loja_aberta": d.ativo, "desde": conn.execute("SELECT loja_aberta_desde FROM loja WHERE id = %s", (LOJA_ID,)).fetchone()["loja_aberta_desde"]}
+    quando = agora()
+    conn.execute("UPDATE loja SET loja_aberta = %s, loja_aberta_desde = %s WHERE id = %s", (d.ativo, quando, LOJA_ID))
+    auditar(conn, sessao, "loja_aberta", "loja", LOJA_ID, antes={"loja_aberta": r["loja_aberta"]}, depois={"loja_aberta": d.ativo})
+    conn.commit()
+    return {"loja_aberta": d.ativo, "desde": quando}
+
+
 @router.patch("/{cid}/ativo")
 def ativar(cid: int, d: AtivoIn, sessao=Depends(requer("canais.configurar")), conn=Depends(get_db)):
     ativo = d.ativo
@@ -123,7 +145,8 @@ def mapear(cid: int, d: MapaIn, sessao=Depends(requer("canais.configurar")), con
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
     try:
         conn.execute("INSERT INTO mapa_produto_canal (canal_id, produto_id, id_externo) VALUES (%s,%s,%s) "
-                     "ON CONFLICT (canal_id, produto_id) DO UPDATE SET id_externo = EXCLUDED.id_externo", (cid, d.produto_id, ext))
+                     "ON CONFLICT (canal_id, produto_id) DO UPDATE SET id_externo = EXCLUDED.id_externo, "
+                     "pausado_no_canal = CASE WHEN mapa_produto_canal.id_externo = EXCLUDED.id_externo THEN mapa_produto_canal.pausado_no_canal ELSE false END", (cid, d.produto_id, ext))
         auditar(conn, sessao, "mapear", "mapa_produto_canal", d.produto_id, depois={"canal_id": cid, "id_externo": ext})
         conn.commit()
     except psycopg.Error as e:

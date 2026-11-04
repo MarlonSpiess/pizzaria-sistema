@@ -201,8 +201,14 @@ def test_dia_completo_contagem_cega_entregador_estorno_e_fechamento(client, card
     assert client.post("/api/caixa/contagem", json=todas(), headers=ha).status_code == 409  # entrega sem acerto
     assert client.post("/api/caixa/acertos", json={"entregador_id": ent["id"]}, headers=ha).status_code == 409  # ainda não entregue
     _pronto_e_entregue(client, conn_teste, c["id"], hg)
+    conn_teste.execute("INSERT INTO canal_venda (loja_id, codigo, nome) VALUES (1, 'anotaai', 'Anota Ai') ON CONFLICT DO NOTHING")
+    conn_teste.execute("SET session_replication_role = replica")  # o gatilho de imutabilidade do pedido impede esta troca; só no teste
+    conn_teste.execute("UPDATE pedido SET canal = 'anotaai', id_canal = %s WHERE id = %s", (f"CX{c['id']}", c["id"]))
+    conn_teste.execute("SET session_replication_role = DEFAULT")
     ac = client.post("/api/caixa/acertos", json={"entregador_id": ent["id"]}, headers=ha)
     assert ac.status_code == 201, ac.text
+    avisos = conn_teste.execute("SELECT evento FROM aviso_canal WHERE pedido_id = %s", (c["id"],)).fetchall()
+    assert sorted(a[0] for a in avisos) == ["finalizado", "pronto"]  # entrega de canal externo: finaliza no acerto (o "pronto" nasce junto se faltar)
     ac = ac.json()
     assert (ac["dinheiro_recebido"], ac["valor_entregas"], ac["diaria"], ac["total_devido"], ac["saldo_gaveta"]) == ("41.00", "5.00", "30.00", "35.00", "6.00")
     assert client.post("/api/caixa/acertos", json={"entregador_id": ent["id"]}, headers=ha).status_code == 409  # nada a acertar

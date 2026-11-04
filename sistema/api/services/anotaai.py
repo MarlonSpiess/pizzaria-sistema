@@ -20,3 +20,9 @@ class AnotaAi:
 
     def avisar(self, id_externo: str, evento: str) -> None:
         raise NotImplementedError("Aguardando a documentação da API do Anota Ai.")
+
+    def pausar_produto(self, id_externo: str) -> None:
+        raise NotImplementedError("Aguardando a documentação da API do Anota Ai.")
+
+    def reabrir_produto(self, id_externo: str) -> None:
+        raise NotImplementedError("Aguardando a documentação da API do Anota Ai.")

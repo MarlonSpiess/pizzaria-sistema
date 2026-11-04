@@ -487,13 +487,18 @@ async function abaCanais() {
   const atual = canais.find((c) => c.id === estado.canalId);
   const nav0 = () => h("div", { class: "subnav" }, canais.map((c) => h("button", { onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome)));
   const podeConfigurar = ["administrador", "proprietario"].includes(estado.eu.perfil);
+  let loja = { loja_aberta: false };
+  try { loja = await api("GET", "/canais/loja"); } catch (e) { alvo.replaceChildren(aviso("erro", e.message)); return; }
   let fila = [], mapa = [];
   try { [fila, mapa] = await Promise.all([api("GET", "/canais/" + atual.id + "/fila"), api("GET", "/canais/" + atual.id + "/produtos")]); } catch (e) { alvo.replaceChildren(nav0(), aviso("erro", e.message)); return; }
   const nav = h("div", { class: "subnav" }, canais.map((c) => h("button", { class: c.id === atual.id ? "ativo" : "", onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome + (c.pendentes ? " (" + c.pendentes + ")" : ""))));
+  const lojaCartao = h("div", { class: "cartao" }, h("h2", {}, "Loja: " + (loja.loja_aberta ? "ABERTA para pedidos" : "fechada")),
+    h("p", { class: "pequeno" }, "Chave manual da gerência. Ligue quando já puder receber pedidos e desligue ao fechar; ela não muda sozinha." + (loja.desde ? " Última troca: " + new Date(loja.desde).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) + "." : "")),
+    h("button", { class: loja.loja_aberta ? "sec" : "principal", onclick: async (ev) => { ev.target.disabled = true; try { await api("PATCH", "/canais/loja", { ativo: !loja.loja_aberta }); abaCanais(); } catch (e) { falha(e); ev.target.disabled = false; } } }, loja.loja_aberta ? "Fechar a loja" : "Abrir a loja"));
   const estadoCartao = h("div", { class: "cartao" }, h("h2", {}, atual.nome), h("p", { class: "pequeno" }, "Integração ainda não conectada: falta o token do canal. Aqui ficam só a estrutura, a fila de entrada e o mapa de produtos."),
     !podeConfigurar ? null : h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/canais/" + atual.id + "/ativo", { ativo: !atual.ativo }); abaCanais(); } catch (e) { falha(e); } } }, atual.ativo ? "Desativar canal" : "Ativar canal"),
     h("p", {}, atual.ativo ? "Canal ativo." : "Canal desativado."),
-    h("p", {}, "Aceitar sozinho: " + (atual.aceitar_sozinho ? "LIGADO (regra: caixa de hoje aberto e todos os itens no mapa de produtos). Vale quando a integração for conectada; hoje nada é aceito automaticamente." : "desligado. A gerência aceita cada pedido explicitamente.")),
+    h("p", {}, "Aceitar sozinho: " + (atual.aceitar_sozinho ? "LIGADO (regra: loja aberta, caixa de hoje aberto e todos os itens no mapa de produtos). Vale quando a integração for conectada; hoje nada é aceito automaticamente." : "desligado. A gerência aceita cada pedido explicitamente.")),
     !podeConfigurar ? null : h("button", { class: "sec", onclick: async (ev) => { ev.target.disabled = true; try { await api("PATCH", "/canais/" + atual.id + "/aceitar-sozinho", { ativo: !atual.aceitar_sozinho }); abaCanais(); } catch (e) { falha(e); } } }, atual.aceitar_sozinho ? "Desligar aceitar sozinho" : "Ligar aceitar sozinho"));
   const filaCartao = h("div", { class: "cartao" }, h("h2", {}, "Fila de entrada"), fila.length ? tabela(["Pedido no canal", "Situação", "Recebido", ""], fila.map((e) => h("tr", {},
     h("td", {}, e.id_externo), h("td", {}, ({ pendente: "na fila", importando: "importando…", importada: "importada", bloqueada: "BLOQUEADA, aguarda a gerência", recusada: "recusada" }[e.situacao] || e.situacao) + (e.motivo ? ": " + e.motivo : "")), h("td", {}, new Date(e.recebido_em).toLocaleString("pt-BR"), ["pendente", "importando", "bloqueada"].includes(e.situacao) ? (() => { const t = new Date(e.recebido_em).getTime(), min = Number.isFinite(t) ? Math.max(0, Math.floor((Date.now() - t) / 60000)) : null;
@@ -504,7 +509,7 @@ async function abaCanais() {
     tabela(["Produto", "ID Externo", ""], mapa.map((m) => { const i = h("input", { value: m.id_externo || "", placeholder: "ID no canal" });
       if (!podeConfigurar) { i.disabled = true; return h("tr", {}, h("td", {}, m.nome), h("td", {}, m.id_externo || "sem ID"), h("td", {})); }
       return h("tr", {}, h("td", {}, m.nome), h("td", {}, i), h("td", {}, h("button", { class: "sec", onclick: async () => { try { await api("PUT", "/canais/" + atual.id + "/produtos", { produto_id: m.produto_id, id_externo: i.value }); msg.replaceChildren(aviso("ok", "Mapeado.")); } catch (x) { falha(x); } } }, "Salvar"))); })));
-  alvo.replaceChildren(nav, msg, estadoCartao, filaCartao, mapaCartao);
+  alvo.replaceChildren(nav, msg, lojaCartao, estadoCartao, filaCartao, mapaCartao);
   clearInterval(relogioCanais);
   relogioCanais = setInterval(() => {  // o "há N min" acompanha o relógio, sem atropelar quem digita
     if (estado.aba !== "canais" || !estado.token) { clearInterval(relogioCanais); return; }
@@ -1276,7 +1281,22 @@ async function abaEstoque() {
 
   async function subAlertas() {
     const a = await api("GET", "/estoque/alertas");
-    return h("div", {}, h("div", { class: "cartao" }, h("h2", {}, "Repor"), a.repor.length ? tabela(["Item", "Saldo", "Situação"], a.repor.map((i) => h("tr", {}, h("td", {}, i.nome), h("td", {}, num(i.saldo) + " " + i.unidade), h("td", {}, i.situacao)))) : h("p", {}, "Nada abaixo do mínimo.")),
+    const fechar = async (i, em_falta) => {  // integração com o fechamento de vendas por ingrediente (só a gerência)
+      try {
+        const r = await api("GET", "/vendas-fechadas/ingredientes/" + i.id + "/sabores");
+        const nomes = r.sabores.map((x) => x.nome).join(", ") || "nenhum sabor";
+        if (!window.confirm((em_falta ? "Reabrir a venda de: " : "Fechar a venda de: ") + nomes + ". Ingrediente: " + i.nome + ".")) return;
+        await api("PUT", "/vendas-fechadas/ingredientes/" + i.id + "/falta", { em_falta });
+        acao("GET", "/estoque/alertas", undefined, em_falta ? "Venda fechada para " + nomes + "." : "Venda reaberta.");
+      } catch (e) { falha(e); }
+    };
+    const rotuloEst = { negativo: "NEGATIVO", zerado: "ZERADO", repor: "repor", "abaixo do mínimo": "abaixo do mínimo" };
+    return h("div", {}, h("div", { class: "cartao" }, h("h2", {}, "Ingredientes: negativo, zerado, para repor"),
+      h("p", { class: "pequeno" }, "Negativo e zerado pedem tratativa física e, se for o caso, ajuste de estoque. \"Baixo\" usa o estoque mínimo de cada item. O estoque pode ficar negativo."),
+      a.repor.length ? tabela(["Item", "Saldo", "Situação", ""], a.repor.map((i) => h("tr", {}, h("td", {}, i.nome), h("td", {}, num(i.saldo) + " " + i.unidade),
+        h("td", { style: ["negativo", "zerado"].includes(i.situacao) ? "color:var(--crit);font-weight:700" : "" }, rotuloEst[i.situacao] || i.situacao, i.venda_fechada ? " · venda fechada" : ""),
+        h("td", {}, i.venda_fechada ? h("button", { class: "sec", onclick: () => fechar(i, false) }, "Reabrir vendas")
+          : h("button", { class: "sec", onclick: () => fechar(i, true) }, "Fechar vendas dos sabores" + (i.sabores_afetados != null ? " (" + i.sabores_afetados + ")" : "")))))) : h("p", {}, "Nada abaixo do mínimo.")),
       h("div", { class: "cartao" }, h("h2", {}, "Validade (até " + a.dias_alerta + " dias)"), a.validade.length ? tabela(["Item", "Lote", "Validade", "Saldo", ""], a.validade.map((l) => h("tr", {}, h("td", {}, l.item), h("td", {}, l.codigo), h("td", {}, l.validade), h("td", {}, num(l.saldo)), h("td", {}, l.vencido ? "VENCIDO" : "")))) : h("p", {}, "Nenhum lote perto de vencer.")),
       h("div", { class: "cartao" }, h("h2", {}, "Faltas apontadas pela Produção"), h("p", {}, a.faltas_producao_24h + " retrocesso(s) por falta de insumo nas últimas 24 horas.")),
       h("div", { class: "cartao" }, h("h2", {}, "Baixas que não saíram"), a.pendencias.length ? tabela(["Tipo", "Produto", "Vezes"], a.pendencias.map((p) => h("tr", {}, h("td", {}, p.tipo === "sem_ficha" ? "Produto sem ficha técnica" : "Erro na baixa"), h("td", {}, p.produto || ""), h("td", {}, p.vezes)))) : h("p", {}, "Tudo baixando pela ficha técnica.")));
