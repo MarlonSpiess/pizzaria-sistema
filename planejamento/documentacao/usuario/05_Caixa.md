@@ -13,14 +13,14 @@ Versão 2.0, 04/11/2026. Para quem opera o caixa: atendente e gerência. Leia an
 
 O fundo de troco padrão vem dos parâmetros. Valor diferente só a gerência define. Não é possível abrir um caixa novo se o anterior não foi fechado.
 
-Sem caixa aberto: o acabamento não despacha, a recepção não atribui nem acerta entregas e, se o parâmetro mandar, não há venda.
+Sem caixa aberto: o acabamento não despacha, a recepção não atribui nem acerta entregas e, se o parâmetro mandar, não há venda. Depois da contagem e depois do fechamento do caixa de hoje **não há mais venda nem cancelamento no dia**, e o caixa de hoje não pode ser reaberto.
 
 ## 2. Sangria e suprimento
 
 - **Sangria (saída):** dinheiro que sai da gaveta (exemplo: pagar uma despesa ou levar para o cofre).
 - **Suprimento (entrada):** dinheiro que entra na gaveta (exemplo: reforço de troco).
 
-Escolha o tipo, o motivo e o valor. Motivo marcado como "vira despesa" exige o comprovante (número ou descrição). Se a soma das sangrias passar do limite do parâmetro, um gerente autoriza com login e senha.
+Escolha o tipo, o motivo e o valor. Motivo marcado como "vira despesa" exige o comprovante (número ou descrição). Se a soma das sangrias passar do limite do parâmetro, um gerente, proprietário ou administrador autoriza com login e senha (o subgerente não). Gerente, proprietário e administrador lançam a própria sangria sem pedir autorização.
 
 Os motivos são cadastrados em **Motivos e maquininhas** (na primeira vez, a gerência toca em "Criar os motivos combinados"; só a gerência cria e altera motivos).
 
@@ -45,7 +45,7 @@ Depois da contagem, o caixa não aceita novos pedidos nem cancelamentos.
 
 1. Confira o **Resultado da contagem**.
 2. Se a diferença passar da **tolerância**, escreva a **justificativa** e peça a um gerente, proprietário ou administrador que **não fez a contagem** para aprovar com login e senha. Subgerente não aprova diferença.
-3. Toque em **Fechar o caixa**.
+3. Toque em **Fechar caixa**.
 
 ## 6. Pedidos sem número de CF
 

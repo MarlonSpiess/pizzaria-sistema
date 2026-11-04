@@ -23,7 +23,7 @@ O sistema é uma aplicação web única que roda no PC da loja e atende, pela re
 |---|---|---|
 | 🍕 Produção | massa, pizzaiolo, acabamento e gerência | Massa, Montagem, Forno, Acabamento com etiqueta, Despacho, Andamento e Motivos |
 | 🧾 Vendas | atendente e gerência | Pedidos (novo pedido, pedidos do dia), Caixa e entregas, Canais (loja aberta, Anota Ai, iFood no futuro), Clientes, Entregadores |
-| 🏢 Administrativo | gerência, proprietário e administrador | Painel, Cardápio, Fichas e etapas, Estoque, Compras, Contas, BI, Custos, Imobilizado, RH, Usuários, Parâmetros, Auditoria |
+| 🏢 Administrativo (na tela, "Admin") | gerência, proprietário e administrador; o atendente só consulta o Cardápio | Painel, Cardápio, Fichas e etapas, Estoque, Compras, Contas, BI, Custos, Imobilizado, RH, Usuários, Parâmetros, Auditoria |
 
 Os 9 módulos do planejamento original (RH, Imobilizado, Estoques e Compras, Contas, Custos, Vendas, Produção, Fechamento de Caixa e BI) continuam existindo como partes do código. A decisão de 03/11/2026 só os reorganizou em 3 áreas de uso, um login e um servidor. A correspondência está na seção 9.
 
@@ -99,6 +99,7 @@ Regras para escrever uma migração nova:
 2. Sem `BEGIN`, `COMMIT`, `ROLLBACK`, `CREATE INDEX CONCURRENTLY` ou `VACUUM` (o script recusa).
 3. Idempotente (`IF NOT EXISTS`) e curta.
 4. Rodar com o papel dono do banco (`MIGRATE_DB_USER`), nunca com o papel do app.
+5. Depois de aplicar, rodar `papel_app.sql` de novo (seção 3.4).
 
 `--dry-run` mostra o que seria aplicado sem alterar nada.
 
@@ -143,7 +144,7 @@ São 101 tabelas. O sabor com venda fechada **não é guardado**: é calculado a
 
 ### 3.4 Papel restrito do aplicativo
 
-O app conecta com um papel sem privilégio de dono (`pizzaria_app`). `scripts/papel_app.sql` dá leitura e escrita nas tabelas e **tira** `UPDATE`, `DELETE` e `TRUNCATE` da auditoria e do registro de backup. Assim nem um erro no código consegue apagar a auditoria. As migrações e o `criar_admin.py` usam o papel dono (`MIGRATE_DB_USER`).
+O app conecta com um papel sem privilégio de dono (`pizzaria_app`). `scripts/papel_app.sql` dá leitura e escrita nas tabelas e **tira** `UPDATE`, `DELETE` e `TRUNCATE` da auditoria e do registro de backup. Assim nem um erro no código consegue apagar a auditoria. As migrações usam o papel dono (`MIGRATE_DB_USER`). **Atenção:** o `GRANT` do `papel_app.sql` vale só para as tabelas que já existem; depois de **toda migração nova**, rode o `papel_app.sql` de novo, senão o app não acessa a tabela nova (correção pedida: acrescentar privilégio padrão para tabelas). Só vale se `DB_USER=pizzaria_app`; o padrão do código é `postgres`.
 
 ---
 
@@ -172,7 +173,7 @@ São 249 rotas. A lista completa, com a permissão de cada uma, está no [Apênd
 
 Algumas leituras são compartilhadas por várias funções e a própria rota corta o que a função não deve ver:
 
-- `GET /producao/fila`: montagem vê só "na lista" e "em montagem"; acabamento vê "no forno", "saiu do forno" e "acabada" e o estado do forno; gerência vê tudo. Situação fora do conjunto recebe 403. O nome do cliente só vai para acabamento e gerência (a etiqueta usa).
+- `GET /producao/fila`: montagem vê só "na lista" e "em montagem"; acabamento vê "no forno" e "saiu do forno" ("acabada" só se pedir pelo filtro) e o estado do forno; gerência vê tudo. Situação fora do conjunto recebe 403. O nome do cliente só vai para acabamento e gerência (a etiqueta usa).
 - `GET /producao/pedidos`: só acabamento e gerência.
 - `GET /caixa/despacho`: pedido, situação e nome do entregador, **sem total e sem valor**. Avisa quando o caixa não está aberto. `POST /caixa/despacho/{pedido}` usa sempre o valor padrão da entrega.
 - `POST /pedidos/{id}/situacao`: o balcão só marca "despachado ou retirado"; os demais estados exigem `vendas.gerir`. Pedido de **entrega vindo de canal** só vai para "despachado ou retirado" com entregador atribuído (o acerto depende disso).
@@ -183,7 +184,7 @@ Algumas leituras são compartilhadas por várias funções e a própria rota cor
 
 ### 5.1 Princípio
 
-Cada função só vê e só acessa o que é dela, e **a regra vale no servidor, não só no menu** (decisão de Marlon, 03/11/2026). Esconder um botão não protege nada, porque o código das telas é público e qualquer um pode chamar a rota direto. Toda rota, exceto `/auth/login` e `/health`, confere a permissão do perfil **atual** de quem chama (menor privilégio, negado por padrão).
+Cada função só vê e só acessa o que é dela, e **a regra vale no servidor, não só no menu** (decisão de Marlon, 03/11/2026). Esconder um botão não protege nada, porque o código das telas é público e qualquer um pode chamar a rota direto. Toda rota de negócio confere a permissão do perfil **atual** de quem chama; só `/auth/login` e `/health` dispensam login, e `/auth/logout`, `/auth/me` e `/auth/trocar-senha` exigem apenas sessão válida (menor privilégio, negado por padrão).
 
 ### 5.2 Perfis
 
@@ -192,7 +193,7 @@ Cada função só vê e só acessa o que é dela, e **a regra vale no servidor, 
 | administrador | última área | Tudo |
 | proprietário | última área | Tudo |
 | gerente | última área | Tudo da operação e do escritório, menos: usuários, editar parâmetros, configurar canais, aprovar em Contas e em Imobilizado, ver salários |
-| subgerente | última área | O mesmo do gerente, menos aprovar diferença de caixa e aprovar em RH |
+| subgerente | última área | O mesmo do gerente, menos aprovar diferença de caixa, autorizar sangria acima do limite e aprovar em RH |
 | atendente | Vendas | Novo pedido, pedidos do dia, caixa (abrir, lançar, contar, fechar), entregas e acerto, clientes; consulta cardápio e entregadores; Meus dados |
 | massa | Produção | Só a tela Massa (lote, contagem, perda de massa); Meus dados |
 | pizzaiolo | Produção | Só a tela Montagem (pegar, produzida, retroceder, perda); Meus dados |
@@ -206,7 +207,7 @@ Regras que chamam atenção:
 - O **Andamento** (visão geral da cozinha) é só da gerência. O atendente não acessa Produção; a hora de entrega calculada aparece em Vendas > Pedidos do dia.
 - **Canais:** ativar canal, ligar "aceitar sozinho" e editar o mapa de produtos é só de administrador e proprietário (`canais.configurar`). A gerência (`vendas.gerir`) vê a fila, recusa, manda tentar de novo, liga e desliga **loja aberta** e fecha ou reabre vendas por ingrediente.
 - **Alerta de estoque** (negativo, zerado, repor, abaixo do mínimo): visto por quem tem `estoque.ver` (administrador, proprietário, gerente, subgerente), em Estoque > Alertas e no BI.
-- **Aprovação por outra pessoa:** quem contou o caixa não aprova a própria diferença; desconto acima do limite e cancelamento de pedido pago pelo atendente exigem login e senha de um gerente na hora.
+- **Aprovação por outra pessoa:** quem contou o caixa não aprova a própria diferença; desconto acima do limite, taxa de entrega abaixo da padrão e cancelamento de pedido pago pelo atendente exigem login e senha de um gerente ou subgerente na hora; sangria acima do limite exige gerente, proprietário ou administrador.
 
 ### 5.3 Login e sessão
 
@@ -250,7 +251,8 @@ O roteiro passo a passo, para quem instala no PC da loja, está em [Roteiro_de_I
 |---|---|---|
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` | localhost, 5432, pizzaria, postgres | Conexão do app (use `pizzaria_app`) |
 | `DB_PASS` | (obrigatória) | Senha do app; sem ela o servidor não sobe |
-| `MIGRATE_DB_USER`, `MIGRATE_DB_PASS` | DB_USER e DB_PASS | Papel dono, para migrações e `criar_admin.py` |
+| `MIGRATE_DB_USER`, `MIGRATE_DB_PASS` | DB_USER e DB_PASS | Papel dono, só para `aplicar_migrations_pg.py` (o `criar_admin.py` usa `DB_USER`) |
+| `PIZZARIA_ADMIN_SENHA` | vazio | Senha do primeiro administrador sem pergunta (`criar_admin.py`); evite deixar gravada |
 | `LOJA_ID` | 1 | Identificador da loja neste banco |
 | `PIZZARIA_PORT` | 8080 | Porta (`start_api.bat`) |
 | `SESSION_TTL_HOURS` | 12 | Validade da sessão |
@@ -273,7 +275,7 @@ Usuários e perfis, parâmetros, cardápio e fichas técnicas (scripts `carregar
 ### 7.1 Rotina diária (o que o sistema espera)
 
 1. Ligar o PC da loja; `start_api.bat` sobe sozinho se estiver no Agendador de Tarefas.
-2. A recepção abre o caixa do dia (fundo de troco). Sem caixa aberto não há despacho e, se o parâmetro mandar, não há venda.
+2. A recepção abre o caixa do dia (fundo de troco). Sem caixa aberto não há despacho e, se o parâmetro mandar, não há venda. Depois da contagem ou do fechamento do caixa de hoje, não há venda nem cancelamento, e o caixa do dia não reabre.
 3. A gerência liga **loja aberta** em Vendas > Canais (flag manual, decisão de Marlon de 04/11/2026), que indica que a loja já recebe pedidos e entra no critério de "aceitar sozinho". Ela não muda sozinha: desligar ao encerrar.
 4. Durante o dia: pedidos, produção, despacho, acerto dos entregadores.
 5. No fim: acertar todos os entregadores, contagem cega, fechamento, backup.
@@ -286,18 +288,18 @@ Usuários e perfis, parâmetros, cardápio e fichas técnicas (scripts `carregar
 | Falha do canal | Espera crescente (2, 4, 8 até 60 segundos), registro no log, nada cai | [Estrutura] |
 | Importar | Ler o pedido na fila do Anota Ai, ver se a loja pode produzir, aceitar no Anota Ai (prazo de 15 minutos, senão o Anota Ai cancela) e criar o pedido no sistema | [Pendente] da API para aceitar e criar |
 | Importação travada | Após 120 segundos volta para a fila; na 3ª queda vira "bloqueada" para a gerência decidir (tentar de novo ou recusar) | [Construído] |
-| Aceitar sozinho | Flag por canal, desligada por padrão, só administrador e proprietário. Ligada, aceita sem a gerência quando: canal ativo, **loja aberta**, caixa **de hoje** aberto, todos os itens no mapa de produtos (produto ativo) e nenhum sabor com venda fechada. "Caixa de hoje" é o caixa com a data do dia: depois da meia-noite, com o caixa da véspera ainda aberto, nada é aceito sozinho | [Construído] a regra; [Pendente] da API para aceitar de fato |
+| Aceitar sozinho | Flag por canal, desligada por padrão, só administrador e proprietário. Ligada, aceita sem a gerência quando: canal ativo, **loja aberta**, caixa **de hoje** aberto, todos os itens no mapa de produtos (produto ativo) e nenhum sabor com venda fechada. "Caixa de hoje" é o caixa com a data do dia: depois da meia-noite, com o caixa da véspera ainda aberto, nada é aceito sozinho | [Estrutura]: a regra está escrita e testada, mas ainda não é chamada, porque a importação depende da API |
 | Avisos de status | Fila com tentativas e reenvio sem duplicar. Retirada: "pronto" quando o pedido fica acabado, "finalizado" quando o cliente retira. Entrega: "pronto" quando o entregador sai | [Estrutura] |
-| Finalizar entrega | O **acerto do entregador** no caixa enfileira "finalizado" dos pedidos de canal que ele levou (e "pronto", se faltou). "Finalizado" só sai depois do "pronto". Pedido de canal só é despachado com o entregador atribuído (decisão de Marlon, 04/11/2026) | [Construído] a fila; [Estrutura] o envio |
-| Fechar vendas por ingrediente | A gerência marca um ingrediente em falta (ex.: ovo); o sistema mostra os sabores que o usam e fecha a venda deles. O varredor compara o mapa com o que deveria estar pausado no canal e corrige a diferença (pausar ou reabrir), com erro registrado por produto. Reabrir faz o inverso. Pedido com sabor fechado não é aceito sozinho | [Construído] o fechamento; [Pendente] a chamada de pausar da API |
-| Alerta de estoque | Ingrediente **negativo**, **zerado**, **para repor** (ponto de pedido) ou **abaixo do mínimo** (estoque mínimo do cadastro), nesta ordem de gravidade, para tratativa física ou ajuste. No zerado e no negativo, mostra quantos sabores usam o item e oferece "Fechar vendas dos sabores". No BI, zerado ou negativo é alerta de gravidade alta | [Construído] |
+| Finalizar entrega | O **acerto do entregador** no caixa enfileira "finalizado" dos pedidos de canal que ele levou (e "pronto", se faltou). "Finalizado" espera o "pronto" ser enviado (ou esgotar as 20 tentativas). Entre tentativas, a espera cresce até 300 segundos. Pedido de canal só é despachado com o entregador atribuído (decisão de Marlon, 04/11/2026) | [Construído] a fila; [Estrutura] o envio |
+| Fechar vendas por ingrediente | A gerência marca um ingrediente em falta (ex.: ovo), hoje pelo botão em Estoque > Alertas; o sistema mostra os sabores que o usam e os marca como fechados. **O fechamento vale para o canal** (aceitar sozinho e pausa); o pedido de balcão não é bloqueado. Reabrir só tem botão enquanto o item está no alerta; `GET /vendas-fechadas` não tem tela. O varredor compara o mapa com o que deveria estar pausado no canal e corrige a diferença (pausar ou reabrir), com erro registrado por produto. Reabrir faz o inverso. Pedido com sabor fechado não é aceito sozinho | [Construído] o fechamento; [Pendente] a chamada de pausar da API |
+| Alerta de estoque | Ingrediente **negativo**, **zerado**, **para repor** (ponto de pedido) ou **abaixo do mínimo** (estoque mínimo do cadastro), nesta ordem de gravidade, para tratativa física ou ajuste. Vale para qualquer item com estoque mínimo. Todas as faixas têm o botão "Fechar vendas dos sabores"; no zerado e no negativo, mostra também quantos sabores usam o item. No BI, zerado ou negativo é alerta de gravidade alta | [Construído] |
 | Estoque negativo | Permitido: a baixa automática pela ficha técnica e a saída manual de perda e de consumo interno não são barradas por falta de saldo. A **transferência** entre locais continua bloqueada sem saldo | [Construído] |
 | Cancelamento | Existe no Anota Ai; o sistema ainda não avisa | [Pendente] |
 | Limite de chamadas | Uma consulta por segundo pode passar do limite deles | [Pendente] perguntar no chamado |
 
 Fatos confirmados pelo manual de uso do Anota Ai: [Anota_Ai_Fatos_do_Manual.md](../../arquitetura/Anota_Ai_Fatos_do_Manual.md). O que só a documentação da API responde: endereços, autenticação, formato do pedido, identificador do pedido, como o ID externo do produto e a forma de pagamento aparecem, chamadas de aceitar, pronto, finalizar, cancelar e pausar produto.
 
-O **iFood** fica para depois: o menu Canais é genérico (um canal por aba, mesmo desenho de fila e mapa) e o iFood aparece desativado. [Pendente] acesso ao portal.
+O **iFood** fica para depois: o menu Canais é genérico (um canal por aba, mesmo desenho de fila e mapa) e o iFood vem desligado. Não há adaptador: ligá-lo não faz nada. [Pendente] acesso ao portal.
 
 ### 7.3 Parâmetros da loja
 
@@ -371,6 +373,9 @@ A estrutura de menus aprovada está em [01_Estrutura_de_Menus.md](../../menus/01
 | 6 | Aviso de cancelamento ao Anota Ai | API |
 | 7 | Cópia em C:\Maria Gabriela\Pizzaria | Pasta disponível |
 | 8 | Pizza perdida na Montagem não tem botão de refação na tela (a rota aceita); sem refação, o pedido não pode ser marcado acabado | Correção pedida ao PR #2 |
-| 9 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
+| 9 | Vendas fechadas não bloqueiam o pedido de balcão; reabrir não tem tela depois que o item sai do alerta; confirmação de fechar com texto invertido | Correção pedida ao PR #2 |
+| 10 | `papel_app.sql` sem privilégio padrão para tabelas novas | Correção pedida ao PR #2 |
+| 11 | Valor por entrega diferente do padrão só pela API (sem tela) | Decidir se precisa de tela |
+| 12 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
 
 **Recomendação:** antes do primeiro dia de uso, priorizar o teste da impressora e o pedido do token do Anota Ai, porque são os dois pontos que podem mudar o desenho (caminho de impressão e formato do pedido); o resto do sistema já roda na loja sem eles.

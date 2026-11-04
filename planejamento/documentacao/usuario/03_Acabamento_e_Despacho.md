@@ -33,7 +33,7 @@ O despacho exige o **caixa do dia aberto** pela recepção. Se não estiver, a t
 2. Escolha o **entregador** na lista.
 3. Toque em **Despachar**. Isso registra o entregador. Quem marca o pedido como "despachado" é a recepção, em Pedidos do dia, quando o entregador sai.
 
-O **valor por entrega** (o que a loja paga ao entregador, diferente da taxa cobrada do cliente) é sempre o padrão da loja. Valor diferente só a gerência define, pela tela de entregas. Pedido que já tem entregador mostra o nome dele.
+O **valor por entrega** (o que a loja paga ao entregador, diferente da taxa cobrada do cliente) é sempre o padrão da loja. Hoje a tela usa sempre o valor padrão; valor diferente não tem tela. Pedido que já tem entregador mostra o nome dele.
 
 ## 4. O que você não vê
 

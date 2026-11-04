@@ -34,7 +34,7 @@ Se você tentar abrir uma tela que não é da sua função, o sistema recusa. Is
 
 ## 4. Meus dados
 
-Todos têm a tela **Meus dados**, que abre ao tocar no seu nome no topo: a sua escala, o seu ponto e o seu banco de horas (incluindo saldo negativo). Só leitura: quem lança o ponto é a gerência.
+Todos têm a tela **Meus dados**, que abre ao tocar no seu nome no topo: a sua escala, o seu ponto e o seu banco de horas (incluindo saldo negativo). Só leitura: quem lança o ponto é a gerência. A tela só funciona se o seu login estiver ligado ao seu cadastro de funcionário no RH; se aparecer "Seu login não está ligado a um cadastro de funcionário", avise a gerência.
 
 ## 5. Mensagens do sistema
 

@@ -10,11 +10,11 @@ Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). Para 
 |---|---|---|
 | Autorizar desconto acima do limite do atendente (login e senha na hora) | Sim, até o próprio limite | Sim, até o próprio limite |
 | Autorizar cancelamento de pedido pago feito pelo atendente | Sim | Sim |
-| Autorizar sangria acima do limite | Sim | Sim |
+| Autorizar sangria acima do limite (e lançar sangria sem pedir autorização) | Sim | **Não** |
 | Aprovar diferença de caixa acima da tolerância (se não fez a contagem) | Sim | **Não** |
-| Aprovar no RH (exemplo: hora extra) | Sim | **Não** |
+| Aprovar no RH (exemplo: hora extra), até o limite de hora extra do mês e lançamentos de até 62 dias | Sim | **Não** |
 | Aprovar lista de compras acima do valor do parâmetro | Sim | Sim |
-| Aprovar título a pagar, ordem de serviço ou baixa de bem acima do limite | Não (administrador ou proprietário) | Não |
+| Aprovar título a pagar ou ordem de serviço acima do limite; dar baixa em bem (sempre) | Não (administrador ou proprietário) | Não |
 | Editar parâmetros, gerir usuários, ver salários e folha | Não (administrador ou proprietário) | Não |
 | Ativar canal, ligar "aceitar sozinho", editar o mapa de produtos | Não (administrador ou proprietário) | Não |
 
@@ -40,16 +40,16 @@ Além de tudo o que o atendente faz:
   - **Mapa de produtos:** consulta do ID externo de cada produto no canal. Sem ID externo, um pedido com esse produto não é aceito sozinho.
   - Hoje a tela avisa: "Integração ainda não conectada: falta o token do canal".
 - **Loja aberta** (no topo de Vendas > Canais): chave manual. Toque para ligar quando a loja já pode receber pedidos e desligue ao encerrar; ela **não muda sozinha**. Sem loja aberta, nenhum pedido do canal é aceito sozinho.
-- **Fechar vendas por ingrediente** (em Administrativo > Estoque > Alertas, seção 4): o sistema mostra os sabores que usam o ingrediente e fecha a venda deles; pedido com sabor fechado não é aceito sozinho. O aviso de pausa ao Anota Ai depende da API.
+- **Fechar vendas por ingrediente** (em Administrativo > Estoque > Alertas, seção 4): vale para o canal (não aceita sozinho e prepara a pausa no Anota Ai, que depende da API); o balcão não é bloqueado.
 
 ## 4. Administrativo
 
 | Menu | Para que serve |
 |---|---|
-| **Painel** | Números do dia e backup (ver o último e "Fazer backup agora") |
+| **Painel** | Boas-vindas e backup (ver o último e "Fazer backup agora"). Os números do dia ficam em BI > Painel do dia |
 | **Cardápio** | Sabores de pizza, preços por categoria (Tradicional, Especial e outras), bordas e adicionais, calzones, bebidas e outros, simulador de preço. É o cardápio único da loja. Todo preço novo guarda o histórico |
 | **Fichas e etapas** | Fichas técnicas (quanto de cada insumo vai em cada produto, por tamanho), itens (insumos e preparos), etapas de produção, e "O que falta" (produtos sem ficha) |
-| **Estoque** | Saldos, lançar movimento (entrada, saída, perda, consumo interno, ajuste), inventário (contar, conferir, fechar), alertas, locais |
+| **Estoque** | Saldos, lançar movimento (perda, consumo interno, estoque inicial, transferência), inventário (contar, conferir, fechar; é por ele que se ajusta o saldo), alertas, locais |
 | **Compras** | Lista de compras (necessidades, itens avulsos, cotação por fornecedor, definir e aprovar), pedidos de compra, recebimento com a nota, fornecedores |
 | **Contas** | Fluxo de caixa de 30 dias (7 em destaque), a pagar, a receber, lançar título, conciliação com o extrato, cadastros (contas bancárias, tipos de despesa, canais de repasse, despesas recorrentes) |
 | **BI** | Painel do dia, DRE por competência, lucratividade por sabor e categoria, produção; exportação em CSV |
@@ -64,8 +64,8 @@ Além de tudo o que o atendente faz:
 - A **pizza acabada** baixa os insumos pela ficha técnica; a **pizza perdida** baixa como perda o que já tinha entrado na montagem.
 - **Bebidas e acompanhamentos** saem do estoque quando o pedido fica acabado.
 - A baixa automática **nunca trava a produção**. Se faltar saldo, o estoque fica **negativo**, para a falta aparecer. Produto sem ficha gera uma pendência em Estoque > Alertas.
-- **Alerta de estoque** (Estoque > Alertas, e alerta no BI): ingrediente **NEGATIVO**, **ZERADO**, **repor** (chegou ao ponto de pedido) ou **abaixo do mínimo** (estoque mínimo do cadastro), do mais grave para o menos grave. Trate na loja (conferir, repor) e, se for o caso, ajuste o estoque em Lançar movimento.
-- **Fechar vendas dos sabores:** no alerta, toque no botão do ingrediente. O sistema mostra os sabores afetados (exemplo: ovo fecha Portuguesa, Paulista, Baiana) e pede confirmação. Quando o ingrediente voltar, toque em **Reabrir vendas**. Perda e consumo interno também podem deixar o saldo negativo; transferência entre locais não.
+- **Alerta de estoque** (Estoque > Alertas, e alerta no BI): ingrediente **NEGATIVO**, **ZERADO**, **repor** (chegou ao ponto de pedido) ou **abaixo do mínimo** (estoque mínimo do cadastro), do mais grave para o menos grave. Vale para qualquer item com estoque mínimo, não só ingrediente. Trate na loja (conferir, repor) e, se for o caso, ajuste o saldo por um Inventário.
+- **Fechar vendas dos sabores:** no alerta, toque no botão do item. O sistema mostra os sabores afetados (exemplo: ovo fecha Portuguesa, Paulista, Baiana) e pede confirmação. **O que isso faz hoje:** impede que pedidos do canal com esses sabores sejam aceitos sozinhos e prepara a pausa no Anota Ai (que depende da API). **Não bloqueia o balcão**: avise a recepção para não vender o sabor. Para reabrir, use **Reabrir vendas** no mesmo alerta enquanto o item ainda aparece nele; depois que o item é reposto e sai do alerta, ainda não há tela para reabrir (correção pedida). Perda e consumo interno também podem deixar o saldo negativo; transferência entre locais não.
 
 Mantenha o **estoque mínimo** de cada ingrediente preenchido em Estoque > Saldos (configuração do item). Sem ele, o alerta de "baixo" não funciona.
 
