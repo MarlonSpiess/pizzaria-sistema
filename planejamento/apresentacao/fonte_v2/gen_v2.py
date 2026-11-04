@@ -126,7 +126,7 @@ def deck_sistema():
     S.append(slide('cream', 'Controle de acesso', 'Regras que o servidor garante',
                    cards([('Na cozinha', ['O pizzaiolo não vê o forno nem o andamento', 'O acabamento não vê o valor do pedido', 'Despachar exige o caixa do dia aberto']),
                           ('No balcão', ['Desconto acima do limite: gerente digita login e senha', 'Cancelar pedido pago: gerente confirma', 'Quem contou o caixa não aprova a própria diferença']),
-                          ('No escritório', ['Ativar canal e editar o mapa: só administrador e proprietário', 'Salários e folha: só administrador e proprietário', 'Auditoria que nem o sistema consegue apagar'])]), None, R))
+                          ('No escritório', ['Ativar canal e editar o mapa: só administrador e proprietário', 'Salários e folha: só administrador e proprietário', 'Auditoria que o sistema não consegue apagar nem alterar'])]), None, R))
     S.append(slide('cream', 'Fluxo', 'Ciclo do pedido', '<div style="margin-top:20px">' + fit(fluxos_v2.ciclo_pedido(), 1664, 700) + '</div>', None, R))
     S.append(slide('cream', 'Vendas', 'Do pedido ao caixa fechado',
                    cards([('Pedido', ['Retirada ou entrega; cliente pelo telefone', 'Grande com 2 sabores: metade do preço de cada', 'Uma borda por pizza, adicionais com preço', 'Pagamento dividido; troco só no dinheiro; sem fiado']),
@@ -134,13 +134,13 @@ def deck_sistema():
                           ('Entregas', ['Despacho pelo acabamento, sem valores', 'Acerto: dinheiro recebido, valor das entregas e diária', 'Hora de entrega calculada nos pedidos do dia'])]), None, R))
     S.append(slide('cream', 'Canais', 'Anota Ai: o sistema chama a API',
                    tabela(['Parte', 'Como funciona', 'Situação'], [
-                       ['Varredura', 'A cada 1 segundo, só com o canal ativo e configurado', OK + ' estrutura'],
+                       ['Varredura', 'A cada 1 segundo, só com o canal ativo e configurado', OK],
                        ['Importar', 'Ler a fila, ver se a loja pode produzir, aceitar em até 15 min, criar o pedido', PEND],
-                       ['Bloqueados', 'O que a loja não pode produzir fica para a gerência: tentar de novo ou recusar', OK],
-                       ['Aceitar sozinho', 'Flag do canal: canal ativo, caixa de hoje aberto, itens no mapa e loja aberta', OK],
+                       ['Bloqueados', 'O que não passa nos critérios fica para a gerência: tentar de novo ou recusar', OK],
+                       ['Aceitar sozinho', 'Flag do canal: canal ativo, loja aberta, caixa de hoje aberto, itens no mapa, nenhum sabor com venda fechada', OK + ' ' + PEND],
                        ['Avisos', '"Pronto" e "finalizado", com reenvio se a internet cair', OK + ' ' + PEND],
-                       ['Finalizar entrega', 'No acerto do entregador', OK],
-                       ['Vendas fechadas', 'Ingrediente em falta fecha os sabores e pausa no Anota Ai', OK + ' ' + PEND]], ['20%', '58%', '22%']),
+                       ['Finalizar entrega', 'No acerto do entregador', OK + ' ' + PEND],
+                       ['Vendas fechadas', 'Ingrediente em falta fecha os sabores no sistema; a pausa no Anota Ai espera a API', OK + ' ' + PEND]], ['20%', '58%', '22%']),
                    None, R))
     S.append(slide('cream', 'Administrativo', 'O escritório no mesmo sistema',
                    cards([('Estoque e Compras', ['Baixa pela ficha técnica, sem travar a produção', 'Saldo pode ficar negativo para a falta aparecer', 'Lista de compras com cotação e aprovação']),
@@ -152,7 +152,8 @@ def deck_sistema():
                    tabela(['Pendência', 'Depende de'], [
                        ['Token e documentação da API do Anota Ai', 'Chamado de Marlon ao Anota Ai'],
                        ['Teste da impressora térmica Bluetooth', 'Teste no tablet do acabamento'],
-                       ['Revisar e mesclar o PR #2 (inclui loja aberta, vendas fechadas e alerta de estoque)', 'Marlon'],
+                       ['Botão de refação para pizza perdida na montagem', 'Correção pedida no PR #2'],
+                       ['Dados de cardápio ainda faltando (abreviações, fichas de bordas, adicionais e bebidas, tempos)', 'Marlon'],
                        ['iFood', 'Acesso ao portal'],
                        ['Nuvem e HTTPS', 'Decisão de Marlon; hoje não é necessário'],
                        ['Backup fora da máquina', 'Adiado por decisão de Marlon']], ['60%', '40%']), None, R))
@@ -166,15 +167,15 @@ def deck_sistema():
 def deck_comercial():
     R = f'Sistema Integrado da Pizzaria · Apresentação comercial v2.0 · {DATA}'
     S = [capa('Do pedido ao resultado.', 'Cozinha, balcão, delivery, caixa, estoque e números do negócio num só sistema, feito para a rotina de uma pizzaria.',
-              f'Versão 2.0 · {DATA}', 'Sistema de gestão para pizzarias')]
-    qs = ['Quanto custou, de fato, cada pizza que saiu hoje?', 'O caixa fechou certo, e se não fechou, onde está a diferença?', 'O que está acabando no estoque antes de faltar?',
+              f'Versão 2.0 · {DATA}', 'Sistema de gestão para a pizzaria')]
+    qs = ['Quanto custa cada pizza pela ficha técnica, e quanto foi o CMV do mês?', 'O caixa fechou certo, e se não fechou, onde está a diferença?', 'O que está acabando no estoque antes de faltar?',
           'Quanto sobra de cada pedido depois das taxas de cartão e de aplicativo?', 'Quanto tempo o cliente espera, e onde o pedido demora?', 'Quanto de massa e de insumo se perde, e por quê?']
     g = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:26px;margin-top:44px">'
     g += ''.join(f'<div class="card"><div class="num">{i + 1}</div><p style="font-size:30px;line-height:1.35;font-weight:500">{q}</p></div>' for i, q in enumerate(qs))
     S.append(slide('cream', 'O ponto de partida', 'Perguntas que todo dono de pizzaria faz', g + '</div>',
-                   'O sistema responde com números que ninguém precisou digitar duas vezes.', R))
+                   'O sistema responde com números que nascem da própria operação da loja.', R))
     S.append(slide('cream', 'A solução', 'Três áreas, um login, cada um na sua tela',
-                   cards([('🍕 Cozinha', 'Tablets por função: massa, montagem, forno e acabamento. Botões grandes, fila que se atualiza sozinha, pedido urgente na frente.'),
+                   cards([('🍕 Cozinha', 'Tablets por função: massa, montagem e acabamento (com forno e despacho). Botões grandes, fila que se atualiza sozinha, pedido urgente na frente.'),
                           ('🧾 Balcão e delivery', 'Pedido rápido, caixa com contagem cega, entregas e acerto do entregador, pedidos do Anota Ai no mesmo fluxo.'),
                           ('🏢 Escritório', 'Cardápio, fichas técnicas, estoque, compras, contas, custos, equipamentos, equipe e BI.')]), None, R))
     S.append(slide('cream', 'Na cozinha', 'A unidade de trabalho é a pizza',
@@ -186,13 +187,13 @@ def deck_comercial():
                           ('Autorização na hora', ['Desconto acima do limite com login do gerente', 'Cancelamento de pedido pago com confirmação', 'Tudo registrado na auditoria']),
                           ('Caixa', ['Contagem cega: conta antes de ver o esperado', 'Diferença com justificativa e aprovação de outra pessoa', 'Acerto do entregador antes do fechamento'])]), None, R))
     S.append(slide('cream', 'Delivery', 'Anota Ai integrado ao fluxo da loja',
-                   cards([('Pedido entra sozinho', 'O sistema consulta o Anota Ai a cada segundo e importa o pedido para a fila da cozinha.'),
-                          ('Aceite com critério', 'Aceita sozinho só com a loja aberta, o caixa do dia aberto e todos os itens mapeados. O resto vai para a gerência decidir.'),
-                          ('Cliente avisado', '"Pronto" quando sai para entrega ou fica disponível para retirada; "finalizado" no acerto do entregador ou na retirada.')]),
-                   'Conexão real em andamento: depende do token e da documentação da API, que o Anota Ai libera por chamado.', R))
+                   cards([('Pedido entra sozinho', 'Com a API liberada, o sistema consultará o Anota Ai a cada segundo e levará o pedido direto à fila da cozinha.'),
+                          ('Aceite com critério', 'Aceitará sozinho só com o canal ativo, a loja aberta, o caixa de hoje aberto, todos os itens mapeados e nenhum sabor fechado. O resto vai para a gerência.'),
+                          ('Cliente avisado', 'Receberá "pronto" quando o pedido sair para entrega ou ficar disponível para retirada, e "finalizado" no acerto do entregador ou na retirada.')]),
+                   'Estrutura pronta e testada; a conexão aguarda o token e a documentação da API, que o Anota Ai libera por chamado.', R))
     S.append(slide('cream', 'Controle', 'Estoque que acompanha a venda',
                    cards([('Baixa automática', 'Cada pizza acabada baixa os insumos pela ficha técnica, com custo médio e lote. A produção nunca para por causa do estoque.'),
-                          ('Alerta e ação', 'Ingrediente baixo, zerado ou negativo gera alerta. Sem ingrediente, o sistema fecha os sabores que o usam e para de vendê-los no delivery.'),
+                          ('Alerta e ação', 'Ingrediente baixo, zerado ou negativo gera alerta. Sem ingrediente, a gerência fecha num toque os sabores que o usam; a pausa no delivery virá com a API.'),
                           ('Compra certa', 'Lista de necessidades pelo estoque mínimo e pela validade, cotação por fornecedor e aprovação acima de um valor.')]), None, R))
     S.append(slide('cream', 'Resultado', 'Os números do negócio sem planilha',
                    cards([('CMV', 'Teórico pela ficha e real pelo inventário, fechado no mês.'), ('DRE gerencial', 'Por competência, com série e exportação.'),
@@ -200,7 +201,7 @@ def deck_comercial():
     S.append(slide('cream', 'Confiança', 'Seguro por desenho',
                    cards([('Login pessoal', 'Cada pessoa com a sua senha; bloqueio após tentativas erradas.'),
                           ('Acesso no servidor', 'Cada função só acessa o que é dela, mesmo que alguém tente pela rede.'),
-                          ('Auditoria', 'Quem fez o quê e quando. Nem o próprio sistema consegue apagar.'),
+                          ('Auditoria', 'Quem fez o quê e quando. O sistema não consegue apagar nem alterar.'),
                           ('Dados na loja', 'Roda no PC da loja, na rede local, com backup sob comando.')]), None, R))
     passos = ['Instalar no PC da loja e liberar a rede local', 'Criar os logins e preencher os parâmetros', 'Carregar cardápio, fichas e estoque inicial',
               'Dia de teste: pedido, cozinha, etiqueta e caixa', 'Ligar o Anota Ai quando o token chegar']

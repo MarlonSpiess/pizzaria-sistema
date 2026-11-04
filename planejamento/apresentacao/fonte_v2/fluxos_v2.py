@@ -46,34 +46,32 @@ def ciclo_pedido():
 
 
 def importacao():
-    f = Fluxo(6, 3, bw=228, bh=100, mx=160, my=90)
+    f = Fluxo(6, 3, bw=228, bh=100, mx=160, my=95)
     f.no('var', 0, 0, 'Varredura a cada 1 segundo', 'ini')
     f.no('ativo', 1, 0, 'Canal ativo e configurado?', 'dec', w=220, h=150, fs=18)
     f.no('nada', 1, 1, 'Não consulta', 'passo')
     f.no('pend', 2, 0, 'Entrada na fila (pendente)', 'passo')
     f.no('imp', 3, 0, 'Importando: a varredura espera', 'passo')
-    f.no('prod', 4, 0, 'Pode produzir? Itens no mapa, sabores abertos', 'dec', w=250, h=160, fs=17)
-    f.no('bloq', 4, 1, 'Bloqueada: gerência decide', 'alerta')
+    f.no('auto', 4, 0, 'Aceitar sozinho? Loja aberta, caixa de hoje, itens no mapa, sabores abertos', 'dec', w=290, h=180, fs=15)
+    f.no('bloq', 4, 1, 'Fica para a gerência (bloqueada)', 'alerta')
     f.no('rec', 3, 2, 'Recusada', 'fim')
-    f.no('auto', 5, 0, 'Aceitar sozinho? Loja aberta, caixa de hoje', 'dec', w=250, h=160, fs=17)
-    f.no('ger', 5, 1, 'Gerência aceita', 'passo')
-    f.no('aceita', 5, 2, 'Aceitar no Anota Ai (até 15 min)', 'pend')
-    f.no('cria', 4, 2, 'Criar o pedido: importada', 'pend')
+    f.no('aceita', 5, 0, 'Aceitar no Anota Ai (até 15 min)', 'pend')
+    f.no('cria', 5, 2, 'Criar o pedido: importada', 'pend')
+    f.no('ger', 4, 2, 'Aceite à mão (sem botão até a API)', 'pend')
     xs = [f.pos(c, 0)[0] for c in range(6)]
     ys = [f.pos(0, r)[1] for r in range(3)]
     f.seta('var', 'ativo')
     f.seta('ativo', 'pend', 'sim')
     f.seta('ativo', 'nada', 'não')
     f.seta('pend', 'imp')
-    f.seta('imp', 'prod')
-    f.seta('prod', 'auto', 'sim')
-    f.seta('prod', 'bloq', 'não')
+    f.seta('imp', 'auto')
+    f.seta('auto', 'aceita', 'sim')
+    f.seta('auto', 'bloq', 'não')
     f.seta('bloq', 'rec', 'recusar')
+    f.seta('bloq', 'ger', 'aceitar')
     f.seta('bloq', 'pend', 'tentar de novo', via=[(xs[2], ys[1])], lx=xs[3], ly=ys[1])
-    f.seta('auto', 'ger', 'não')
-    f.seta('ger', 'aceita')
-    f.seta('auto', 'aceita', 'sim', via=[(1652, ys[0]), (1652, ys[2])], lx=1630, ly=(ys[1] + ys[2]) / 2)
     f.seta('aceita', 'cria')
+    f.seta('ger', 'cria')
     return f.svg()
 
 
@@ -141,7 +139,7 @@ def estoque():
 ALL = [
     ('As 3 áreas e o que passa entre elas', 'Um login, um servidor, acesso conferido por função. O Anota Ai é consultado pelo sistema.', mapa_areas),
     ('Ciclo do pedido', 'Da venda ao caixa, com os avisos ao Anota Ai em cada passo.', ciclo_pedido),
-    ('Importação de pedidos do Anota Ai', 'Estrutura pronta; aceitar e criar o pedido dependem da documentação da API.', importacao),
+    ('Importação de pedidos do Anota Ai', 'Estrutura pronta; aceitar e criar o pedido dependem da documentação da API. Hoje o pedido do Anota Ai é aceito no aplicativo dele e digitado no balcão.', importacao),
     ('Produção: uma tela por função', 'A unidade de trabalho é a pizza. Cada função só vê a sua etapa.', producao),
     ('Caixa do dia', 'Um caixa por dia, uma gaveta, contagem cega.', caixa),
     ('Estoque, alertas e vendas fechadas', 'Decisões de 04/11/2026: o estoque pode ficar negativo e a falta fecha a venda dos sabores.', estoque),

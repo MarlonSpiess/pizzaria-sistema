@@ -36,10 +36,10 @@ Versão 2.0, 04/11/2026 (a v1.0, de 20/10/2026, foi aprovada por Marlon em 21/10
 | Servidor | Único, com módulos separados no código; roda no PC da loja |
 | Anota Ai | Integração por **API chamada pelo sistema**, sem webhook e sem nuvem; varredura a cada 1 segundo; aviso de "pronto" e "finalizado" |
 | Importar | Ler a fila, ver se a loja pode produzir, aceitar no Anota Ai (prazo de 15 minutos) e criar o pedido; estado "importando" no meio; não produzíveis ficam "bloqueados" para a gerência |
-| Aceitar sozinho | Flag por canal, desligada por padrão, só administrador e proprietário; critérios: canal ativo, caixa de hoje aberto, itens no mapa e loja aberta |
+| Aceitar sozinho | Flag por canal, desligada por padrão, só administrador e proprietário; critérios: canal ativo, loja aberta, caixa de hoje aberto, itens no mapa e nenhum sabor com venda fechada |
 | Loja aberta | Flag manual que a gerência liga e desliga |
 | Finalizar entrega | Junto com o acerto do entregador no caixa; retirada finaliza quando o cliente retira |
-| Fechar vendas por ingrediente | Ingrediente em falta fecha os sabores que o usam e avisa o Anota Ai; reabrir faz o inverso |
+| Fechar vendas por ingrediente | Ingrediente em falta fecha no sistema os sabores que o usam; o aviso ao Anota Ai depende da API; reabrir faz o inverso |
 | Estoque | Pode ficar negativo; alerta de baixo (estoque mínimo do cadastro), zerado ou negativo |
 
 Todas estão no código do PR #2; o que fala com o Anota Ai fica pronto do nosso lado e espera a API.

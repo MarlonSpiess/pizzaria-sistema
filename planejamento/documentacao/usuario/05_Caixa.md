@@ -22,11 +22,11 @@ Sem caixa aberto: o acabamento não despacha, a recepção não atribui nem acer
 
 Escolha o tipo, o motivo e o valor. Motivo marcado como "vira despesa" exige o comprovante (número ou descrição). Se a soma das sangrias passar do limite do parâmetro, um gerente autoriza com login e senha.
 
-Os motivos são cadastrados em **Motivos e maquininhas** (toque em "Criar os motivos combinados" na primeira vez).
+Os motivos são cadastrados em **Motivos e maquininhas** (na primeira vez, a gerência toca em "Criar os motivos combinados"; só a gerência cria e altera motivos).
 
 ## 3. Entregas e acerto do entregador
 
-**Entregas de hoje:** lista os pedidos de entrega. O despacho (escolher o entregador) é feito pelo acabamento ou aqui.
+**Entregas de hoje:** lista os pedidos de entrega. O despacho (escolher o entregador) é feito pelo acabamento ou aqui. Atribuir não muda a situação: quando o entregador sair, marque o pedido como despachado em Pedidos do dia.
 
 **Acerto do entregador:** o entregador devolve o dinheiro que recebeu dos clientes e recebe o valor das entregas mais a diária (uma vez por dia). Só entram pedidos já marcados como **despachado ou retirado**. Escolha o entregador e confirme. A diária vem do parâmetro; valor diferente só a gerência define.
 
@@ -44,7 +44,7 @@ Depois da contagem, o caixa não aceita novos pedidos nem cancelamentos.
 ## 5. Fechar o caixa
 
 1. Confira o **Resultado da contagem**.
-2. Se a diferença passar da **tolerância**, escreva a **justificativa** e peça a um gerente que **não fez a contagem** para aprovar com login e senha. Subgerente não aprova diferença.
+2. Se a diferença passar da **tolerância**, escreva a **justificativa** e peça a um gerente, proprietário ou administrador que **não fez a contagem** para aprovar com login e senha. Subgerente não aprova diferença.
 3. Toque em **Fechar o caixa**.
 
 ## 6. Pedidos sem número de CF

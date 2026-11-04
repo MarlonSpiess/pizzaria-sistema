@@ -17,11 +17,11 @@ As telas Forno e Acabamento se atualizam sozinhas a cada 8 segundos. Toque em **
 
 1. Corte, embale e confira a pizza.
 2. Toque em **Acabada e etiqueta**. A etiqueta aparece na tela com o nome do cliente, o número do pedido, os sabores e o tamanho.
-3. Toque em **Imprimir** e cole a etiqueta na caixa. Toque em **Fechar** para guardar a etiqueta.
+3. Toque em **Imprimir** e cole a etiqueta na caixa. Toque em **Fechar** para tirar a etiqueta da tela.
 
 Se a pizza saiu errada, escolha o motivo em **Refazer** e confirme. A pizza atual vira perda e uma pizza igual entra **na frente** da fila de montagem. A refação só é possível enquanto o pedido está em produção; depois disso, a recepção faz um pedido novo.
 
-**Pedidos em aberto:** mostra, por pedido, quantas pizzas já estão acabadas. Quando todas estiverem acabadas, toque em **Marcar pedido acabado**. Bebidas e acompanhamentos não aparecem nessa lista.
+**Pedidos em aberto:** mostra, por pedido, quantas pizzas já estão acabadas. Quando todas estiverem acabadas, toque em **Marcar pedido acabado**. Bebidas e acompanhamentos não são contados como pizzas. Pedido só com bebida ou acompanhamento aparece com "0 de 0": separe os itens e toque em **Marcar pedido acabado**.
 
 Atenção: o teste da impressora térmica Bluetooth ainda está pendente. Se a etiqueta não imprimir, avise a gerência.
 
@@ -31,9 +31,9 @@ O despacho exige o **caixa do dia aberto** pela recepção. Se não estiver, a t
 
 1. Em **Entregas de hoje**, ache o pedido.
 2. Escolha o **entregador** na lista.
-3. Toque em **Despachar**.
+3. Toque em **Despachar**. Isso registra o entregador. Quem marca o pedido como "despachado" é a recepção, em Pedidos do dia, quando o entregador sai.
 
-O valor da entrega é sempre o padrão da loja. Valor diferente só a recepção ou a gerência definem. Pedido que já tem entregador mostra o nome dele.
+O **valor por entrega** (o que a loja paga ao entregador, diferente da taxa cobrada do cliente) é sempre o padrão da loja. Valor diferente só a gerência define, pela tela de entregas. Pedido que já tem entregador mostra o nome dele.
 
 ## 4. O que você não vê
 

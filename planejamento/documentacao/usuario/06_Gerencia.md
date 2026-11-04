@@ -2,7 +2,7 @@
 
 Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). Para a operação de balcão e caixa, use também os manuais do [atendente](04_Atendente.md) e do [caixa](05_Caixa.md).
 
-**As suas áreas:** 🍕 Produção, 🧾 Vendas e 🏢 Administrativo. Troque de área no seletor no alto do trilho. Ao entrar, o sistema abre na última área que você usou.
+**As suas áreas:** 🍕 Produção, 🧾 Vendas e 🏢 Administrativo. Troque de área no seletor no alto do menu lateral (o trilho de ícones). Ao entrar, o sistema abre na última área que você usou.
 
 ## 1. O que só a gerência faz, e os limites
 
@@ -23,7 +23,7 @@ Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). Para 
 Você vê todas as telas da cozinha: **Massa**, **Montagem**, **Forno**, **Acabamento**, **Despacho**, e mais duas que são só suas:
 
 - **Andamento:** todos os pedidos em aberto, com cliente, tipo, pizzas acabadas, situação e entrega calculada. É a visão geral da cozinha.
-- **Motivos:** motivos de retrocesso e de perda. Na primeira vez, toque em "Criar os motivos combinados". Motivo de retrocesso marcado como "Avisa Estoques" sinaliza falta de insumo. Inative um motivo em vez de apagar.
+- **Motivos:** motivos de retrocesso e de perda. Na primeira vez, toque em "Criar os motivos combinados". Motivo de retrocesso marcado como "Avisa Estoques" indica que o retrocesso foi por falta de insumo. Inative um motivo em vez de apagar.
 
 A estimativa de entrega usa os parâmetros de produção (minutos de montagem e de acabamento, pizzaiolos ativos, tempo de forno, deslocamento). Mantenha-os atualizados para a hora de entrega ficar certa.
 
@@ -36,7 +36,8 @@ Além de tudo o que o atendente faz:
   - **Fila de entrada:** pedidos que chegaram do canal, com há quantos minutos esperam. A partir de 10 minutos aparecem em destaque, porque o Anota Ai cancela sozinho o pedido não aceito em 15 minutos.
   - Estados: na fila, importando, importada, **bloqueada** (a loja não pode produzir, ou a importação falhou 3 vezes) e recusada.
   - Pedido bloqueado: escolha **Tentar de novo** ou **Recusar** (com motivo).
-  - **Mapa de produtos:** consulta do ID externo de cada produto no canal. Sem ID, o produto não é exportado.
+  - **Aceitar** um pedido à mão ainda não tem botão: depende da chamada de aceitar da API do Anota Ai. Até lá, aceite pelo aplicativo do Anota Ai.
+  - **Mapa de produtos:** consulta do ID externo de cada produto no canal. Sem ID externo, um pedido com esse produto não é aceito sozinho.
   - Hoje a tela avisa: "Integração ainda não conectada: falta o token do canal".
 - **Loja aberta** (no topo de Vendas > Canais): chave manual. Toque para ligar quando a loja já pode receber pedidos e desligue ao encerrar; ela **não muda sozinha**. Sem loja aberta, nenhum pedido do canal é aceito sozinho.
 - **Fechar vendas por ingrediente** (em Administrativo > Estoque > Alertas, seção 4): o sistema mostra os sabores que usam o ingrediente e fecha a venda deles; pedido com sabor fechado não é aceito sozinho. O aviso de pausa ao Anota Ai depende da API.
@@ -46,7 +47,7 @@ Além de tudo o que o atendente faz:
 | Menu | Para que serve |
 |---|---|
 | **Painel** | Números do dia e backup (ver o último e "Fazer backup agora") |
-| **Cardápio** | Sabores de pizza, preços por categoria (Tradicional, Especial e outras), bordas e adicionais, calzones, bebidas e outros, simulador de preço. É o cardápio único da loja, exportado aos canais. Todo preço novo guarda o histórico |
+| **Cardápio** | Sabores de pizza, preços por categoria (Tradicional, Especial e outras), bordas e adicionais, calzones, bebidas e outros, simulador de preço. É o cardápio único da loja. Todo preço novo guarda o histórico |
 | **Fichas e etapas** | Fichas técnicas (quanto de cada insumo vai em cada produto, por tamanho), itens (insumos e preparos), etapas de produção, e "O que falta" (produtos sem ficha) |
 | **Estoque** | Saldos, lançar movimento (entrada, saída, perda, consumo interno, ajuste), inventário (contar, conferir, fechar), alertas, locais |
 | **Compras** | Lista de compras (necessidades, itens avulsos, cotação por fornecedor, definir e aprovar), pedidos de compra, recebimento com a nota, fornecedores |
@@ -63,7 +64,7 @@ Além de tudo o que o atendente faz:
 - A **pizza acabada** baixa os insumos pela ficha técnica; a **pizza perdida** baixa como perda o que já tinha entrado na montagem.
 - **Bebidas e acompanhamentos** saem do estoque quando o pedido fica acabado.
 - A baixa automática **nunca trava a produção**. Se faltar saldo, o estoque fica **negativo**, para a falta aparecer. Produto sem ficha gera uma pendência em Estoque > Alertas.
-- **Alerta de estoque** (Estoque > Alertas, e alerta no BI): ingrediente **NEGATIVO**, **ZERADO**, **repor** ou **abaixo do mínimo**, do mais grave para o menos grave. Trate na loja (conferir, repor) e, se for o caso, ajuste o estoque em Lançar movimento.
+- **Alerta de estoque** (Estoque > Alertas, e alerta no BI): ingrediente **NEGATIVO**, **ZERADO**, **repor** (chegou ao ponto de pedido) ou **abaixo do mínimo** (estoque mínimo do cadastro), do mais grave para o menos grave. Trate na loja (conferir, repor) e, se for o caso, ajuste o estoque em Lançar movimento.
 - **Fechar vendas dos sabores:** no alerta, toque no botão do ingrediente. O sistema mostra os sabores afetados (exemplo: ovo fecha Portuguesa, Paulista, Baiana) e pede confirmação. Quando o ingrediente voltar, toque em **Reabrir vendas**. Perda e consumo interno também podem deixar o saldo negativo; transferência entre locais não.
 
 Mantenha o **estoque mínimo** de cada ingrediente preenchido em Estoque > Saldos (configuração do item). Sem ele, o alerta de "baixo" não funciona.

@@ -2,7 +2,7 @@
 
 Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). O caixa do dia tem manual próprio: [05_Caixa.md](05_Caixa.md).
 
-**A sua área:** 🧾 Vendas. Telas: **Pedidos** (Novo pedido e Pedidos do dia), **Caixa e entregas**, **Clientes**, **Entregadores** (consulta). Você também consulta o **Cardápio**. Você não acessa Produção: a hora de entrega calculada aparece em Pedidos do dia.
+**A sua área:** 🧾 Vendas. Telas: **Pedidos** (Novo pedido e Pedidos do dia), **Caixa e entregas**, **Clientes**, **Entregadores** (consulta). Você também consulta o **Cardápio** (Administrativo > Cardápio). Você não acessa Produção: a hora de entrega calculada aparece em Pedidos do dia.
 
 ## 1. Fazer um pedido (Vendas > Pedidos > Novo pedido)
 
@@ -14,7 +14,7 @@ Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). O cai
    - **Observação do item** (exemplo: sem cebola) e **Quantidade**.
    - Calzone, bebida e acompanhamento: escolha o produto e a quantidade.
    - Toque em **Adicionar ao pedido**. Repita para cada item.
-4. **Taxa de entrega:** vem o valor padrão. Valor diferente exige o motivo; valor menor que o padrão pode exigir autorização.
+4. **Taxa de entrega** (cobrada do cliente): vem o valor padrão. Valor diferente exige o motivo. Taxa menor que a padrão conta como desconto: se passar do seu limite de desconto, um gerente autoriza com login e senha.
 5. **Desconto ou acréscimo:** escolha o tipo, o valor e o motivo e toque em **Aplicar ajuste**. Desconto acima do seu limite exige um gerente, que digita o login e a senha dele na hora.
 6. **Pagamento:** escolha a forma (dinheiro, Pix, crédito ou débito) e o valor. Pode dividir em mais de uma forma. Só o dinheiro tem troco. O sistema mostra "Falta receber" até fechar o total. **Não existe fiado**: o pedido só é confirmado pago por completo.
 7. Marque **Pedido urgente** se for o caso, escreva observações do pedido e toque em **Confirmar pedido**.
@@ -34,12 +34,12 @@ Se a loja estiver configurada para vender só com caixa aberto, abra o caixa ant
 |---|---|
 | **Avançar para despachado ou retirado** | O cliente retirou no balcão, ou o entregador saiu com o pedido. Só depois de o acabamento marcar o pedido acabado. Entrega do Anota Ai exige o entregador atribuído antes |
 | **Urgente** ou **Tirar urgência** | Só enquanto o pedido está "recebido" (antes de a produção começar) |
-| **Cancelar** | Motivo obrigatório. Como todo pedido está pago, um gerente confirma com login e senha. O valor volta como estorno no caixa do dia |
+| **Cancelar** | Motivo obrigatório. Como todo pedido está pago, um gerente confirma com login e senha. O valor fica registrado como estorno no caixa do dia, por forma de pagamento; a devolução ao cliente (dinheiro, Pix ou estorno na maquininha) é feita fora do sistema |
 | **Ver** | Detalhes do pedido, pagamentos e histórico |
 
 ## 3. Entregas
 
-O despacho (atribuir o entregador) normalmente é feito pelo **acabamento**. A recepção também pode atribuir em **Caixa e entregas > Entregas**, e é a recepção que faz o **acerto do entregador**. Veja o [manual do caixa](05_Caixa.md).
+O despacho (atribuir o entregador) normalmente é feito pelo **acabamento**. A recepção também pode atribuir em **Caixa e entregas > Entregas**. Atribuir **não** muda a situação do pedido: quando o entregador sair, toque em **Avançar para despachado ou retirado** em Pedidos do dia. É a recepção que faz o **acerto do entregador**. Veja o [manual do caixa](05_Caixa.md).
 
 ## 4. Clientes
 
@@ -47,7 +47,7 @@ Em **Clientes** você busca, cadastra e corrige nome, telefone e endereço. Cada
 
 ## 5. Pedidos do Anota Ai
 
-Quando a integração estiver conectada (pendente do token), os pedidos do Anota Ai entram sozinhos como pedidos do sistema e seguem o mesmo caminho. A fila de entrada do canal é da gerência (Vendas > Canais).
+**Hoje** a integração não está conectada (falta o token e a documentação da API). Continue atendendo o Anota Ai pelo aplicativo dele, como hoje, e aceite o pedido lá em até 15 minutos (senão o Anota Ai cancela). Para o pedido ir para a cozinha, digite-o aqui em Novo pedido. Quando a integração for conectada, os pedidos do Anota Ai entrarão sozinhos e seguirão o mesmo caminho; a fila de entrada do canal é da gerência (Vendas > Canais).
 
 ## 6. Cupom fiscal
 

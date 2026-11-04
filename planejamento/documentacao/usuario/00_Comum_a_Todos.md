@@ -9,18 +9,18 @@ Versão 2.0, 04/11/2026. Leia isto antes do manual da sua função.
 3. Digite o seu **usuário** e a sua **senha**. O login é pessoal: não use o login de outra pessoa e não dê a sua senha a ninguém. Tudo o que você faz fica registrado no seu nome.
 4. No primeiro acesso, o sistema pede uma senha nova (mínimo de 8 caracteres).
 
-Se errar a senha 5 vezes em 15 minutos, o sistema bloqueia novas tentativas por um tempo. Espere alguns minutos ou peça ajuda à gerência.
+Se errar a senha 5 vezes em 15 minutos, o sistema bloqueia novas tentativas. O bloqueio vale até completar 15 minutos da primeira tentativa errada. Espere ou peça ajuda à gerência.
 
 ## 2. As 3 áreas
 
-O sistema tem 3 áreas: 🍕 **Produção**, 🧾 **Vendas** e 🏢 **Administrativo**. Você só vê as áreas e as telas da sua função. Se a sua função tem uma área só (massa, pizzaiolo, acabamento), o seletor de áreas não aparece.
+O sistema tem 3 áreas: 🍕 **Produção**, 🧾 **Vendas** e 🏢 **Administrativo**. Você só vê as áreas e as telas da sua função. Se a sua função tem uma área só (massa, pizzaiolo, acabamento), o seletor de áreas não aparece. O atendente vê Vendas e, em Administrativo, só a consulta do Cardápio.
 
 | Função | Área ao entrar | Telas |
 |---|---|---|
 | Massa | Produção | Massa |
 | Pizzaiolo | Produção | Montagem |
 | Acabamento | Produção | Forno, Acabamento, Despacho |
-| Atendente | Vendas | Pedidos, Caixa e entregas, Clientes, Entregadores (consulta), Cardápio (consulta) |
+| Atendente | Vendas | Pedidos, Caixa e entregas, Clientes, Entregadores (consulta); Administrativo > Cardápio (consulta) |
 | Gerente e subgerente | Última área usada | Todas as áreas, com limites de aprovação |
 | Proprietário e administrador | Última área usada | Tudo |
 
@@ -34,7 +34,7 @@ Se você tentar abrir uma tela que não é da sua função, o sistema recusa. Is
 
 ## 4. Meus dados
 
-Todos têm a tela **Meus dados**: a sua escala, o seu ponto e o seu banco de horas (incluindo saldo negativo). Só leitura: quem lança o ponto é a gerência.
+Todos têm a tela **Meus dados**, que abre ao tocar no seu nome no topo: a sua escala, o seu ponto e o seu banco de horas (incluindo saldo negativo). Só leitura: quem lança o ponto é a gerência.
 
 ## 5. Mensagens do sistema
 

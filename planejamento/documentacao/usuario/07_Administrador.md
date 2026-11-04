@@ -35,15 +35,15 @@ Exclusivo de administrador e proprietário:
 
 Hoje a integração **não está conectada**: falta o token e a documentação da API do Anota Ai, que se pede por chamado. Até lá, nada é aceito automaticamente.
 
-## 4. Aprovações exclusivas
+## 4. Aprovações
 
 - Títulos a pagar lançados à mão acima do valor do parâmetro (Contas).
 - Ordens de serviço acima do valor do parâmetro e baixa de bem (Imobilizado).
 - Folha gerencial e salários (RH > Folha gerencial): prévia, resumo e lançamento em Contas.
-- Diferença de caixa (também o gerente), sempre por quem não fez a contagem.
+- Diferença de caixa acima da tolerância: administrador, proprietário ou gerente, sempre quem não fez a contagem (não é exclusivo de vocês; o subgerente não aprova).
 
 ## 5. Sistema
 
-- **Backup:** botão "Fazer backup agora" no Painel e comando `python scripts\backup.py` no PC da loja. A rotina diária fora da máquina está adiada; até lá, faça ao fechar o dia e copie para um pen drive.
-- **Auditoria:** consulte quem fez cada ação. Ninguém, nem o sistema, consegue apagar a auditoria.
+- **Backup:** botão "Fazer backup agora" no Painel e comando `python scripts\backup.py` no PC da loja (na pasta `sistema`, com o ambiente `venv` ativo e o `set_env.bat` carregado). A rotina diária fora da máquina está adiada; até lá, faça ao fechar o dia e copie para um pen drive.
+- **Auditoria:** consulte quem fez cada ação. O sistema não consegue apagar nem alterar a auditoria; só o dono do banco, fora do sistema, teria esse acesso.
 - Instalação, variáveis e solução de problemas: [Manual Técnico](../tecnico/Manual_Tecnico.md).

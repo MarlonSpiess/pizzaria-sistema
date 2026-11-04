@@ -2,7 +2,7 @@
 
 Versão 2.0, 04/11/2026. Descreve o sistema como ele está no código do PR #2 (branch `claude/project-thread-qkmkh7`, commit `a55b10d`), com 3 módulos, 1 login e acesso rígido por função conferido no servidor. Substitui, para o que é técnico, o README antigo de `sistema/` (que ainda falava só da fatia 1A).
 
-**Público:** quem instala, mantém ou continua o desenvolvimento.
+**Público:** quem instala, mantém ou continua o desenvolvimento. Marlon é o dono do projeto e quem decide as regras de negócio.
 
 **Critério de sucesso deste manual:** uma pessoa técnica que nunca viu o projeto consegue instalar, operar, fazer backup, entender a arquitetura, achar a rota e a tabela de qualquer função e saber o que ainda está pendente, sem precisar perguntar a Marlon.
 
@@ -122,7 +122,6 @@ Regras para escrever uma migração nova:
 | 014 | `014_avisos_canal.sql` | Canais | aviso_canal (fila de avisos de status com tentativas) |
 | 015 | `015_eventos_aviso_anotaai.sql` | Canais | Troca os eventos de aviso para `pronto` e `finalizado`, conforme o manual do Anota Ai; descarta avisos antigos não enviados |
 | 016 | `016_importacao_canal.sql` | Canais | Estados da entrada (pendente, importando, importada, bloqueada, recusada), `pedido_id`, `importando_desde`, `importacao_tentativas`; flag `aceitar_sozinho` no canal |
-
 | 017 | `017_loja_aberta.sql` | Canais | `loja.loja_aberta` e `loja.loja_aberta_desde` (flag manual da gerência, desligada por padrão) |
 | 018 | `018_vendas_fechadas.sql` | Vendas fechadas | ingrediente_em_falta (histórico de falta e reabertura); em mapa_produto_canal: `pausado_no_canal`, `sincronizado_em`, `erro_sincronia` |
 
@@ -134,7 +133,7 @@ São 101 tabelas. O sabor com venda fechada **não é guardado**: é calculado a
 |---|---|---|
 | Pedido (`pedido.situacao`) | recebido → em producao → acabado → despachado ou retirado; cancelado a partir de qualquer estado antes de despachado | Produção move até acabado (o acabamento marca o pedido acabado); o balcão marca despachado ou retirado; a gerência pode mover à mão |
 | Pizza ou calzone (`pizza_producao.situacao`) | na lista → em montagem → no forno → saiu do forno → acabada; perdida; cancelada | Pizzaiolo (montagem e retrocesso), acabamento (saiu do forno, acabada, refazer) |
-| Caixa do dia (`caixa_dia.situacao`) | aberto → contado → fechado | Atendente abre, conta e fecha; diferença acima da tolerância exige aprovação de outra pessoa da gerência |
+| Caixa do dia (`caixa_dia.situacao`) | aberto → contado → fechado | Atendente abre, conta e fecha; diferença acima da tolerância exige aprovação de gerente, proprietário ou administrador que não fez a contagem (subgerente não) |
 | Ingrediente em falta (`ingrediente_em_falta`) | em falta (sem `reaberto_em`) → reaberto | Gerência (`vendas.gerir`), em Estoque > Alertas |
 | Entrada do canal (`entrada_canal.situacao`) | pendente → importando → importada; bloqueada; recusada | Varredor e importação; a gerência decide as bloqueadas (tentar de novo ou recusar) |
 | Aviso ao canal (`aviso_canal`) | pendente (com `proxima_tentativa`) → enviado; para após 20 tentativas com erro registrado | Varredor |
@@ -287,7 +286,7 @@ Usuários e perfis, parâmetros, cardápio e fichas técnicas (scripts `carregar
 | Falha do canal | Espera crescente (2, 4, 8 até 60 segundos), registro no log, nada cai | [Estrutura] |
 | Importar | Ler o pedido na fila do Anota Ai, ver se a loja pode produzir, aceitar no Anota Ai (prazo de 15 minutos, senão o Anota Ai cancela) e criar o pedido no sistema | [Pendente] da API para aceitar e criar |
 | Importação travada | Após 120 segundos volta para a fila; na 3ª queda vira "bloqueada" para a gerência decidir (tentar de novo ou recusar) | [Construído] |
-| Aceitar sozinho | Flag por canal, desligada por padrão, só administrador e proprietário. Ligada, aceita sem a gerência quando: canal ativo, **loja aberta**, caixa **de hoje** aberto, todos os itens no mapa de produtos (produto ativo) e nenhum sabor com venda fechada | [Construído] a regra; [Pendente] da API para aceitar de fato |
+| Aceitar sozinho | Flag por canal, desligada por padrão, só administrador e proprietário. Ligada, aceita sem a gerência quando: canal ativo, **loja aberta**, caixa **de hoje** aberto, todos os itens no mapa de produtos (produto ativo) e nenhum sabor com venda fechada. "Caixa de hoje" é o caixa com a data do dia: depois da meia-noite, com o caixa da véspera ainda aberto, nada é aceito sozinho | [Construído] a regra; [Pendente] da API para aceitar de fato |
 | Avisos de status | Fila com tentativas e reenvio sem duplicar. Retirada: "pronto" quando o pedido fica acabado, "finalizado" quando o cliente retira. Entrega: "pronto" quando o entregador sai | [Estrutura] |
 | Finalizar entrega | O **acerto do entregador** no caixa enfileira "finalizado" dos pedidos de canal que ele levou (e "pronto", se faltou). "Finalizado" só sai depois do "pronto". Pedido de canal só é despachado com o entregador atribuído (decisão de Marlon, 04/11/2026) | [Construído] a fila; [Estrutura] o envio |
 | Fechar vendas por ingrediente | A gerência marca um ingrediente em falta (ex.: ovo); o sistema mostra os sabores que o usam e fecha a venda deles. O varredor compara o mapa com o que deveria estar pausado no canal e corrige a diferença (pausar ou reabrir), com erro registrado por produto. Reabrir faz o inverso. Pedido com sabor fechado não é aceito sozinho | [Construído] o fechamento; [Pendente] a chamada de pausar da API |
@@ -314,7 +313,7 @@ Ficam em Administrativo > Parâmetros, com histórico. Só administrador e propr
 | Contas, imobilizado e RH | valor de título que exige aprovação, valor mínimo de bem, valor de ordem de serviço que exige aprovação, encargos estimados, limite de hora extra |
 | BI | meta de CMV (vazio = sem meta), alertas ligados (CMV, estoque, caixa, atraso, manutenção) |
 
-### 7.4 Backup [adiado por decisão de Marlon]
+### 7.4 Backup (a cópia diária fora da máquina foi adiada por Marlon)
 
 `python scripts\backup.py` faz `pg_dump`, copia para as pastas de `BACKUP_DIRS_EXTRA` e mantém os últimos 30. O painel tem o botão "Fazer backup agora" (`sistema.backup.rodar`) e mostra o último backup. Testar a restauração sem tocar no banco em uso: `python scripts\restaurar_em_teste.py <arquivo.dump> pizzaria_restauracao_teste`. A rotina diária fora da máquina está adiada; até lá, rodar ao fechar o dia e copiar para um pen drive.
 
