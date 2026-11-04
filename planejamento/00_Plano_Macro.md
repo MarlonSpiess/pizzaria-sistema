@@ -1,6 +1,6 @@
 # Plano Macro: Sistema Integrado da Pizzaria
 
-Versão 1.0, 20/10/2026. Consolida o plano macro e os detalhamentos dos nove módulos e do núcleo, todos aprovados por Marlon entre 18 e 20/10/2026. **APROVADO por Marlon em 21/10/2026.** Os documentos de cada módulo (pasta `modulos/`) são a fonte de verdade de cada assunto; este documento dá a visão do conjunto.
+Versão 2.0, 04/11/2026 (a v1.0, de 20/10/2026, foi aprovada por Marlon em 21/10/2026). A seção 0 registra o estado atual; as seções 1 a 9 são o plano aprovado, mantido como registro. Consolida o plano macro e os detalhamentos dos nove módulos e do núcleo, todos aprovados por Marlon entre 18 e 20/10/2026. **APROVADO por Marlon em 21/10/2026.** Os documentos de cada módulo (pasta `modulos/`) são a fonte de verdade de cada assunto; este documento dá a visão do conjunto.
 
 **Critério de sucesso deste documento:** Marlon lê a visão do conjunto (módulos, integrações, ordem de construção, parâmetros e pendências) e diz "aprovado" ou aponta o que corrigir. Aprovado, o planejamento termina e começa o desenho técnico.
 
@@ -10,6 +10,43 @@ Versão 1.0, 20/10/2026. Consolida o plano macro e os detalhamentos dos nove mó
 - **[Fonte]**: pesquisa na web, com link na seção 9.
 - **[Prática]**: conhecimento de administração e de sistemas de gestão (ERP) sem fonte específica citada. Trate como proposta a validar.
 - **[Suposição]**: hipótese minha que depende de resposta sua (seção 8).
+
+---
+
+## 0. Estado em 04/11/2026: de 9 módulos para 3 áreas
+
+**O que mudou e por quê.** Com o sistema construído, Marlon decidiu em 03/11/2026 organizar o uso pela **tarefa de quem usa**, e não pela lista de módulos. O resultado é **1 login com 3 áreas**, **acesso rígido por função conferido no servidor** e, em 04/11/2026, **servidor único com módulos separados no código**. Os 9 módulos continuam existindo dentro do código; mudou a forma de apresentar e de acessar.
+
+| Área | Módulos do plano que ela reúne | Quem usa |
+|---|---|---|
+| 🍕 Produção | 7 Produção (uma tela por função; o despacho entrou na tela do acabamento) | massa, pizzaiolo, acabamento, gerência |
+| 🧾 Vendas | 6 Vendas, 8 Fechamento de Caixa, canais (Anota Ai; iFood no futuro), clientes e entregadores | atendente, gerência |
+| 🏢 Administrativo | 0 Núcleo, 3 Estoques e Compras, 4 Contas, 5 Custos, 2 Imobilizado, 1 RH, 9 BI, cardápio e fichas técnicas | gerência, proprietário, administrador |
+
+**O que está construído.** Todas as fatias da seção 6 (Núcleo, Vendas, Produção, Caixa, Estoques, Compras, Contas, Custos, Imobilizado, RH e BI), a reorganização em 3 áreas, o despacho no acabamento, a estrutura de canais, loja aberta, finalizar no acerto, vendas fechadas por ingrediente e alertas de estoque. São 18 migrações, 101 tabelas, 249 rotas e a suíte de testes automatizados, revisados por dois revisores (um cego). Detalhes no [Manual Técnico](documentacao/tecnico/Manual_Tecnico.md).
+
+**Decisões de Marlon depois da aprovação do plano (03 e 04/11/2026):**
+
+| Tema | Decisão |
+|---|---|
+| Navegação | Layout C; 1 login, 3 áreas; uma tela por função |
+| Acesso | Rígido por função, conferido no servidor. Pizzaiolo só Montagem; massa só Massa; acabamento só Forno, Acabamento e Despacho; Andamento só gerência; atendente sem Produção |
+| Despacho | No acabamento, sem ver o valor do pedido, e só com o caixa do dia aberto |
+| Canais | Ativar canal e editar o mapa de produtos só administrador e proprietário |
+| Servidor | Único, com módulos separados no código; roda no PC da loja |
+| Anota Ai | Integração por **API chamada pelo sistema**, sem webhook e sem nuvem; varredura a cada 1 segundo; aviso de "pronto" e "finalizado" |
+| Importar | Ler a fila, ver se a loja pode produzir, aceitar no Anota Ai (prazo de 15 minutos) e criar o pedido; estado "importando" no meio; não produzíveis ficam "bloqueados" para a gerência |
+| Aceitar sozinho | Flag por canal, desligada por padrão, só administrador e proprietário; critérios: canal ativo, caixa de hoje aberto, itens no mapa e loja aberta |
+| Loja aberta | Flag manual que a gerência liga e desliga |
+| Finalizar entrega | Junto com o acerto do entregador no caixa; retirada finaliza quando o cliente retira |
+| Fechar vendas por ingrediente | Ingrediente em falta fecha os sabores que o usam e avisa o Anota Ai; reabrir faz o inverso |
+| Estoque | Pode ficar negativo; alerta de baixo (estoque mínimo do cadastro), zerado ou negativo |
+
+Todas estão no código do PR #2; o que fala com o Anota Ai fica pronto do nosso lado e espera a API.
+
+**Pendências que continuam abertas:** token e documentação da API do Anota Ai; acesso ao iFood; decisão de nuvem e HTTPS (não necessária hoje); teste da impressora térmica Bluetooth; backup fora da máquina (adiado por Marlon); cópia na pasta local C:\Maria Gabriela\Pizzaria; itens de cardápio ainda sem dado (abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção).
+
+**Situação das pendências da seção 8.3:** 1 e 2 (cardápio e ficha técnica) com arquivos e scripts de carga prontos, e os itens acima ainda faltando; 4 (Anota Ai) continua aberta; 5 (impressora) aberta, fornos sem impacto no código; 6 (qual PC é o servidor) resolvida pelo roteiro de instalação, contingência ainda aberta; 7 (backup) adiada; 8 (identificador) resolvida com sequencial e `loja_id`; 11 (perfis proprietário e subgerente) resolvida no código; 3, 9, 10 e 12 continuam abertas.
 
 ---
 

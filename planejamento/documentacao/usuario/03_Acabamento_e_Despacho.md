@@ -1,0 +1,44 @@
+# Manual do Usuário: Acabamento e Despacho
+
+Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
+
+**As suas telas:** Produção > **Forno**, **Acabamento** e **Despacho**. O forno e o despacho fazem parte da sua função (decisão de 03/11/2026).
+
+As telas Forno e Acabamento se atualizam sozinhas a cada 8 segundos. Toque em **Atualizar** se precisar na hora.
+
+## 1. Forno
+
+- O topo mostra quantas pizzas estão no forno e a capacidade. Se passar da capacidade, aparece um aviso (o sistema só avisa, não bloqueia).
+- Quando a pizza sair do forno, toque em **Saiu do forno** na linha dela.
+
+## 2. Acabamento e etiqueta
+
+**Saíram do forno:** as pizzas esperando acabamento, com o número do pedido e o nome do cliente.
+
+1. Corte, embale e confira a pizza.
+2. Toque em **Acabada e etiqueta**. A etiqueta aparece na tela com o nome do cliente, o número do pedido, os sabores e o tamanho.
+3. Toque em **Imprimir** e cole a etiqueta na caixa. Toque em **Fechar** para guardar a etiqueta.
+
+Se a pizza saiu errada, escolha o motivo em **Refazer** e confirme. A pizza atual vira perda e uma pizza igual entra **na frente** da fila de montagem. A refação só é possível enquanto o pedido está em produção; depois disso, a recepção faz um pedido novo.
+
+**Pedidos em aberto:** mostra, por pedido, quantas pizzas já estão acabadas. Quando todas estiverem acabadas, toque em **Marcar pedido acabado**. Bebidas e acompanhamentos não aparecem nessa lista.
+
+Atenção: o teste da impressora térmica Bluetooth ainda está pendente. Se a etiqueta não imprimir, avise a gerência.
+
+## 3. Despacho (pedidos de entrega)
+
+O despacho exige o **caixa do dia aberto** pela recepção. Se não estiver, a tela avisa e não deixa despachar.
+
+1. Em **Entregas de hoje**, ache o pedido.
+2. Escolha o **entregador** na lista.
+3. Toque em **Despachar**.
+
+O valor da entrega é sempre o padrão da loja. Valor diferente só a recepção ou a gerência definem. Pedido que já tem entregador mostra o nome dele.
+
+## 4. O que você não vê
+
+O valor do pedido, o total, o pagamento e os dados de contato do cliente. Isso é proposital: o despacho funciona sem valores.
+
+## 5. O que acontece no Anota Ai
+
+Para pedidos que vieram do Anota Ai, o sistema avisa o cliente sozinho: na **retirada**, "pronto" quando o pedido fica acabado; na **entrega**, "pronto" quando o entregador sai. Isso só funciona quando a integração estiver conectada (pendente do token do Anota Ai).
