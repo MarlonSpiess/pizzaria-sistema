@@ -724,8 +724,8 @@ async function abaVendas() {
 
   // ---- novo pedido: o servidor calcula preço, limite e troco; a tela só mostra o que ele devolve
   async function novoPedido() {
-    const [produtos, adicionais, param] = await Promise.all([api("GET", "/produtos?ativo=true"), api("GET", "/adicionais?ativo=true"), api("GET", "/parametros")]);
-    const formas = ((param.find ? param.find((x) => x.chave === "formas_pagamento_aceitas") : null) || {}).valor || ["dinheiro", "pix", "credito", "debito"];
+    const [produtos, adicionais, param] = await Promise.all([api("GET", "/produtos?ativo=true"), api("GET", "/adicionais?ativo=true"), api("GET", "/parametros/formas-pagamento")]);
+    const formas = param.formas;
     const r = estado.rascunho || (estado.rascunho = { chave: novaChave(), tipo: "retirada", cliente: null, itens: [], ajuste: null, pagamentos: [], taxa: "", taxaMotivo: "", obs: "", urgente: false });
     const corpoCalculo = () => ({ tipo: r.tipo, itens: r.itens.map((i) => i.dados), ajuste: r.ajuste, taxa_entrega: r.tipo === "entrega" && r.taxa.trim() ? r.taxa.trim() : null });
     let calc = null;

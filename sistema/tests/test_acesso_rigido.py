@@ -95,3 +95,13 @@ def test_forno_com_pizza_real_so_o_acabamento_opera(client, hs, cardapio):  # no
     for perfil in ("pizzaiolo", "massa", "atendente"):
         assert client.post(f"/api/producao/pizzas/{p['id']}/saiu-do-forno", headers=hs[perfil]).status_code == 403
     assert client.post(f"/api/producao/pizzas/{p['id']}/saiu-do-forno", headers=hs["acabamento"]).status_code == 200
+
+
+def test_atendente_le_so_formas_de_pagamento(client, hs2):
+    assert client.get("/api/parametros", headers=hs2["atendente"]).status_code == 403
+    r = client.get("/api/parametros/formas-pagamento", headers=hs2["atendente"])
+    assert r.status_code == 200 and "pix" in r.json()["formas"]
+    assert client.get("/api/parametros/formas-pagamento", headers=hs2["gerente"]).status_code == 200
+    assert client.get("/api/parametros/formas-pagamento").status_code == 401
+    for perfil in ("massa", "pizzaiolo", "acabamento"):
+        assert client.get("/api/parametros/formas-pagamento", headers=hs2[perfil]).status_code == 403, perfil
