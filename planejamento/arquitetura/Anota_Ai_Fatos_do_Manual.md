@@ -29,3 +29,10 @@ Fonte: "Manual do Usuário, Atendendo Pedidos pelo Celular na Anota Ai" (Setembr
 - Limite de chamadas (a cada 1 segundo pode passar do limite).
 - Identificador do pedido no Anota Ai e como ele chega para o sistema.
 - Como o código externo de produto e de forma de pagamento aparece no pedido.
+
+## Definições de Marlon sobre a importação (04/11/2026)
+
+- **Importar** = ler o pedido na fila do Anota Ai via API, selecionar os que a loja pode produzir, aceitar no Anota Ai e criar o pedido no sistema. No meio do processo o pedido está **importando**, e a varredura espera.
+- Estados da entrada: na fila (pendente), importando, importada, bloqueada (a loja não pode produzir; a gerência decide: tentar de novo ou recusar) e recusada.
+- **Aceitar sozinho** (flag do canal, desligada por padrão, só administrador e proprietário alteram): ligada, aceita sem a gerência quando o caixa de hoje está aberto e todos os itens estão no mapa de produtos. Desligada, ou se algum critério falhar, a gerência aceita explicitamente.
+- **Pendentes:** regra de "pode ser produzido" além do mapa; critério "loja aberta" (não existe no sistema); chamada real de aceitar (15 minutos, idempotente); rota e botão de aceite explícito da gerência; criação do pedido a partir da entrada; ligar `pode_aceitar_sozinho` ao fluxo de importação. Tudo depende da API do Anota Ai.

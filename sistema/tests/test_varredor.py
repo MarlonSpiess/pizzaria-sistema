@@ -1,4 +1,8 @@
 """Varredura e aviso de status dos canais, com adaptador falso (a API real do Anota Ai está pendente)."""
+from datetime import timedelta
+
+import pytest
+
 from api.services import canais, varredor
 from tests.conftest import entrar
 from tests.test_producao import _g, _pagar, hs, parametros, fila_limpa  # noqa: F401  (fixtures)
@@ -84,3 +88,86 @@ def test_aviso_de_status_com_reenvio(client, conn_teste, cardapio, hs):  # noqa:
         assert f.avisos == [(f"EXT{pid}", "pronto")]
         assert canais.enviar_avisos(conn, c["id"], f) == 0  # já enviado, não repete
     client.patch(f"/api/canais/{c['id']}/ativo", json={"ativo": False}, headers=adm)
+
+
+def test_estados_da_importacao(client, conn_teste):
+    from api.database import pool
+    _, adm = entrar(client, "administrador")
+    _, ger = entrar(client, "gerente")
+    c = _canal(client, adm)
+    conn_teste.execute("DELETE FROM entrada_canal WHERE canal_id = %s AND pedido_id IS NULL", (c["id"],))  # só esta fila
+    varredor._proxima_varredura.clear(); varredor._falhas.clear()
+    client.patch(f"/api/canais/{c['id']}/ativo", json={"ativo": True}, headers=adm)
+    f = Falso(); f.novos = [{"id_externo": "I1"}, {"id_externo": "I2"}]
+    varredor.ciclo([f])
+    with pool.connection() as conn:
+        a = canais.iniciar_importacao(conn, c["id"])
+        assert a["id_externo"] == "I1" and canais.ha_importando(conn, c["id"])
+        f.novos = [{"id_externo": "I3"}]
+        varredor.ciclo([f])  # importando: a varredura espera, I3 não entra
+        assert conn.execute("SELECT count(*) AS n FROM entrada_canal WHERE canal_id = %s AND id_externo = 'I3'", (c["id"],)).fetchone()["n"] == 0
+        canais.bloquear_importacao(conn, a["id"], "Sabor fora do cardápio"); conn.commit()
+        assert not canais.ha_importando(conn, c["id"])
+        b = canais.iniciar_importacao(conn, c["id"])
+        assert b["id_externo"] == "I2"  # a bloqueada não volta sozinha
+        conn.execute("UPDATE entrada_canal SET importando_desde = now() - interval '10 minutes' WHERE id = %s", (b["id"],)); conn.commit()
+        assert canais.liberar_importacoes_paradas(conn, c["id"]) == 1  # processo caiu no meio: volta para a fila
+    with pool.connection() as conn:  # terceira queda seguida: vira bloqueada em vez de travar a fila
+        for _ in range(2):
+            b = canais.iniciar_importacao(conn, c["id"])
+            assert b["id_externo"] == "I2"
+            conn.execute("UPDATE entrada_canal SET importando_desde = now() - interval '10 minutes' WHERE id = %s", (b["id"],)); conn.commit()
+            canais.liberar_importacoes_paradas(conn, c["id"])
+        assert conn.execute("SELECT situacao FROM entrada_canal WHERE id = %s", (b["id"],)).fetchone()["situacao"] == "bloqueada"
+        conn.execute("UPDATE entrada_canal SET situacao = 'pendente', importacao_tentativas = 0 WHERE id = %s", (b["id"],)); conn.commit()
+        with pytest.raises(RuntimeError):  # concluir/bloquear fora de 'importando' não passa em silêncio
+            canais.concluir_importacao(conn, b["id"], 1)
+        conn.rollback()
+    fila = {e["id_externo"]: e for e in client.get(f"/api/canais/{c['id']}/fila", headers=adm).json()}
+    assert fila["I1"]["situacao"] == "bloqueada" and fila["I1"]["motivo"] and fila["I2"]["situacao"] == "pendente"
+    assert client.post(f"/api/canais/fila/{fila['I2']['id']}/reprocessar", headers=ger).status_code == 409  # só bloqueada
+    assert client.post(f"/api/canais/fila/{fila['I1']['id']}/reprocessar", headers=ger).status_code == 200
+    assert client.post(f"/api/canais/fila/{fila['I1']['id']}/recusar", json={"motivo": "Não fazemos"}, headers=ger).status_code == 200
+    client.patch(f"/api/canais/{c['id']}/ativo", json={"ativo": False}, headers=adm)
+
+
+def test_flag_aceitar_sozinho_e_criterios(client, conn_teste, cardapio, monkeypatch):  # noqa: F811
+    from api.database import hoje, pool
+    _, adm = entrar(client, "administrador")
+    _, ger = entrar(client, "gerente")
+    c = _canal(client, adm)
+    assert client.patch(f"/api/canais/{c['id']}/aceitar-sozinho", json={"ativo": False}, headers=adm).status_code == 200
+    assert _canal(client, adm)["aceitar_sozinho"] is False  # padrão: aceite explícito
+    assert client.patch(f"/api/canais/{c['id']}/aceitar-sozinho", json={"ativo": True}, headers=ger).status_code == 403  # só administrador/proprietário
+    assert client.patch("/api/canais/99999999/aceitar-sozinho", json={"ativo": True}, headers=adm).status_code == 404
+    pid = cardapio["trad"]["id"]
+    conn_teste.execute("DELETE FROM mapa_produto_canal WHERE id_externo IN ('MAPA-OK', 'MAPA-OK2')")
+    assert client.put(f"/api/canais/{c['id']}/produtos", json={"produto_id": pid, "id_externo": "MAPA-OK"}, headers=adm).status_code == 200
+    try:
+        with pool.connection() as conn:
+            canal = {"id": c["id"], "ativo": True, "aceitar_sozinho": False}
+            assert canais.pode_aceitar_sozinho(conn, canal, ["MAPA-OK"]) == (False, "Aceite automático desligado.")
+        assert client.patch(f"/api/canais/{c['id']}/aceitar-sozinho", json={"ativo": True}, headers=adm).json()["aceitar_sozinho"] is True
+        aud = client.get("/api/auditoria?entidade=canal_venda&limite=20", headers=adm).json()["data"]
+        assert any(a["acao"] == "aceitar_sozinho" and a["depois"]["aceitar_sozinho"] is True for a in aud)
+        with pool.connection() as conn:
+            canal = {"id": c["id"], "ativo": True, "aceitar_sozinho": True}
+            aberto = {"situacao": "aberto", "data": hoje()}
+            monkeypatch.setattr(canais, "ultimo_caixa", lambda conn, loja: aberto)  # o estado real do caixa depende de outros testes
+            assert canais.pode_aceitar_sozinho(conn, canal, []) == (False, "Pedido sem itens identificados.")
+            assert canais.pode_aceitar_sozinho(conn, canal, ["MAPA-OK", "MAPA-OK"]) == (True, None)  # repetido não atrapalha
+            ok, motivo = canais.pode_aceitar_sozinho(conn, canal, ["MAPA-OK", "NAO-MAPEADO"])
+            assert not ok and "NAO-MAPEADO" in motivo
+            assert canais.pode_aceitar_sozinho(conn, {**canal, "ativo": False}, ["MAPA-OK"]) == (False, "Canal desativado.")
+            monkeypatch.setattr(canais, "ultimo_caixa", lambda conn, loja: {"situacao": "aberto", "data": hoje() - timedelta(days=1)})
+            assert canais.pode_aceitar_sozinho(conn, canal, ["MAPA-OK"]) == (False, "O caixa de hoje não está aberto.")  # esquecido de ontem
+            for caixa in (None, {"situacao": "contado", "data": hoje()}, {"situacao": "fechado", "data": hoje()}):
+                monkeypatch.setattr(canais, "ultimo_caixa", lambda conn, loja, caixa=caixa: caixa)
+                assert not canais.pode_aceitar_sozinho(conn, canal, ["MAPA-OK"])[0]
+            monkeypatch.setattr(canais, "ultimo_caixa", lambda conn, loja: aberto)
+            conn_teste.execute("UPDATE produto SET ativo = false WHERE id = %s", (pid,))  # produto inativo não conta como mapeado
+            ok, motivo = canais.pode_aceitar_sozinho(conn, canal, ["MAPA-OK"])
+            assert not ok and "MAPA-OK" in motivo
+    finally:
+        conn_teste.execute("UPDATE produto SET ativo = true WHERE id = %s", (pid,))
+        client.patch(f"/api/canais/{c['id']}/aceitar-sozinho", json={"ativo": False}, headers=adm)

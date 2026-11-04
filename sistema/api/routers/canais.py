@@ -32,7 +32,7 @@ def _texto(v: str, maximo: int = 120) -> str:
 
 
 def _canal(conn, cid: int) -> dict:
-    c = conn.execute("SELECT id, codigo, nome, ativo FROM canal_venda WHERE id = %s AND loja_id = %s", (cid, LOJA_ID)).fetchone()
+    c = conn.execute("SELECT id, codigo, nome, ativo, aceitar_sozinho FROM canal_venda WHERE id = %s AND loja_id = %s", (cid, LOJA_ID)).fetchone()
     if not c:
         raise HTTPException(status_code=404, detail="Canal não encontrado.")
     return c
@@ -44,7 +44,7 @@ def listar(sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
         conn.execute("INSERT INTO canal_venda (loja_id, codigo, nome) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING", (LOJA_ID, codigo, nome))
     conn.commit()
     return conn.execute(
-        "SELECT c.id, c.codigo, c.nome, c.ativo, "
+        "SELECT c.id, c.codigo, c.nome, c.ativo, c.aceitar_sozinho, "
         "(SELECT count(*) FROM entrada_canal e WHERE e.canal_id = c.id AND e.situacao = 'pendente') AS pendentes, "
         "(SELECT count(*) FROM mapa_produto_canal m WHERE m.canal_id = c.id) AS produtos_mapeados "
         "FROM canal_venda c WHERE c.loja_id = %s ORDER BY c.id", (LOJA_ID,)).fetchall()
@@ -60,10 +60,22 @@ def ativar(cid: int, d: AtivoIn, sessao=Depends(requer("canais.configurar")), co
     return {**c, "ativo": ativo}
 
 
+@router.patch("/{cid}/aceitar-sozinho")
+def aceitar_sozinho(cid: int, d: AtivoIn, sessao=Depends(requer("canais.configurar")), conn=Depends(get_db)):
+    """Liga ou desliga o aceite automático do canal. Desligado, a gerência aceita cada pedido explicitamente."""
+    c = conn.execute("SELECT id, aceitar_sozinho FROM canal_venda WHERE id = %s AND loja_id = %s FOR UPDATE", (cid, LOJA_ID)).fetchone()
+    if not c:
+        raise HTTPException(status_code=404, detail="Canal não encontrado.")
+    conn.execute("UPDATE canal_venda SET aceitar_sozinho = %s WHERE id = %s AND loja_id = %s", (d.ativo, cid, LOJA_ID))
+    auditar(conn, sessao, "aceitar_sozinho", "canal_venda", cid, antes={"aceitar_sozinho": c["aceitar_sozinho"]}, depois={"aceitar_sozinho": d.ativo})
+    conn.commit()
+    return {"id": cid, "aceitar_sozinho": d.ativo}
+
+
 @router.get("/{cid}/fila")
 def fila(cid: int, sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
     _canal(conn, cid)
-    return conn.execute("SELECT id, id_externo, situacao, motivo, recebido_em FROM entrada_canal WHERE canal_id = %s AND loja_id = %s ORDER BY id DESC LIMIT 100", (cid, LOJA_ID)).fetchall()
+    return conn.execute("SELECT id, id_externo, situacao, motivo, recebido_em, pedido_id FROM entrada_canal WHERE canal_id = %s AND loja_id = %s ORDER BY id DESC LIMIT 100", (cid, LOJA_ID)).fetchall()
 
 
 @router.post("/fila/{eid}/recusar")
@@ -72,12 +84,26 @@ def recusar(eid: int, d: RecusaIn, sessao=Depends(requer("vendas.gerir")), conn=
     e = conn.execute("SELECT id, situacao FROM entrada_canal WHERE id = %s AND loja_id = %s FOR UPDATE", (eid, LOJA_ID)).fetchone()
     if not e:
         raise HTTPException(status_code=404, detail="Entrada não encontrada.")
-    if e["situacao"] != "pendente":
-        raise HTTPException(status_code=409, detail="Esta entrada já foi tratada.")
-    conn.execute("UPDATE entrada_canal SET situacao = 'recusada', motivo = %s WHERE id = %s AND loja_id = %s", (motivo, eid, LOJA_ID))
+    if e["situacao"] not in ("pendente", "bloqueada"):
+        raise HTTPException(status_code=409, detail="Esta entrada já foi tratada ou está sendo importada.")
+    conn.execute("UPDATE entrada_canal SET situacao = 'recusada', motivo = %s WHERE id = %s AND loja_id = %s", (motivo, eid, LOJA_ID))  # TODO API: avisar o canal da recusa
     auditar(conn, sessao, "recusar", "entrada_canal", eid, depois={"motivo": motivo})
     conn.commit()
     return {"id": eid, "situacao": "recusada", "motivo": motivo}
+
+
+@router.post("/fila/{eid}/reprocessar")
+def reprocessar(eid: int, sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
+    """A gerência resolveu o impedimento (ex.: cardápio ou estoque): o pedido bloqueado volta para a fila de importação."""
+    e = conn.execute("SELECT id, situacao FROM entrada_canal WHERE id = %s AND loja_id = %s FOR UPDATE", (eid, LOJA_ID)).fetchone()
+    if not e:
+        raise HTTPException(status_code=404, detail="Entrada não encontrada.")
+    if e["situacao"] != "bloqueada":
+        raise HTTPException(status_code=409, detail="Só entrada bloqueada pode voltar para a fila.")
+    conn.execute("UPDATE entrada_canal SET situacao = 'pendente', motivo = NULL, importacao_tentativas = 0 WHERE id = %s AND loja_id = %s", (eid, LOJA_ID))
+    auditar(conn, sessao, "reprocessar", "entrada_canal", eid)
+    conn.commit()
+    return {"id": eid, "situacao": "pendente"}
 
 
 @router.get("/{cid}/produtos")

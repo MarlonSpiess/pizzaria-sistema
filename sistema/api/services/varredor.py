@@ -40,7 +40,8 @@ def ciclo(adaptadores=None) -> None:
             if not conn.execute("SELECT pg_try_advisory_lock(%s, %s) AS ok", (21, c["id"])).fetchone()["ok"]:
                 continue
             try:
-                if time.monotonic() >= _proxima_varredura.get(ad.codigo, 0):
+                canais.liberar_importacoes_paradas(conn, c["id"])
+                if time.monotonic() >= _proxima_varredura.get(ad.codigo, 0) and not canais.ha_importando(conn, c["id"]):
                     try:
                         canais.varrer(conn, c["id"], ad)
                         _falhas[ad.codigo] = 0

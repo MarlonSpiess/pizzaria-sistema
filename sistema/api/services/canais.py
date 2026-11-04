@@ -8,7 +8,8 @@ import logging
 from typing import Protocol
 
 from api.config import LOJA_ID
-from api.database import agora
+from api.database import agora, hoje
+from api.services.caixa import ultimo_caixa
 
 log = logging.getLogger("pizzaria.canais")
 EVENTOS = ("pronto", "finalizado")
@@ -114,3 +115,83 @@ def enviar_avisos(conn, canal_id: int, adaptador: Adaptador, limite: int = 20) -
                          (erro, agora(), espera, a["id"]))
         conn.commit()
     return enviados
+
+
+# ------------------------------------------------------------ importação (estados da entrada)
+IMPORTANDO_MAX_S = 120  # PROVISÓRIO: tempo até considerar a importação parada. Revisar com a API; o aceite no canal precisa ser idempotente.
+IMPORTACAO_MAX_TENTATIVAS = 3  # depois disso a entrada vira "bloqueada" para a gerência ver, em vez de travar a fila
+
+
+def ha_importando(conn, canal_id: int) -> bool:
+    """Há importação em andamento? Enquanto houver, a varredura espera (decisão de Marlon)."""
+    return bool(conn.execute(
+        "SELECT 1 FROM entrada_canal WHERE canal_id = %s AND situacao = 'importando' AND importando_desde > %s - make_interval(secs => %s) LIMIT 1",
+        (canal_id, agora(), IMPORTANDO_MAX_S)).fetchone())
+
+
+def liberar_importacoes_paradas(conn, canal_id: int) -> int:
+    """Importação parada (o processo caiu no meio) volta para a fila; na 3ª vez vira 'bloqueada' para a gerência decidir."""
+    r = conn.execute(
+        "UPDATE entrada_canal SET importacao_tentativas = importacao_tentativas + 1, importando_desde = NULL, "
+        "situacao = CASE WHEN importacao_tentativas + 1 >= %s THEN 'bloqueada' ELSE 'pendente' END, "
+        "motivo = CASE WHEN importacao_tentativas + 1 >= %s THEN 'A importação falhou várias vezes' ELSE motivo END "
+        "WHERE canal_id = %s AND situacao = 'importando' AND importando_desde <= %s - make_interval(secs => %s)",
+        (IMPORTACAO_MAX_TENTATIVAS, IMPORTACAO_MAX_TENTATIVAS, canal_id, agora(), IMPORTANDO_MAX_S))
+    conn.commit()
+    return r.rowcount
+
+
+def iniciar_importacao(conn, canal_id: int) -> dict | None:
+    """Pega a próxima entrada pendente e a marca como 'importando' (uma só por vez, seguro com vários processos).
+    PENDENTE da API: o aceite no Anota Ai (obrigatório em 15 minutos) e a criação do pedido ainda não existem."""
+    e = conn.execute("SELECT id, id_externo, conteudo FROM entrada_canal WHERE canal_id = %s AND situacao = 'pendente' ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED",
+                     (canal_id,)).fetchone()
+    if e:
+        conn.execute("UPDATE entrada_canal SET situacao = 'importando', importando_desde = %s WHERE id = %s", (agora(), e["id"]))
+    conn.commit()
+    return e
+
+
+def concluir_importacao(conn, entrada_id: int, pedido_id: int) -> None:
+    """Marca importada. Quem chama faz o commit junto com a criação do pedido. Falha se a entrada não está mais 'importando'
+    (ex.: foi liberada por demora): nesse caso o chamador deve desfazer a transação para não duplicar o pedido."""
+    r = conn.execute("UPDATE entrada_canal SET situacao = 'importada', pedido_id = %s, importando_desde = NULL, motivo = NULL WHERE id = %s AND situacao = 'importando'",
+                     (pedido_id, entrada_id))
+    if r.rowcount != 1:
+        raise RuntimeError("A entrada não está mais em importação.")
+
+
+def bloquear_importacao(conn, entrada_id: int, motivo: str) -> None:
+    """A loja não pode produzir este pedido: fica na fila para a gerência decidir. Quem chama faz o commit."""
+    r = conn.execute("UPDATE entrada_canal SET situacao = 'bloqueada', motivo = %s, importando_desde = NULL WHERE id = %s AND situacao = 'importando'",
+                     (motivo[:200], entrada_id))
+    if r.rowcount != 1:
+        raise RuntimeError("A entrada não está mais em importação.")
+
+
+# ------------------------------------------------------------ aceitar sozinho
+def pode_aceitar_sozinho(conn, canal: dict, ids_externos: list[str]) -> tuple[bool, str | None]:
+    """Decide se o pedido pode ser aceito sem a gerência. Devolve (pode, motivo se não pode).
+
+    Critérios (decisão de Marlon, 04/11/2026): canal ativo com a flag ligada, caixa DE HOJE aberto e todos os itens no mapa
+    de produtos (produto ativo). PENDENTE: "loja aberta" (não existe esse estado no sistema; falta definir se é o caixa
+    aberto, um horário ou uma pausa). Recebe os identificadores externos dos itens porque o formato do pedido do Anota Ai
+    ainda não é conhecido. Releia o canal no banco antes de chamar, para a flag não vir desatualizada.
+    """
+    if not canal.get("ativo", True):
+        return False, "Canal desativado."
+    if not canal["aceitar_sozinho"]:
+        return False, "Aceite automático desligado."
+    c = ultimo_caixa(conn, LOJA_ID)
+    if not c or c["situacao"] != "aberto" or c.get("data") != hoje():
+        return False, "O caixa de hoje não está aberto."
+    ids = sorted({str(i).strip() for i in ids_externos if i is not None and str(i).strip()})
+    if not ids:
+        return False, "Pedido sem itens identificados."
+    mapeados = {r["id_externo"] for r in conn.execute(
+        "SELECT m.id_externo FROM mapa_produto_canal m JOIN produto p ON p.id = m.produto_id AND p.ativo AND p.loja_id = %s "
+        "WHERE m.canal_id = %s AND m.id_externo = ANY(%s)", (LOJA_ID, canal["id"], ids)).fetchall()}
+    faltam = [i for i in ids if i not in mapeados]
+    if faltam:
+        return False, "Itens fora do mapa de produtos: " + ", ".join(faltam)[:150]
+    return True, None
