@@ -22,7 +22,7 @@ As telas Forno e Acabamento se atualizam sozinhas a cada 8 segundos. Toque em **
 
 Se a pizza saiu errada, escolha o motivo em **Refazer** e confirme. A pizza atual vira perda e uma pizza igual entra **na frente** da fila de montagem. A refação só é possível enquanto o pedido está em produção; depois disso, a recepção faz um pedido novo.
 
-**Pizzas avulsas (montagem errada):** a pizza errada aparece neste cartão. Se ela for vendida à parte, toque em **Vendida** (não vira perda). Se não houver venda, toque em **Descartar (motivo)**: ela entra nas perdas. O ingrediente usado na montagem já foi baixado do estoque uma vez, como perda "Pizza avulsa". Ainda não há ligação da venda avulsa com o caixa: o valor recebido segue a orientação da gerência (pendente).
+**Pizzas avulsas (montagem errada):** a pizza errada aparece neste cartão. Quem vende é a recepção, pelo Novo pedido (você não lança a venda). Se não houver venda, toque em **Descartar (motivo)**: ela entra nas perdas. O ingrediente usado na montagem já foi baixado do estoque uma vez, como perda "Pizza avulsa".
 
 **Avisos da Produção:** o cartão no alto da tela mostra montagem errada e falta de ingrediente; para você, aparece também o cliente do pedido.
 

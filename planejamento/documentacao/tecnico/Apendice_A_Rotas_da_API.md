@@ -252,7 +252,6 @@ A permissão é conferida no servidor em cada chamada (`requer` exige a permiss�
 | POST | `/api/producao/pizzas/{pid}/montagem-errada` | `producao.montagem` ou `producao.acabamento` ou `producao.gerir` |
 | POST | `/api/producao/pizzas/{pid}/sem-ingredientes` | `producao.montagem` |
 | GET | `/api/producao/avulsas` | `producao.acabamento` ou `producao.gerir` |
-| POST | `/api/producao/avulsas/{pid}/vender` | `producao.acabamento` ou `producao.gerir` |
 | POST | `/api/producao/avulsas/{pid}/descartar` | `producao.acabamento` ou `producao.gerir` |
 | GET | `/api/producao/avisos` | `producao.massa` ou `producao.montagem` ou `producao.forno` ou `producao.acabamento` ou `producao.gerir` |
 | POST | `/api/producao/avisos/{aid}/resolver` | `producao.gerir` ou `producao.acabamento` |
@@ -347,6 +346,7 @@ A permissão é conferida no servidor em cada chamada (`requer` exige a permiss�
 
 | Método | Rota | Permissão |
 |---|---|---|
+| GET | `/api/pedidos/avulsas-disponiveis` | `vendas.criar` |
 | POST | `/api/pedidos/calcular` | `vendas.criar` |
 | POST | `/api/pedidos` | `vendas.criar` |
 | GET | `/api/pedidos` | `vendas.ver` |

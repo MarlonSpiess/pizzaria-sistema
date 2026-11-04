@@ -28,7 +28,7 @@ Com a pizza na mão, você tem quatro botões e o de perda:
 | Botão | Quando usar | O que acontece |
 |---|---|---|
 | **Finalizada a montagem (vai ao forno)** | A pizza está certa | Sai da sua tela e vai para o forno |
-| **Montagem errada no sabor** | Você montou o sabor errado | A pizza errada vira **avulsa** (sai do pedido e pode ser vendida à parte) e você recomeça a pizza certa do pedido, que continua com você. Massa, montagem e acabamento recebem o aviso |
+| **Montagem errada no sabor** | Você montou o sabor errado | A pizza errada vira **avulsa** (sai do pedido e pode ser vendida no balcão) e você recomeça a pizza certa do pedido, que continua com você. Massa, montagem e acabamento recebem o aviso |
 | **Problemas no formato/esteira** | A pizza saiu fora do formato ou estragou na esteira | Igual ao sabor errado: vira avulsa e você recomeça a pizza certa |
 | **Sem ingredientes** | Falta ingrediente para montar | A pizza vai para o **fim da lista** e a gerência é avisada para providenciar o ingrediente. Fica registrado como retrocesso por falta de insumo |
 | **Perdeu a pizza (motivo)** | A pizza estragou e não serve para venda | A pizza vira perda. O acabamento ou a gerência toca em **Refazer** e uma pizza igual volta para a fila, **na frente** |

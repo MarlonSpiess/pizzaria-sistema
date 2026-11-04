@@ -103,7 +103,7 @@ Regras para escrever uma migração nova:
 
 `--dry-run` mostra o que seria aplicado sem alterar nada.
 
-### 3.2 Migrações existentes (até a 019)
+### 3.2 Migrações existentes (até a 020)
 
 | Nº | Arquivo | Fatia | Tabelas criadas ou alteradas |
 |---|---|---|---|
@@ -126,6 +126,7 @@ Regras para escrever uma migração nova:
 | 017 | `017_loja_aberta.sql` | Canais | `loja.loja_aberta` e `loja.loja_aberta_desde` (flag manual da gerência, desligada por padrão) |
 | 018 | `018_vendas_fechadas.sql` | Vendas fechadas | ingrediente_em_falta (histórico de falta e reabertura); em mapa_produto_canal: `pausado_no_canal`, `sincronizado_em`, `erro_sincronia` |
 | 019 | `019_montagem_errada_avulsa.sql` | Produção | situação `avulsa` em pizza_producao (final); aviso_producao (sabor_errado, formato, sem_ingredientes; resolvido_em/por); pizza_avulsa_destino (vendida ou perda com motivo; só inserção) |
+| 020 | `020_venda_avulsa.sql` | Vendas | item_pedido.`avulsa_pizza_id` (índice único: uma venda por avulsa); pizza_avulsa_destino.`pedido_id` |
 
 São 103 tabelas. O sabor com venda fechada **não é guardado**: é calculado a partir dos ingredientes em falta e da ficha técnica mais recente (incluindo preparos, até 5 níveis), para nunca ficar fora de sincronia.
 
@@ -166,7 +167,7 @@ São 250 rotas. A lista completa, com a permissão de cada uma, está no [Apênd
 | Área | Grupos de rotas |
 |---|---|
 | Comum | `/auth` (login, logout, me, trocar senha), `/rh/meus-dados` |
-| Produção | `/producao/fila`, `/producao/pizzas/*` (próxima, produzida, retroceder, saiu do forno, acabada, perder, refazer), `/producao/perdidas` (pizzas perdidas aguardando refação: acabamento e gerência), `/producao/pizzas/{id}/montagem-errada` (tipo sabor ou formato; pizzaiolo na própria pizza em montagem, acabamento e gerência depois), `/producao/pizzas/{id}/sem-ingredientes` (pizzaiolo), `/producao/avisos` (todos os setores da produção; cliente só para acabamento e gerência) e `/producao/avisos/{id}/resolver` (gerência e acabamento; na tela, só a gerência tem o botão), `/producao/avulsas` e `/producao/avulsas/{id}/vender` ou `/descartar` (acabamento e gerência), `/producao/pedidos`, `/producao/massa/*`, `/producao/motivos/*`, `/caixa/despacho*` |
+| Produção | `/producao/fila`, `/producao/pizzas/*` (próxima, produzida, retroceder, saiu do forno, acabada, perder, refazer), `/producao/perdidas` (pizzas perdidas aguardando refação: acabamento e gerência), `/producao/pizzas/{id}/montagem-errada` (tipo sabor ou formato; pizzaiolo na própria pizza em montagem, acabamento e gerência depois), `/producao/pizzas/{id}/sem-ingredientes` (pizzaiolo), `/producao/avisos` (todos os setores da produção; cliente só para acabamento e gerência) e `/producao/avisos/{id}/resolver` (gerência e acabamento; na tela, só a gerência tem o botão), `/producao/avulsas` e `/producao/avulsas/{id}/descartar` (acabamento e gerência; a venda é pelo pedido: `GET /pedidos/avulsas-disponiveis` com vendas.criar e `avulsa_id` no item de `POST /pedidos` e `/pedidos/calcular`; o servidor copia produto, sabor 2 e tamanho, quantidade 1, sem adicionais; pedido só com avulsa nasce acabado e não gera pizza; cancelar o pedido faz a avulsa virar perda; `GET /bi/producao` traz `avulsas`), `/producao/pedidos`, `/producao/massa/*`, `/producao/motivos/*`, `/caixa/despacho*` |
 | Vendas | `/pedidos/*` (calcular, criar, listar, situação, urgente, CF, cancelar), `/caixa/*` (abrir, movimentos, contagem, fechar, entregas, acertos, motivos, maquininhas, regras de recebimento, relatório), `/canais/*` (incluindo `/canais/loja`), `/vendas-fechadas/*`, `/clientes/*`, `/entregadores/*`, `/parametros/formas-pagamento` |
 | Administrativo | `/categorias`, `/produtos`, `/adicionais`, `/precos/pizza`, `/itens`, `/fichas/*`, `/etapas`, `/modelo-etapas`, `/estoque/*`, `/compras/*`, `/contas/*`, `/custos/*`, `/imobilizado/*`, `/rh/*`, `/bi/*`, `/usuarios/*`, `/parametros/*`, `/auditoria`, `/sistema/backup` |
 
@@ -374,7 +375,7 @@ A estrutura de menus aprovada está em [01_Estrutura_de_Menus.md](../../menus/01
 | 6 | Aviso de cancelamento ao Anota Ai | API |
 | 7 | Cópia em C:\Maria Gabriela\Pizzaria | Pasta disponível |
 | 8 | Valor por entrega diferente do padrão só pela API (sem tela) | Decidir se precisa de tela |
-| 9 | Receita da pizza avulsa vendida não entra em Vendas nem no caixa (o botão Vendida só evita a perda) | Definir com Marlon |
+| 9 | Pizza avulsa vendida: o consumo da montagem continua como perda no estoque e no custo; avulsa sem borda e adicionais | Limitação aceita no PR #2; rever se distorcer o CMV |
 | 10 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
 
 **Recomendação:** antes do primeiro dia de uso, priorizar o teste da impressora e o pedido do token do Anota Ai, porque são os dois pontos que podem mudar o desenho (caminho de impressão e formato do pedido); o resto do sistema já roda na loja sem eles.

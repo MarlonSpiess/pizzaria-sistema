@@ -19,6 +19,8 @@ Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). O cai
 6. **Pagamento:** escolha a forma (dinheiro, Pix, crédito ou débito) e o valor. Pode dividir em mais de uma forma. Só o dinheiro tem troco. O sistema mostra "Falta receber" até fechar o total. **Não existe fiado**: o pedido só é confirmado pago por completo.
 7. Marque **Pedido urgente** se for o caso, escreva observações do pedido e toque em **Confirmar pedido**.
 
+**Pizzas avulsas prontas:** quando a cozinha erra uma montagem, a pizza errada fica disponível no cartão **Pizzas avulsas prontas**, no Novo pedido. Toque em **Adicionar ao pedido** para vendê-la: entra com o preço do cardápio, quantidade 1, sem borda nem adicionais; desconto segue as regras de sempre. Ela não volta para a cozinha; pedido só com avulsa já nasce acabado. Se o pedido for cancelado, a avulsa vira perda.
+
 As pizzas entram sozinhas na fila da produção. Bebidas e acompanhamentos não passam pela cozinha.
 
 Se a loja estiver configurada para vender só com caixa aberto, abra o caixa antes do primeiro pedido.
