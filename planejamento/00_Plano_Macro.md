@@ -39,7 +39,7 @@ Versão 2.0, 04/11/2026 (a v1.0, de 20/10/2026, foi aprovada por Marlon em 21/10
 | Aceitar sozinho | Flag por canal, desligada por padrão, só administrador e proprietário; critérios: canal ativo, loja aberta, caixa de hoje aberto, itens no mapa e nenhum sabor com venda fechada |
 | Loja aberta | Flag manual que a gerência liga e desliga |
 | Finalizar entrega | Junto com o acerto do entregador no caixa; retirada finaliza quando o cliente retira |
-| Fechar vendas por ingrediente | Ingrediente em falta fecha os sabores que o usam para o canal (não aceita sozinho; pausa no Anota Ai depende da API); o balcão ainda não é bloqueado; reabrir faz o inverso |
+| Fechar vendas por ingrediente | Ingrediente em falta fecha os sabores que o usam no balcão (o pedido é recusado) e no canal (não aceita sozinho; pausa no Anota Ai depende da API); reabrir pelo cartão "Vendas fechadas agora" |
 | Estoque | Pode ficar negativo; alerta de baixo (estoque mínimo do cadastro), zerado ou negativo |
 
 Todas estão no código do PR #2; o que fala com o Anota Ai fica pronto do nosso lado e espera a API.

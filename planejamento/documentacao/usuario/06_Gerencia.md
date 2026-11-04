@@ -40,7 +40,7 @@ Além de tudo o que o atendente faz:
   - **Mapa de produtos:** consulta do ID externo de cada produto no canal. Sem ID externo, um pedido com esse produto não é aceito sozinho.
   - Hoje a tela avisa: "Integração ainda não conectada: falta o token do canal".
 - **Loja aberta** (no topo de Vendas > Canais): chave manual. Toque para ligar quando a loja já pode receber pedidos e desligue ao encerrar; ela **não muda sozinha**. Sem loja aberta, nenhum pedido do canal é aceito sozinho.
-- **Fechar vendas por ingrediente** (em Administrativo > Estoque > Alertas, seção 4): vale para o canal (não aceita sozinho e prepara a pausa no Anota Ai, que depende da API); o balcão não é bloqueado.
+- **Fechar vendas por ingrediente** (em Administrativo > Estoque > Alertas, seção 4): vale para o balcão (o sabor não pode ser vendido) e para o canal (não aceita sozinho e prepara a pausa no Anota Ai, que depende da API).
 
 ## 4. Administrativo
 
@@ -65,7 +65,7 @@ Além de tudo o que o atendente faz:
 - **Bebidas e acompanhamentos** saem do estoque quando o pedido fica acabado.
 - A baixa automática **nunca trava a produção**. Se faltar saldo, o estoque fica **negativo**, para a falta aparecer. Produto sem ficha gera uma pendência em Estoque > Alertas.
 - **Alerta de estoque** (Estoque > Alertas, e alerta no BI): ingrediente **NEGATIVO**, **ZERADO**, **repor** (chegou ao ponto de pedido) ou **abaixo do mínimo** (estoque mínimo do cadastro), do mais grave para o menos grave. Vale para qualquer item com estoque mínimo, não só ingrediente. Trate na loja (conferir, repor) e, se for o caso, ajuste o saldo por um Inventário.
-- **Fechar vendas dos sabores:** no alerta, toque no botão do item. O sistema mostra os sabores afetados (exemplo: ovo fecha Portuguesa, Paulista, Baiana) e pede confirmação. **O que isso faz hoje:** impede que pedidos do canal com esses sabores sejam aceitos sozinhos e prepara a pausa no Anota Ai (que depende da API). **Não bloqueia o balcão**: avise a recepção para não vender o sabor. Para reabrir, use **Reabrir vendas** no mesmo alerta enquanto o item ainda aparece nele; depois que o item é reposto e sai do alerta, ainda não há tela para reabrir (correção pedida). Perda e consumo interno também podem deixar o saldo negativo; transferência entre locais não.
+- **Fechar vendas dos sabores:** no alerta, toque no botão do item. O sistema mostra os sabores afetados (exemplo: ovo fecha Portuguesa, Paulista, Baiana) e pede confirmação. **O que isso faz hoje:** o balcão não consegue vender esses sabores (aparecem como VENDA FECHADA e o sistema recusa o pedido), pedidos do canal com eles não são aceitos sozinhos e a pausa no Anota Ai fica preparada (depende da API). Para reabrir, use **Reabrir vendas** no cartão **Vendas fechadas agora**, no topo de Estoque > Alertas; o cartão continua lá mesmo depois que o item é reposto e sai do alerta. Perda e consumo interno também podem deixar o saldo negativo; transferência entre locais não.
 
 Mantenha o **estoque mínimo** de cada ingrediente preenchido em Estoque > Saldos (configuração do item). Sem ele, o alerta de "baixo" não funciona.
 

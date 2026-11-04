@@ -49,7 +49,7 @@ Em **Clientes** você busca, cadastra e corrige nome, telefone e endereço. Cada
 
 **Hoje** a integração não está conectada (falta o token e a documentação da API). Continue atendendo o Anota Ai pelo aplicativo dele, como hoje, e aceite o pedido lá em até 15 minutos (senão o Anota Ai cancela). Para o pedido ir para a cozinha, digite-o aqui em Novo pedido.
 
-**Sabor com venda fechada:** quando a gerência fecha um sabor por falta de ingrediente, o balcão **não** é bloqueado pelo sistema. Siga o aviso da gerência e não venda o sabor. Quando a integração for conectada, os pedidos do Anota Ai entrarão sozinhos e seguirão o mesmo caminho; a fila de entrada do canal é da gerência (Vendas > Canais).
+**Sabor com venda fechada:** quando a gerência fecha um sabor por falta de ingrediente, ele aparece na lista como **VENDA FECHADA (falta ...)** e não pode ser escolhido. Se o pedido já tiver esse sabor, o resumo mostra o aviso em vermelho e o sistema não grava o pedido até você tocar em **Remover** no item. Ofereça outro sabor ao cliente. Quando a integração for conectada, os pedidos do Anota Ai entrarão sozinhos e seguirão o mesmo caminho; a fila de entrada do canal é da gerência (Vendas > Canais).
 
 ## 6. Cupom fiscal
 
