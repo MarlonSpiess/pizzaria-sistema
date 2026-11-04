@@ -2,6 +2,9 @@
 
 Versão 0.3, 21/10/2026. Consolidada com as respostas J1 a J14 de Marlon e com a revisão da J8 (lista de compras e cotação) pedida em 20/10/2026. A v0.2 foi aprovada em 19/10/2026; **a revisão de Compras (3.2 e J8) teve as perguntas J8a a J8e respondidas por Marlon em 21/10/2026, que aceitou todas as sugestões.** Parte do [Plano Macro](../00_Plano_Macro.md), seção 4.3. Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md) e [Fechamento de Caixa](03_Fechamento_de_Caixa.md), todos aprovados.
 
+> **Situação em 04/11/2026 (documentação v2.0).** O conteúdo de negócio abaixo continua valendo como registro das decisões aprovadas. Desde 03/11/2026 o sistema não é mais apresentado como 9 módulos: ele tem **3 áreas** (Produção, Vendas e Administrativo), **1 login** e **acesso rígido por função conferido no servidor**, num **servidor único**. Onde a forma de uso mudou, vale o [Manual Técnico](../documentacao/tecnico/Manual_Tecnico.md) e os [manuais de usuário](../documentacao/usuario/). **Onde ficou:** Administrativo > Estoque e Compras. **Construído:** fatias 2A e 2B. **O que mudou (04/11/2026):** (1) o estoque de ingrediente **pode ficar negativo**: a baixa automática e a saída de perda e de consumo interno não são barradas (a transferência continua); (2) alerta de ingrediente **baixo** (abaixo do estoque mínimo cadastrado), **zerado** ou **negativo**, com as faixas negativo, zerado, repor e abaixo do mínimo, para tratativa física ou ajuste, visto pela gerência e no BI; (3) **fechar vendas por ingrediente** (migração 018), direto no alerta: ingrediente em falta fecha os sabores que o usam no balcão e no canal (o aviso ao Anota Ai depende da API).
+
+
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
 Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fonte específica; **[Suposição]** é minha e precisa de confirmação.

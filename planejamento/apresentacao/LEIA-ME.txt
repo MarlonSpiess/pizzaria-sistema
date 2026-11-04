@@ -1,1 +1,2 @@
-Apresentação publicada em https://claude.ai/artifact/2kPXTPhYJFSiym6sqUreUn (cópia do código-fonte dos slides nesta pasta).
+Versão 2.0 (04/11/2026), atual: Apresentacao_do_Sistema_v2.pdf, Apresentacao_Comercial_v2.pdf e Fluxogramas_v2.pdf. Fonte em fonte_v2 (python gen_v2.py e depois node render.js).
+Versão 1 (outubro de 2026, 9 módulos), mantida como registro: Apresentacao_Comercial_Sistema_Pizzaria.pdf, Fluxogramas_Sistema_Pizzaria.pdf e Sistema_Integrado_Pizzaria.pdf. Publicada em https://claude.ai/artifact/2kPXTPhYJFSiym6sqUreUn (fonte em fonte_v1 e project).
