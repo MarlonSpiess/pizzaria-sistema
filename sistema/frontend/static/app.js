@@ -1013,13 +1013,17 @@ async function abaProducao() {
   }
 
   async function subAcabamento() {
-    const [f, peds, mot] = await Promise.all([api("GET", "/producao/fila"), api("GET", "/producao/pedidos"), api("GET", "/producao/motivos")]);
+    const [f, peds, mot, perdidas] = await Promise.all([api("GET", "/producao/fila"), api("GET", "/producao/pedidos"), api("GET", "/producao/motivos"), api("GET", "/producao/perdidas").catch(() => [])]);
     const prontas = f.pizzas.filter((p) => p.situacao === "saiu do forno");
     const box = h("div", {});
     const etiqueta = (e) => box.replaceChildren(h("div", { class: "cartao etiqueta" }, h("h2", {}, "Etiqueta"), grande(e.cliente + " · Id " + e.id_dia), h("p", {}, e.sabores + " (" + e.tamanho + ")"),
       h("button", { class: "sec", onclick: () => window.print() }, "Imprimir"), " ", h("button", { class: "sec", onclick: () => { etiquetaAberta = null; box.replaceChildren(); } }, "Fechar")));
     if (etiquetaAberta) etiqueta(etiquetaAberta);  // sobrevive à atualização da lista até ser fechada
-    return h("div", {}, box, h("div", { class: "cartao tabela" }, h("h2", {}, "Saíram do forno"), prontas.length ? h("table", {}, h("tbody", {}, prontas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
+    const cartaoPerdidas = perdidas.length ? h("div", { class: "cartao tabela" }, h("h2", {}, "Pizzas perdidas para refazer"),
+      h("p", { class: "pequeno" }, "Enquanto a pizza perdida não for refeita, o pedido não pode ser marcado como acabado. A nova entra no começo da fila. A perda já foi registrada; o motivo escolhido aqui fica no registro da refação."),
+      h("table", {}, h("tbody", {}, perdidas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
+        h("td", {}, seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."), "Refazer esta pizza? A nova entra no começo da fila."))))))) : null;
+    return h("div", {}, box, cartaoPerdidas, h("div", { class: "cartao tabela" }, h("h2", {}, "Saíram do forno"), prontas.length ? h("table", {}, h("tbody", {}, prontas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
       h("td", {}, h("button", { class: "principal", onclick: async () => { const r = await acao("POST", "/producao/pizzas/" + p.id + "/acabada"); if (r) { etiquetaAberta = r.etiqueta; await desenharSub(); } } }, "Acabada e etiqueta"), " ",
         seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."), "Refazer esta pizza? A atual vira perda.")))))) : h("p", { class: "pequeno" }, "Nenhuma pizza esperando acabamento.")),
       h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos em aberto"), peds.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Pedido", "Cliente", "Pizzas", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, peds.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")),
