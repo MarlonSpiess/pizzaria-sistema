@@ -118,6 +118,8 @@ def test_limites_do_atendente(client, cardapio):
     assert client.post(f"/api/caixa/entregas/{ped['id']}", json={"entregador_id": ent["id"], "valor_entrega": "9999,00"}, headers=ha).status_code == 403
     assert client.post("/api/caixa/acertos", json={"entregador_id": ent["id"], "diaria": "5000,00"}, headers=ha).status_code in (403, 409)
     assert client.post(f"/api/caixa/entregas/{ped['id']}", json={"entregador_id": ent["id"], "valor_entrega": "7,00"}, headers=hg).status_code == 201  # gerência pode
+    aud_c = client.get("/api/auditoria?entidade=entrega&limite=100", headers=hg).json()["data"]
+    assert next(a for a in aud_c if str(a["entidade_id"]) == str(ped["id"]) and a["acao"] == "atribuir")["depois"]["origem"] == "caixa"
     client.post(f"/api/pedidos/{ped['id']}/cancelar", json={"motivo": "Teste de limites"}, headers=hg)  # sai da lista de acertos pendentes
 
 
@@ -142,6 +144,10 @@ def test_despacho_do_acabamento_sem_valores_e_sem_o_resto_do_caixa(client, carda
     ok = client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"]}, headers=hac)
     assert ok.status_code == 201 and "valor_entrega" not in (ok.json() or {})
     assert client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"]}, headers=hac).status_code == 409
+    aud = client.get("/api/auditoria?entidade=entrega&limite=50", headers=hg).json()["data"]
+    linha = next(a for a in aud if str(a["entidade_id"]) == str(ped["id"]) and a["acao"] == "atribuir")
+    assert linha["usuario"] and linha["depois"]["origem"] == "despacho"
+    assert client.get("/api/auditoria", headers=hac).status_code == 403  # o acabamento não lê a auditoria (ela guarda o valor da entrega)
     # e continua sem o resto do Caixa
     assert client.get("/api/caixa/entregas", headers=hac).status_code == 403
     assert client.get("/api/caixa/hoje", headers=hac).status_code == 403

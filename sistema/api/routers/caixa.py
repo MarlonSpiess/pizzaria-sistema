@@ -371,7 +371,7 @@ def entregas(sessao=Depends(requer("caixa.ver")), conn=Depends(get_db)):
 
 @router.post("/entregas/{pedido_id}", status_code=201)
 def atribuir_entrega(pedido_id: int, d: EntregaIn, sessao=Depends(requer("caixa.operar")), conn=Depends(get_db)):
-    return _atribuir(conn, sessao, pedido_id, d)
+    return _atribuir(conn, sessao, pedido_id, d, "caixa")
 
 
 # Despacho feito pelo acabamento: só pedido, situação e entregador (sem valores) e só a lista mínima de entregadores.
@@ -398,13 +398,13 @@ def despacho_entregadores(sessao=Depends(requer("entregas.despachar")), conn=Dep
 def despachar(pedido_id: int, d: EntregaIn, sessao=Depends(requer("entregas.despachar")), conn=Depends(get_db)):
     if d.valor_entrega is not None:
         raise HTTPException(status_code=403, detail="O valor da entrega é definido pela recepção ou pela gerência.")
-    r = _atribuir(conn, sessao, pedido_id, d)
+    r = _atribuir(conn, sessao, pedido_id, d, "despacho")
     if isinstance(r, dict):
         r.pop("valor_entrega", None)  # o acabamento não vê valores
     return r
 
 
-def _atribuir(conn, sessao, pedido_id: int, d: EntregaIn):
+def _atribuir(conn, sessao, pedido_id: int, d: EntregaIn, origem: str):
     quando = agora()
     c = svc.exigir_aberto(conn, LOJA_ID)
     p = conn.execute("SELECT id, data, tipo, situacao FROM pedido WHERE id = %s AND loja_id = %s FOR SHARE", (pedido_id, LOJA_ID)).fetchone()
@@ -424,7 +424,7 @@ def _atribuir(conn, sessao, pedido_id: int, d: EntregaIn):
     try:
         conn.execute("INSERT INTO entrega (pedido_id, loja_id, data, entregador_id, valor_entrega, atribuido_por, atribuido_em) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                      (pedido_id, LOJA_ID, p["data"], d.entregador_id, valor, sessao["usuario_id"], quando))
-        auditar(conn, sessao, "atribuir", "entrega", pedido_id, depois={"entregador_id": d.entregador_id, "valor": fmt(valor)})
+        auditar(conn, sessao, "atribuir", "entrega", pedido_id, depois={"entregador_id": d.entregador_id, "valor": fmt(valor), "origem": origem})
         conn.commit()
     except psycopg.errors.UniqueViolation:
         conn.rollback()
