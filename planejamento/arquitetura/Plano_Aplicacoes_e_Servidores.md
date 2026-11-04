@@ -51,3 +51,13 @@ Falta antes de expor fora da loja: HTTPS (nada no código ainda); conferir que D
 | HTTPS e acesso de fora da loja | Decisão da nuvem | Pendente |
 | Aceitar pedido da fila e virar pedido do sistema | Formato do pedido do Anota Ai | Pendente |
 | Cópia na pasta local C:\Maria Gabriela\Pizzaria | Pasta fora do ar | Pendente |
+
+## 7. Integração com o Anota Ai: decisão de Marlon (04/11/2026)
+
+O Anota Ai tem API. O sistema chama a API (nada chega de fora), então continua na loja, sem nuvem e sem HTTPS por enquanto.
+
+- **Varredura a cada 1 segundo** dos pedidos novos, enquanto o canal estiver ativo. Em falha, espera crescente e registro no log.
+- **Aviso ao Anota Ai** quando o pedido está pronto (entrega), saiu para entrega ou está disponível para retirada. Fila com tentativas: se a internet cair, o aviso espera e é reenviado.
+- **Construído (estrutura, testada com adaptador falso):** migração 014, varredor em segundo plano, fila de avisos, trava para só um processo trabalhar por canal.
+- **Pendente da documentação da API:** endereços, autenticação, formato do pedido e de cada aviso (adaptador em `api/services/anotaai.py`), limite de chamadas (a cada 1 segundo pode exceder), e a importação do pedido da fila para o sistema. URL e token entram por variáveis de ambiente `ANOTAAI_URL` e `ANOTAAI_TOKEN`.
+- **Cancelamento:** hoje não gera aviso; decidir se o Anota Ai precisa receber.

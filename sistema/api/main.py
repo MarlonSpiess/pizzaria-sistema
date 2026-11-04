@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.config import DB_CONFIG, DOCS_ENABLED
 from api.database import pool
+from api.services import varredor
 from api.routers import auditoria, auth, cardapio, parametros, pessoas, receitas, sistema, usuarios, vendas, producao, caixa, estoque, compras, contas, custos, imobilizado, rh, bi, canais
 
 log = logging.getLogger("pizzaria")
@@ -56,8 +57,10 @@ class LimiteCorpo:
 async def lifespan(app: FastAPI):
     pool.open()
     try:
+        varredor.iniciar()
         yield
     finally:
+        varredor.parar()
         pool.close()
 
 

@@ -12,7 +12,7 @@ from api.schemas import CfIn, PedidoCalcular, PedidoCancelar, PedidoCreate, Pedi
 from api.security import PERMISSOES, requer
 from api.services import parametros as svc_parametros
 from api.services import producao as svc_producao
-from api.services import estoque
+from api.services import canais, estoque
 from api.services.caixa import exigir_nao_encerrado
 from api.services.dinheiro import fmt
 from api.services.vendas import SITUACOES, autorizar, excede_limite, limite_desconto, repartir_pagamentos, totais
@@ -206,6 +206,7 @@ def mudar_situacao(conn, sessao, p: dict, nova: str) -> dict:
     conn.execute("INSERT INTO evento_pedido (pedido_id, situacao, usuario_id, criado_em) VALUES (%s,%s,%s,%s)",
                  (p["id"], nova, sessao["usuario_id"], quando))
     auditar(conn, sessao, "situacao", "pedido", p["id"], antes={"situacao": atual}, depois={"situacao": nova})
+    canais.enfileirar_aviso(conn, p["id"], p["canal"], p["tipo"], nova)
     if nova == "acabado":  # bebidas e acompanhamentos saem do estoque pela ficha do produto
         estoque.baixar_itens_do_pedido(conn, LOJA_ID, p["id"], sessao["usuario_id"], quando)
     return _pedido(conn, p["id"])
