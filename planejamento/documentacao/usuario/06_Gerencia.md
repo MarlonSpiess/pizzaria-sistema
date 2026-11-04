@@ -25,6 +25,8 @@ Você vê todas as telas da cozinha: **Massa**, **Montagem**, **Forno**, **Acaba
 - **Andamento:** todos os pedidos em aberto, com cliente, tipo, pizzas acabadas, situação e entrega calculada. É a visão geral da cozinha.
 - **Motivos:** motivos de retrocesso e de perda. Na primeira vez, toque em "Criar os motivos combinados". Motivo de retrocesso marcado como "Avisa Estoques" indica que o retrocesso foi por falta de insumo. Inative um motivo em vez de apagar.
 
+**Montagem errada e falta de ingrediente:** o pizzaiolo tem os botões Montagem errada no sabor, Problemas no formato/esteira e Sem ingredientes. A pizza errada vira **avulsa** (cartão no Acabamento: Vendida ou Descartar com motivo); a falta de ingrediente manda a pizza para o fim da lista. Tudo aparece no cartão **Avisos da Produção**, no alto das telas da cozinha; toque em **Resolver** quando tomar a providência (exemplo: repor o ingrediente ou fechar a venda do sabor). Para "Sem ingredientes" funcionar, precisa existir em Motivos um motivo de retrocesso que avisa o estoque (exemplo: Falta de insumo). A receita da pizza avulsa vendida ainda não entra no caixa pelo sistema (pendente).
+
 A estimativa de entrega usa os parâmetros de produção (minutos de montagem e de acabamento, pizzaiolos ativos, tempo de forno, deslocamento). Mantenha-os atualizados para a hora de entrega ficar certa.
 
 ## 3. Vendas

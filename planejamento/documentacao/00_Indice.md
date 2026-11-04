@@ -4,7 +4,7 @@ Versão 2.0, 04/11/2026. Fiel ao código do PR #2 (commit `a55b10d`). Comece por
 
 ## Para quem instala e mantém
 
-- [Manual Técnico](tecnico/Manual_Tecnico.md): arquitetura, banco e migrações (até a 018), API, segurança, instalação, operação, integração Anota Ai, testes e pendências.
+- [Manual Técnico](tecnico/Manual_Tecnico.md): arquitetura, banco e migrações (até a 019), API, segurança, instalação, operação, integração Anota Ai, testes e pendências.
 - [Apêndice A: rotas da API e permissão](tecnico/Apendice_A_Rotas_da_API.md) e [Apêndice B: permissões por perfil](tecnico/Apendice_B_Permissoes_por_Perfil.md), gerados do código.
 - [Roteiro de instalação na loja](../instalacao/Roteiro_de_Instalacao_Loja.md).
 

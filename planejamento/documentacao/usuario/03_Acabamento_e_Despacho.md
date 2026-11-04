@@ -10,6 +10,7 @@ As telas Forno e Acabamento se atualizam sozinhas a cada 8 segundos. Toque em **
 
 - O topo mostra quantas pizzas estão no forno e a capacidade. Se passar da capacidade, aparece um aviso (o sistema só avisa, não bloqueia).
 - Quando a pizza sair do forno, toque em **Saiu do forno** na linha dela.
+- Se perceber que a pizza está com o **sabor errado** ou com **problema no formato/esteira**, toque no botão correspondente na linha dela (no Forno ou no Acabamento). A pizza vira **avulsa** e a pizza certa volta para o **topo** da lista de montagem.
 
 ## 2. Acabamento e etiqueta
 
@@ -20,6 +21,10 @@ As telas Forno e Acabamento se atualizam sozinhas a cada 8 segundos. Toque em **
 3. Toque em **Imprimir** e cole a etiqueta na caixa. Toque em **Fechar** para tirar a etiqueta da tela.
 
 Se a pizza saiu errada, escolha o motivo em **Refazer** e confirme. A pizza atual vira perda e uma pizza igual entra **na frente** da fila de montagem. A refação só é possível enquanto o pedido está em produção; depois disso, a recepção faz um pedido novo.
+
+**Pizzas avulsas (montagem errada):** a pizza errada aparece neste cartão. Se ela for vendida à parte, toque em **Vendida** (não vira perda). Se não houver venda, toque em **Descartar (motivo)**: ela entra nas perdas. O ingrediente usado na montagem já foi baixado do estoque uma vez, como perda "Pizza avulsa". Ainda não há ligação da venda avulsa com o caixa: o valor recebido segue a orientação da gerência (pendente).
+
+**Avisos da Produção:** o cartão no alto da tela mostra montagem errada e falta de ingrediente; para você, aparece também o cliente do pedido.
 
 **Pizzas perdidas para refazer:** quando o pizzaiolo perde uma pizza na montagem, aparece no Acabamento o cartão **Pizzas perdidas para refazer** (ele só aparece se houver alguma). Toque em **Refazer**, escolha o motivo (obrigatório) e confirme. Uma pizza igual entra **na frente** da fila de montagem, ligada à perdida. A perdida não conta mais como pendente: o pedido pode ser marcado acabado quando a pizza nova ficar acabada. Não há perda nem baixa de estoque em dobro; a pizza nova baixa a ficha técnica quando ficar acabada.
 

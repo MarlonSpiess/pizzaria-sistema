@@ -2,7 +2,7 @@
 
 Gerado automaticamente a partir de `sistema/api/routers/` por `planejamento/documentacao/fonte/gerar_apendice_rotas.py`. Não edite à mão: rode o script de novo quando o código mudar.
 
-Total: 250 rotas.
+Total: 257 rotas.
 
 A permissão é conferida no servidor em cada chamada (`requer` exige a permissão; `requer_alguma` aceita qualquer uma das listadas). Quais perfis têm cada permissão está na seção 5 do Manual Técnico. Além da permissão, várias rotas aplicam regras de negócio (por exemplo, caixa aberto, limite de desconto, aprovação por outra pessoa) que devolvem 400, 403 ou 409.
 
@@ -249,6 +249,13 @@ A permissão é conferida no servidor em cada chamada (`requer` exige a permiss�
 | POST | `/api/producao/pedidos/{ped_id}/acabado` | `producao.acabamento` |
 | POST | `/api/producao/pizzas/{pid}/perder` | `producao.perda` |
 | POST | `/api/producao/pizzas/{pid}/refazer` | `producao.refazer` |
+| POST | `/api/producao/pizzas/{pid}/montagem-errada` | `producao.montagem` ou `producao.acabamento` ou `producao.gerir` |
+| POST | `/api/producao/pizzas/{pid}/sem-ingredientes` | `producao.montagem` |
+| GET | `/api/producao/avulsas` | `producao.acabamento` ou `producao.gerir` |
+| POST | `/api/producao/avulsas/{pid}/vender` | `producao.acabamento` ou `producao.gerir` |
+| POST | `/api/producao/avulsas/{pid}/descartar` | `producao.acabamento` ou `producao.gerir` |
+| GET | `/api/producao/avisos` | `producao.massa` ou `producao.montagem` ou `producao.forno` ou `producao.acabamento` ou `producao.gerir` |
+| POST | `/api/producao/avisos/{aid}/resolver` | `producao.gerir` ou `producao.acabamento` |
 | GET | `/api/producao/massa` | `producao.massa` ou `producao.gerir` |
 | POST | `/api/producao/massa/lote` | `producao.massa` |
 | POST | `/api/producao/massa/contagem` | `producao.massa` |

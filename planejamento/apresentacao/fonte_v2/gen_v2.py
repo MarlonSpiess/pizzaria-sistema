@@ -147,7 +147,7 @@ def deck_sistema():
                           ('Contas e Custos', ['Fluxo de 30 dias, 7 em destaque', 'Conciliação com o extrato', 'CMV teórico e real, custo por produto']),
                           ('Imobilizado, RH e BI', ['Manutenção preventiva, preditiva e corretiva', 'Escala, ponto e banco de horas; Meus dados para todos', 'DRE, lucratividade por sabor, alertas'])]), None, R))
     S.append(slide('cream', 'Arquitetura', 'Servidor único no PC da loja', '<div style="margin-top:16px">' + fit(fluxos_v2.mapa_areas(), 1664, 620) + '</div>',
-                   'FastAPI e PostgreSQL. 18 migrações, 101 tabelas, 250 rotas, testes automatizados e dois revisores em todo código.', R))
+                   'FastAPI e PostgreSQL. 19 migrações, 103 tabelas, 257 rotas, testes automatizados e dois revisores em todo código.', R))
     S.append(slide('cream', 'Situação em ' + DATA, 'O que falta para o primeiro dia',
                    tabela(['Pendência', 'Depende de'], [
                        ['Token e documentação da API do Anota Ai', 'Chamado de Marlon ao Anota Ai'],

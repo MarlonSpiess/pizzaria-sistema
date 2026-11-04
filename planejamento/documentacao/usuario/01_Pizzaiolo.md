@@ -17,18 +17,27 @@ Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
 1. Toque em **Pegar a próxima pizza**. O sistema dá a próxima da fila para você.
 2. Leia sabores, tamanho, borda, adicionais e observações.
 3. Monte a pizza.
-4. Toque em **Produzida (vai ao forno)**. A pizza sai da sua tela e vai para o forno.
+4. Toque em **Finalizada a montagem (vai ao forno)**. A pizza sai da sua tela e vai para o forno.
 
 Você trabalha uma pizza por vez. Só pega a próxima depois de marcar a atual.
 
-## 3. Quando algo dá errado
+## 3. Os botões da pizza atual
 
-| Situação | O que fazer |
-|---|---|
-| Não dá para montar agora (exemplo: falta um ingrediente na bancada) | Em **Retroceder**, escolha o motivo. A pizza volta uma posição na fila. O motivo é obrigatório |
-| A pizza estragou na montagem | Em **Perdeu a pizza**, escolha o motivo e confirme. A pizza vira perda. **Avise a gerência na hora.** O acabamento ou a gerência toca em **Refazer** e uma pizza igual volta para a sua fila, **na frente**. Em implementação: botões próprios do pizzaiolo para montagem errada no sabor, problema no formato ou esteira e falta de ingrediente; este manual será atualizado quando entrarem |
+Com a pizza na mão, você tem quatro botões e o de perda:
 
-Retroceder e perder ficam registrados com o seu nome e o motivo. A gerência vê isso nos relatórios. Os motivos são cadastrados pela gerência.
+| Botão | Quando usar | O que acontece |
+|---|---|---|
+| **Finalizada a montagem (vai ao forno)** | A pizza está certa | Sai da sua tela e vai para o forno |
+| **Montagem errada no sabor** | Você montou o sabor errado | A pizza errada vira **avulsa** (sai do pedido e pode ser vendida à parte) e você recomeça a pizza certa do pedido, que continua com você. Massa, montagem e acabamento recebem o aviso |
+| **Problemas no formato/esteira** | A pizza saiu fora do formato ou estragou na esteira | Igual ao sabor errado: vira avulsa e você recomeça a pizza certa |
+| **Sem ingredientes** | Falta ingrediente para montar | A pizza vai para o **fim da lista** e a gerência é avisada para providenciar o ingrediente. Fica registrado como retrocesso por falta de insumo |
+| **Perdeu a pizza (motivo)** | A pizza estragou e não serve para venda | A pizza vira perda. O acabamento ou a gerência toca em **Refazer** e uma pizza igual volta para a fila, **na frente** |
+
+Cada botão pede confirmação. Tudo fica registrado com o seu nome. O botão de retroceder saiu da tela; para falta de ingrediente, use **Sem ingredientes**.
+
+Se o acabamento descobrir o erro depois (no forno ou no acabamento), ele mesmo marca a pizza como avulsa e a pizza certa volta para o **topo** da lista.
+
+**Avisos da Produção:** quando há montagem errada ou falta de ingrediente sem solução, aparece no alto da tela o cartão **Avisos da Produção**. A gerência resolve o aviso.
 
 ## 4. O que você não vê
 
