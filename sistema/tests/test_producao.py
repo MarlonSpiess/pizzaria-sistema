@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 
 from tests.conftest import criar_usuario_direto, entrar, novo_login
@@ -352,3 +354,73 @@ def test_pizza_perdida_na_montagem_aparece_para_refazer_e_destrava_o_pedido(clie
     assert client.post(f"/api/producao/pedidos/{ped['id']}/acabado", headers=hs["acabamento"]).status_code == 409  # a nova ainda não acabou
     assert p["id"] not in [x["id"] for x in client.get("/api/producao/perdidas", headers=hs["gerente"]).json()]
     assert conn_teste.execute("SELECT count(*) AS n FROM perda WHERE pizza_id = %s", (p["id"],)).fetchone()[0] == 1  # a perda não duplica
+
+
+def test_montagem_errada_vira_avulsa_e_a_certa_recomeca(client, cardapio, hs, conn_teste):
+    ped = _pagar(client, hs["atendente"], [_g(cardapio)])
+    p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    url = f"/api/producao/pizzas/{p['id']}/montagem-errada"
+    assert client.post(url, json={"tipo": "xx"}, headers=hs["pizzaiolo"]).status_code == 422
+    assert client.post(url, json={"tipo": "sabor"}, headers=hs["massa"]).status_code == 403
+    r = client.post(url, json={"tipo": "sabor"}, headers=hs["pizzaiolo"])
+    assert r.status_code == 201 and r.json()["situacao"] == "em montagem" and r.json()["original"] == "avulsa"
+    assert client.post(url, json={"tipo": "sabor"}, headers=hs["pizzaiolo"]).status_code == 409  # a original já é avulsa
+    atual = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    assert atual["id"] == r.json()["id"]  # o pizzaiolo continua na montagem, com a pizza certa
+    assert conn_teste.execute("SELECT situacao FROM pizza_producao WHERE id = %s", (p["id"],)).fetchone()[0] == "avulsa"
+    assert conn_teste.execute("SELECT count(*) FROM perda WHERE pizza_id = %s", (p["id"],)).fetchone()[0] == 0  # avulsa não é perda
+    assert client.post(f"/api/producao/pedidos/{ped['id']}/acabado", headers=hs["acabamento"]).status_code == 409  # a certa ainda não acabou
+    for quem in ("pizzaiolo", "massa", "acabamento", "gerente"):  # todos os setores veem o aviso
+        av = client.get("/api/producao/avisos", headers=hs[quem])
+        assert av.status_code == 200 and any(a["pizza_id"] == p["id"] and a["tipo"] == "sabor_errado" for a in av.json())
+    assert "cliente" not in client.get("/api/producao/avisos", headers=hs["pizzaiolo"]).json()[0]
+    assert client.get("/api/producao/avisos", headers=hs["atendente"]).status_code == 403
+    assert client.post(f"/api/producao/avisos/{av.json()[0]['id']}/resolver", headers=hs["pizzaiolo"]).status_code == 403
+    assert client.post(f"/api/producao/avisos/{av.json()[0]['id']}/resolver", headers=hs["gerente"]).status_code == 200
+
+
+def test_acabamento_aponta_montagem_errada_e_a_certa_vai_ao_topo_da_lista(client, cardapio, hs, conn_teste):
+    _pagar(client, hs["atendente"], [_g(cardapio, 2)])
+    p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    client.post(f"/api/producao/pizzas/{p['id']}/produzida", headers=hs["pizzaiolo"])
+    url = f"/api/producao/pizzas/{p['id']}/montagem-errada"
+    assert client.post(url, json={"tipo": "formato"}, headers=hs["pizzaiolo"]).status_code == 403  # depois da montagem, só acabamento e gerência
+    r = client.post(url, json={"tipo": "formato"}, headers=hs["acabamento"])
+    assert r.status_code == 201 and r.json()["situacao"] == "na lista"
+    ordens = {x["id"]: x["ordem"] for x in client.get("/api/producao/fila", headers=hs["gerente"]).json()["pizzas"] if x["situacao"] == "na lista"}
+    assert min(ordens, key=lambda k: Decimal(ordens[k])) == r.json()["id"]
+
+
+def test_sem_ingredientes_manda_a_pizza_para_o_fim_e_avisa_a_gerencia(client, cardapio, hs):
+    _pagar(client, hs["atendente"], [_g(cardapio, 3)])
+    p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    url = f"/api/producao/pizzas/{p['id']}/sem-ingredientes"
+    assert client.post(url, headers=hs["acabamento"]).status_code == 403
+    assert client.post(url, headers=hs["pizzaiolo"]).status_code == 200
+    lista = [x for x in client.get("/api/producao/fila", headers=hs["gerente"]).json()["pizzas"] if x["situacao"] == "na lista"]
+    assert lista[-1]["id"] == p["id"]
+    assert any(a["tipo"] == "sem_ingredientes" for a in client.get("/api/producao/avisos", headers=hs["gerente"]).json())
+    assert client.post(url, headers=hs["pizzaiolo"]).status_code == 409  # já não está em montagem
+
+
+def test_avulsa_vendida_nao_vira_perda_e_descartada_vira(client, cardapio, hs, conn_teste):
+    m = _motivos(client, hs["gerente"])
+    _pagar(client, hs["atendente"], [_g(cardapio, 2)])
+    ids = []
+    for _ in range(2):
+        p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+        assert client.post(f"/api/producao/pizzas/{p['id']}/montagem-errada", json={"tipo": "sabor"}, headers=hs["pizzaiolo"]).status_code == 201
+        client.post(f"/api/producao/pizzas/{p['id']}/produzida", headers=hs["pizzaiolo"])  # a nova segue; a avulsa fica
+        ids.append(p["id"])
+    assert client.get("/api/producao/avulsas", headers=hs["pizzaiolo"]).status_code == 403
+    lista = [x["id"] for x in client.get("/api/producao/avulsas", headers=hs["acabamento"]).json()]
+    assert set(ids) <= set(lista)
+    a, b = ids
+    assert client.post(f"/api/producao/avulsas/{a}/vender", headers=hs["pizzaiolo"]).status_code == 403
+    assert client.post(f"/api/producao/avulsas/{a}/vender", headers=hs["acabamento"]).status_code == 200
+    assert client.post(f"/api/producao/avulsas/{a}/vender", headers=hs["acabamento"]).status_code == 409  # já tem destino
+    assert client.post(f"/api/producao/avulsas/{b}/descartar", json={"motivo_id": m["perda"]}, headers=hs["gerente"]).status_code == 200
+    n = lambda pid: conn_teste.execute("SELECT count(*) FROM perda WHERE pizza_id = %s", (pid,)).fetchone()[0]
+    assert n(a) == 0 and n(b) == 1  # perda só se não houve venda
+    assert a not in [x["id"] for x in client.get("/api/producao/avulsas", headers=hs["acabamento"]).json()]
+    assert client.post(f"/api/producao/avulsas/{ids[0]}/descartar", json={"motivo_id": m["perda"]}, headers=hs["gerente"]).status_code == 409
