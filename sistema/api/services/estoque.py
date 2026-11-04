@@ -214,7 +214,7 @@ def consumo_ficha(conn, loja_id: int, tipo: str, tamanho: str, produto_id: int, 
     return consumo, falta
 
 
-def baixar_pizza(conn, loja_id: int, pizza_id: int, fase: str, usuario_id, quando) -> None:
+def baixar_pizza(conn, loja_id: int, pizza_id: int, fase: str, usuario_id, quando, motivo_texto: str = "Pizza perdida", ficha_inteira: bool = False) -> None:
     """fase 'acabada': consome a ficha inteira. 'perdida': consome só o que já tinha entrado (montagem), como perda. Nunca bloqueia a produção."""
     try:
         with conn.transaction():
@@ -230,11 +230,11 @@ def baixar_pizza(conn, loja_id: int, pizza_id: int, fase: str, usuario_id, quand
                 return
             it = conn.execute("SELECT produto_id, sabor2_id, tamanho FROM item_pedido WHERE id = %s", (p["item_id"],)).fetchone()
             adicionais = [a["adicional_id"] for a in conn.execute("SELECT adicional_id FROM item_adicional WHERE item_id = %s AND adicional_id IS NOT NULL", (p["item_id"],)).fetchall()]
-            consumo, falta = consumo_ficha(conn, loja_id, p["tipo"], it["tamanho"], it["produto_id"], it["sabor2_id"], adicionais, fase == "perdida")
+            consumo, falta = consumo_ficha(conn, loja_id, p["tipo"], it["tamanho"], it["produto_id"], it["sabor2_id"], adicionais, fase == "perdida" and not ficha_inteira)
             for pid_ in set(falta):
                 _pendencia(conn, loja_id, "sem_ficha", pid_, ("pizza", pizza_id), "Produto sem ficha técnica: a baixa não foi feita.", quando)
             _gravar_baixa(conn, loja_id, consumo, "perda" if fase == "perdida" else "saida_venda", usuario_id, quando,
-                          "Pizza perdida" if fase == "perdida" else None, ("pizza", pizza_id))
+                          motivo_texto if fase == "perdida" else None, ("pizza", pizza_id))
     except Exception as e:  # a produção segue; o estoque registra o problema
         conn.execute("INSERT INTO pendencia_estoque (loja_id, tipo, origem_tipo, origem_id, detalhe, criado_em) VALUES (%s,'erro_baixa','pizza',%s,%s,%s)",
                      (loja_id, pizza_id, f"{type(e).__name__}: {str(e)[:150]}", quando))

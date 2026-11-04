@@ -41,7 +41,7 @@ def _proxima_ordem(conn, loja_id: int) -> Decimal:
 def gerar_pizzas(conn, loja_id: int, pedido_id: int, usuario_id, quando) -> int:
     """Uma linha por pizza ou calzone de cada item (quantidade 3 vira 3 pizzas). Mesma transação do pedido."""
     itens = conn.execute("SELECT id, tipo, tamanho, descricao, quantidade, observacoes FROM item_pedido "
-                         "WHERE pedido_id = %s AND tipo IN ('pizza','calzone') ORDER BY seq", (pedido_id,)).fetchall()
+                         "WHERE pedido_id = %s AND tipo IN ('pizza','calzone') AND avulsa_pizza_id IS NULL ORDER BY seq", (pedido_id,)).fetchall()
     n = 0
     for it in itens:
         sabores = it["descricao"].split(": ", 1)[-1]
@@ -73,10 +73,10 @@ def estimativa_entrega(conn, loja_id: int, tipo_pedido: str, quando, novas: int)
 
 
 def pizzas_pendentes(conn, pedido_id: int) -> int:
-    """Pizzas que ainda impedem o pedido de acabar. Perdida com refação não conta (a refação conta no lugar)."""
+    """Pizzas que ainda impedem o pedido de acabar. Perdida ou avulsa com refação não conta (a refação conta no lugar)."""
     return conn.execute(
         "SELECT count(*) AS n FROM pizza_producao x WHERE x.pedido_id = %s AND x.situacao NOT IN ('acabada','cancelada') "
-        "AND NOT (x.situacao = 'perdida' AND EXISTS (SELECT 1 FROM pizza_producao r WHERE r.original_id = x.id))", (pedido_id,)).fetchone()["n"]
+        "AND NOT (x.situacao IN ('perdida','avulsa') AND EXISTS (SELECT 1 FROM pizza_producao r WHERE r.original_id = x.id))", (pedido_id,)).fetchone()["n"]
 
 
 def motivo_perda_cancelamento(conn, loja_id: int) -> int:
@@ -92,7 +92,10 @@ def registrar_perda_pizza(conn, loja_id: int, pizza: dict, motivo_id: int, usuar
 
 
 def cancelar_pizzas(conn, loja_id: int, pedido_id: int, usuario_id, quando) -> None:
-    """Pedido cancelado: o que não começou some da fila; o que já foi feito vira perda, com o motivo do cancelamento."""
+    """Pedido cancelado: o que não começou some da fila; o que já foi feito vira perda, com o motivo do cancelamento.
+    A pizza avulsa vendida neste pedido também vira perda: a venda caiu e ela não volta à lista."""
+    for a in conn.execute("SELECT pp.id, pp.tamanho FROM item_pedido i JOIN pizza_producao pp ON pp.id = i.avulsa_pizza_id WHERE i.pedido_id = %s FOR UPDATE OF pp", (pedido_id,)).fetchall():
+        registrar_perda_pizza(conn, loja_id, a, motivo_perda_cancelamento(conn, loja_id), usuario_id, quando)
     for p in conn.execute("SELECT id, tamanho, situacao FROM pizza_producao WHERE pedido_id = %s AND situacao IN "
                           "('na lista','em montagem','no forno','saiu do forno','acabada') FOR UPDATE", (pedido_id,)).fetchall():
         if p["situacao"] == "na lista":
@@ -126,7 +129,7 @@ def saldo_massa(conn, loja_id: int) -> dict:
             "AND ((p.tipo = 'pizza' AND p.tamanho = %s) OR (p.tipo = 'calzone' AND %s::text = %s::text))" + filtro.replace("criado_em", "e.criado_em"),
             [loja_id, t, calz, t] + args).fetchone()["n"]
         usadas += conn.execute(
-            "SELECT count(*) AS n FROM evento_producao e JOIN pizza_producao p ON p.id = e.pizza_id WHERE p.loja_id = %s AND e.situacao = 'perdida' "
+            "SELECT count(*) AS n FROM evento_producao e JOIN pizza_producao p ON p.id = e.pizza_id WHERE p.loja_id = %s AND e.situacao IN ('perdida','avulsa') "
             "AND ((p.tipo = 'pizza' AND p.tamanho = %s) OR (p.tipo = 'calzone' AND %s::text = %s::text)) "
             "AND EXISTS (SELECT 1 FROM evento_producao m WHERE m.pizza_id = p.id AND m.situacao = 'em montagem') "
             "AND NOT EXISTS (SELECT 1 FROM evento_producao f WHERE f.pizza_id = p.id AND f.situacao = 'no forno')" + filtro.replace("criado_em", "e.criado_em"),

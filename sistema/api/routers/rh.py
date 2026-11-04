@@ -306,7 +306,7 @@ def remover_turno(tid: int, sessao=Depends(requer("rh.operar")), conn=Depends(ge
 
 
 @router.get("/escalados")
-def escalados(data: date, funcao: Optional[str] = None, sessao=Depends(requer("producao.ver")), conn=Depends(get_db)):
+def escalados(data: date, funcao: Optional[str] = None, sessao=Depends(requer("rh.ver")), conn=Depends(get_db)):
     """Quem está escalado no dia (sem ausência), por função. Produção usa para saber quantos pizzaiolos estão ativos."""
     sql = ("SELECT f.id, f.nome, fr.nome AS funcao, t.inicio, t.fim FROM turno t JOIN funcionario f ON f.id = t.funcionario_id JOIN funcao_rh fr ON fr.id = t.funcao_id "
            "WHERE f.loja_id = %s AND f.ativo AND t.data = %s AND NOT EXISTS (SELECT 1 FROM ausencia a WHERE a.funcionario_id = f.id AND a.tipo <> 'falta' AND t.data BETWEEN a.inicio AND a.fim)")

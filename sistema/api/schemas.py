@@ -564,6 +564,13 @@ class ItemPedidoIn(Base):
     adicional_ids: list[int] = []
     quantidade: int = 1
     observacoes: Optional[str] = None
+    avulsa_id: Optional[int] = None  # pizza avulsa já pronta (montagem errada): o servidor usa o sabor e o tamanho dela
+
+    @model_validator(mode="after")
+    def _avulsa(self):
+        if self.avulsa_id is not None and (self.tipo not in ("pizza", "calzone") or self.quantidade != 1 or self.adicional_ids):
+            raise ValueError("Pizza avulsa é uma pizza ou calzone, quantidade 1; borda e adicionais vêm do item de origem.")
+        return self
 
     @field_validator("tipo")
     @classmethod
@@ -727,6 +734,20 @@ class MotivoUpdate(Base):
 
 class MotivoRef(Base):
     motivo_id: int
+
+
+class MontagemErradaIn(Base):
+    tipo: str  # "sabor" ou "formato" (problemas no formato/esteira)
+    observacao: Optional[str] = None  # o que quem apontou o erro vê na pizza; vai junto na venda avulsa
+
+    _o = field_validator("observacao")(_texto_opcional(120))
+
+    @field_validator("tipo")
+    @classmethod
+    def _t(cls, v):
+        if v not in ("sabor", "formato"):
+            raise ValueError("Tipo deve ser sabor ou formato.")
+        return v
 
 
 class LoteMassaIn(Base):
