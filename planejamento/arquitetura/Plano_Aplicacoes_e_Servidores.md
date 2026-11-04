@@ -1,6 +1,6 @@
 # Plano de aplicações e servidores (Etapa 3)
 
-Rascunho v0.1, 04/11/2026. Parte do que já existe no sistema e marca o que ainda depende de decisão ou de informação externa. Nada aqui foi implantado.
+Versão 0.2, 04/11/2026. Servidor único com módulos separados APROVADO por Marlon em 04/11/2026. Parte do que já existe no sistema e marca o que ainda depende de decisão ou de informação externa. Nada aqui foi implantado.
 
 ## 1. Situação atual (fato)
 
@@ -40,3 +40,14 @@ Falta antes de expor fora da loja: HTTPS (nada no código ainda); conferir que D
 2. Rodar o beta no PC da loja com as 3 áreas.
 3. Quando o Anota Ai liberar o token: serviço de canais e aceitar pedido da fila.
 4. Decidir nuvem e HTTPS antes de qualquer acesso externo.
+
+## 6. Pendências marcadas (sem decisão, não inventar)
+
+| Item | Depende de | Situação |
+|---|---|---|
+| Como o Anota Ai entrega pedidos (consulta ou aviso) | Token e documentação do Anota Ai | Pendente |
+| iFood | Acesso ao portal do iFood (não pôde ser lido) | Pendente |
+| Nuvem | Decisão de Marlon | Pendente |
+| HTTPS e acesso de fora da loja | Decisão da nuvem | Pendente |
+| Aceitar pedido da fila e virar pedido do sistema | Formato do pedido do Anota Ai | Pendente |
+| Cópia na pasta local C:\Maria Gabriela\Pizzaria | Pasta fora do ar | Pendente |
