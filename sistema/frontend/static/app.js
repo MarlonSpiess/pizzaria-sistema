@@ -779,9 +779,11 @@ async function abaVendas() {
     const blocoPizza = h("div", {}), blocoOutro = h("div", {});
     const preencher = () => {
       const pizzas = produtos.filter((p) => p.tipo === "pizza");
-      sabor1.replaceChildren(...pizzas.map((p) => h("option", { value: p.id }, nomeProd(p))));
-      sabor2.replaceChildren(h("option", { value: "" }, "Sem segundo sabor"), ...pizzas.map((p) => h("option", { value: p.id }, nomeProd(p))));
-      outro.replaceChildren(...produtos.filter((p) => p.tipo === tipo.value).map((p) => h("option", { value: p.id }, p.nome + " (" + brl(p.preco_unico) + ")")));
+      const opt = (p, texto) => h("option", p.venda_fechada ? { value: p.id, disabled: "" } : { value: p.id }, texto + (p.venda_fechada ? " · VENDA FECHADA (falta " + p.motivo_fechada + ")" : ""));
+      sabor1.replaceChildren(...pizzas.map((p) => opt(p, nomeProd(p))));
+      sabor2.replaceChildren(h("option", { value: "" }, "Sem segundo sabor"), ...pizzas.map((p) => opt(p, nomeProd(p))));
+      outro.replaceChildren(...produtos.filter((p) => p.tipo === tipo.value).map((p) => opt(p, p.nome + " (" + brl(p.preco_unico) + ")")));
+      for (const s of [sabor1, outro]) { const o = [...s.options].find((x) => !x.disabled); if (o && s.selectedOptions[0] && s.selectedOptions[0].disabled) s.value = o.value; }
       borda.replaceChildren(h("option", { value: "" }, "Sem borda"), ...adicionais.filter((a) => a.tipo === "borda").map((a) => h("option", { value: a.id }, a.nome)));
       const pizza = tipo.value === "pizza";
       blocoPizza.hidden = !pizza; blocoOutro.hidden = pizza;
@@ -799,12 +801,14 @@ async function abaVendas() {
         dados = { tipo: "pizza", produto_id: Number(sabor1.value), tamanho: tam.value, quantidade: q, observacoes: obsItem.value.trim() || null,
           sabor2_id: sabor2.value ? Number(sabor2.value) : null, adicional_ids: caixasAd.filter(([c]) => c.checked).map(([c]) => Number(c.value)).concat(borda.value ? [Number(borda.value)] : []) };
       } else dados = { tipo: tipo.value, produto_id: Number(outro.value), quantidade: q, observacoes: obsItem.value.trim() || null };
+      if (!dados.produto_id) { falha(new Error("Nenhum sabor ou produto disponível: todos estão com venda fechada.")); return; }
       r.itens.push({ dados }); redesenhar();
     };
     const cartaoItem = h("div", { class: "cartao" }, h("h2", {}, "2. Itens"), campo("Tipo", tipo), blocoPizza, blocoOutro,
       h("div", { class: "linha" }, campo("Quantidade", qtd), campo("Observação do item", obsItem)), h("button", { class: "principal", onclick: adicionar }, "Adicionar ao pedido"));
 
     // resumo
+    if (calc && calc.aviso_venda_fechada) msg.replaceChildren(aviso("erro", calc.aviso_venda_fechada));
     const linhasResumo = calc ? calc.itens.map((i, ix) => h("tr", {}, h("td", {}, i.quantidade + "x " + i.descricao + (i.adicionais.length ? " + " + i.adicionais.map((a) => a.nome).join(", ") : "")),
       h("td", {}, brl(i.total)), h("td", {}, h("button", { class: "sec", onclick: () => { r.itens.splice(ix, 1); redesenhar(); } }, "Remover")))) : [];
     const ajTipo = h("select", {}, [["", "Sem ajuste"], ["desconto", "Desconto"], ["acrescimo", "Acréscimo"]].map(([v, n]) => h("option", { value: v }, n)));
@@ -1285,13 +1289,20 @@ async function abaEstoque() {
       try {
         const r = await api("GET", "/vendas-fechadas/ingredientes/" + i.id + "/sabores");
         const nomes = r.sabores.map((x) => x.nome).join(", ") || "nenhum sabor";
-        if (!window.confirm((em_falta ? "Reabrir a venda de: " : "Fechar a venda de: ") + nomes + ". Ingrediente: " + i.nome + ".")) return;
+        if (!window.confirm((em_falta ? "Fechar a venda de: " : "Reabrir a venda de: ") + nomes + ". Ingrediente: " + i.nome + ".")) return;
         await api("PUT", "/vendas-fechadas/ingredientes/" + i.id + "/falta", { em_falta });
         acao("GET", "/estoque/alertas", undefined, em_falta ? "Venda fechada para " + nomes + "." : "Venda reaberta.");
       } catch (e) { falha(e); }
     };
+    let fechadas = { sabores_fechados: [], ingredientes_em_falta: [] };
+    try { fechadas = await api("GET", "/vendas-fechadas"); } catch (e) { /* sem vendas.gerir: sem o cartão */ }
+    const cartaoFechadas = fechadas.ingredientes_em_falta.length ? h("div", { class: "cartao" }, h("h2", {}, "Vendas fechadas agora"),
+      h("p", { class: "pequeno" }, "Sabores com venda fechada por falta de ingrediente. Reabra quando o ingrediente voltar."),
+      tabela(["Ingrediente em falta", "Sabores", ""], fechadas.ingredientes_em_falta.map((e) => h("tr", {}, h("td", {}, e.nome),
+        h("td", { class: "pequeno" }, fechadas.sabores_fechados.filter((s) => s.motivo.split(", ").includes(e.nome)).map((s) => s.nome).join(", ")),
+        h("td", {}, h("button", { class: "sec", onclick: () => fechar({ id: e.item_id, nome: e.nome }, false) }, "Reabrir vendas")))))) : null;
     const rotuloEst = { negativo: "NEGATIVO", zerado: "ZERADO", repor: "repor", "abaixo do mínimo": "abaixo do mínimo" };
-    return h("div", {}, h("div", { class: "cartao" }, h("h2", {}, "Ingredientes: negativo, zerado, para repor"),
+    return h("div", {}, cartaoFechadas, h("div", { class: "cartao" }, h("h2", {}, "Ingredientes: negativo, zerado, para repor"),
       h("p", { class: "pequeno" }, "Negativo e zerado pedem tratativa física e, se for o caso, ajuste de estoque. \"Baixo\" usa o estoque mínimo de cada item. O estoque pode ficar negativo."),
       a.repor.length ? tabela(["Item", "Saldo", "Situação", ""], a.repor.map((i) => h("tr", {}, h("td", {}, i.nome), h("td", {}, num(i.saldo) + " " + i.unidade),
         h("td", { style: ["negativo", "zerado"].includes(i.situacao) ? "color:var(--crit);font-weight:700" : "" }, rotuloEst[i.situacao] || i.situacao, i.venda_fechada ? " · venda fechada" : ""),

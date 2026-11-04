@@ -108,3 +108,26 @@ def test_estoque_pode_ficar_negativo_e_o_alerta_classifica(client, admin):
     assert cima["situacao"] == "negativo"  # os piores primeiro
     for perfil in ("atendente", "massa", "pizzaiolo", "acabamento"):
         assert client.get("/api/estoque/alertas", headers=entrar(client, perfil)[1]).status_code == 403
+
+
+def test_balcao_bloqueia_sabor_fechado_e_vende_o_que_so_esta_com_estoque_baixo(client, admin):
+    _, h = admin
+    _, ger = entrar(client, "gerente")
+    _, atd = entrar(client, "atendente")
+    m = _montar(client, h)
+    pz = lambda p, **x: {"itens": [{"tipo": "pizza", "produto_id": p["id"], "tamanho": "grande", **x}]}
+    assert client.post("/api/pedidos/calcular", json=pz(m["portuguesa"]), headers=atd).status_code == 200  # aberto
+    client.put(f"/api/vendas-fechadas/ingredientes/{m['ovo']['id']}/falta", json={"em_falta": True}, headers=ger)
+    try:
+        r = client.post("/api/pedidos/calcular", json=pz(m["portuguesa"]), headers=atd)  # calcula e avisa, para a tela deixar remover
+        assert r.status_code == 200 and "Venda fechada" in r.json()["aviso_venda_fechada"]
+        r2 = client.post("/api/pedidos/calcular", json=pz(m["mussarela"], sabor2_id=m["baiana"]["id"]), headers=atd)  # 2o sabor
+        assert r2.status_code == 200 and "Venda fechada" in r2.json()["aviso_venda_fechada"]
+        assert client.post("/api/pedidos", json={**pz(m["portuguesa"]), "pagamentos": [{"forma": "pix", "valor": "35,00"}]}, headers=atd).status_code == 409
+        assert client.post("/api/pedidos", json={**pz(m["baiana"]), "pagamentos": [{"forma": "pix", "valor": "35,00"}]}, headers=atd).status_code == 409
+        assert client.post("/api/pedidos/calcular", json=pz(m["mussarela"]), headers=atd).status_code == 200
+        lista = {p["id"]: p for p in client.get("/api/produtos?tipo=pizza", headers=atd).json()}
+        assert lista[m["portuguesa"]["id"]]["venda_fechada"] is True and lista[m["mussarela"]["id"]]["venda_fechada"] is False
+    finally:
+        client.put(f"/api/vendas-fechadas/ingredientes/{m['ovo']['id']}/falta", json={"em_falta": False}, headers=ger)
+    assert client.post("/api/pedidos/calcular", json=pz(m["portuguesa"]), headers=atd).status_code == 200

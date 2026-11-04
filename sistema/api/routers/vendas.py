@@ -15,6 +15,7 @@ from api.services import producao as svc_producao
 from api.services import canais, estoque
 from api.services.caixa import exigir_nao_encerrado
 from api.services.dinheiro import fmt
+from api.services.ingredientes import produtos_fechados
 from api.services.vendas import SITUACOES, autorizar, excede_limite, limite_desconto, repartir_pagamentos, totais
 
 router = APIRouter(prefix="/pedidos", tags=["vendas"])
@@ -48,14 +49,34 @@ def _precisa_autorizacao(sessao, t, lim) -> bool:
     return excede_limite(t["desconto"], t["subtotal"], lim) or (t["tipo"] == "entrega" and t["taxa"] < t["taxa_padrao"] and not _gerencia(sessao))
 
 
+def _sabor_fechado(conn, d) -> Optional[str]:
+    """Texto dos sabores com venda FECHADA (ingrediente em falta) no pedido, ou None. Estoque baixo apenas não fecha."""
+    ids = {x for it in d.itens for x in (it.produto_id, it.sabor2_id) if x}
+    fech = produtos_fechados(conn)
+    ruins = [i for i in ids if i in fech]
+    if ruins:
+        nomes = {p["id"]: p["nome"] for p in conn.execute("SELECT id, nome FROM produto WHERE id = ANY(%s)", (ruins,)).fetchall()}
+        return "Venda fechada para: " + "; ".join(f"{nomes.get(i, i)} (falta {', '.join(fech[i])})" for i in ruins) + ". Remova do pedido."
+    return None
+
+
+def _recusar_sabor_fechado(conn, d) -> None:
+    """Sabor com venda FECHADA não vende, nem no balcão."""
+    txt = _sabor_fechado(conn, d)
+    if txt:
+        raise HTTPException(status_code=409, detail=txt)
+
+
 @router.post("/calcular")
 def calcular(d: PedidoCalcular, sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
-    """Simulação: mesmos preços e regras do pedido, sem gravar."""
+    """Simulação: mesmos preços e regras do pedido, sem gravar. Sabor fechado não derruba o cálculo: volta em aviso_venda_fechada,
+    para a tela deixar remover o item; quem recusa é a criação do pedido."""
     t = totais(conn, LOJA_ID, d)
     lim = limite_desconto(conn, LOJA_ID, sessao["perfil"])
     r = _resumo_calculo(t)
     r["limite_desconto_pct"] = None if lim is None else fmt(lim)
     r["precisa_autorizacao"] = _precisa_autorizacao(sessao, t, lim)
+    r["aviso_venda_fechada"] = _sabor_fechado(conn, d)
     return r
 
 
@@ -66,6 +87,7 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
         if antigo:
             response.status_code = 200
             return antigo
+    _recusar_sabor_fechado(conn, d)
     t = totais(conn, LOJA_ID, d)
     if t["total"] <= 0:
         raise HTTPException(status_code=400, detail="O total do pedido deve ser maior que zero.")
