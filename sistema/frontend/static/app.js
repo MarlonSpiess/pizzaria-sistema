@@ -939,7 +939,7 @@ async function abaProducao() {
     let corpo;
     try { corpo = await ({ massa: subMassa, montagem: subMontagem, forno: subForno, acabamento: subAcabamento, despacho: subDespacho, andamento: subAndamento, motivos: subMotivos }[estado.subp])(); }
     catch (e) { corpo = aviso("erro", e.message); }
-    alvo.replaceChildren(nav, msg, corpo);
+    alvo.replaceChildren(nav, msg, h("div", { class: "prod prod-" + estado.subp }, corpo));
   }
 
   async function subMassa() {
