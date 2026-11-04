@@ -564,6 +564,13 @@ class ItemPedidoIn(Base):
     adicional_ids: list[int] = []
     quantidade: int = 1
     observacoes: Optional[str] = None
+    avulsa_id: Optional[int] = None  # pizza avulsa já pronta (montagem errada): o servidor usa o sabor e o tamanho dela
+
+    @model_validator(mode="after")
+    def _avulsa(self):
+        if self.avulsa_id is not None and (self.tipo not in ("pizza", "calzone") or self.quantidade != 1 or self.adicional_ids):
+            raise ValueError("Pizza avulsa é uma pizza ou calzone, quantidade 1, sem adicionais.")
+        return self
 
     @field_validator("tipo")
     @classmethod
