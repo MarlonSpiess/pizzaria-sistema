@@ -10,7 +10,7 @@ As telas Forno e Acabamento se atualizam sozinhas a cada 8 segundos. Toque em **
 
 - O topo mostra quantas pizzas estão no forno e a capacidade. Se passar da capacidade, aparece um aviso (o sistema só avisa, não bloqueia).
 - Quando a pizza sair do forno, toque em **Saiu do forno** na linha dela.
-- Se perceber que a pizza está com o **sabor errado** ou com **problema no formato/esteira**, toque no botão correspondente na linha dela (no Forno ou no Acabamento). A pizza vira **avulsa** e a pizza certa volta para o **topo** da lista de montagem.
+- Se perceber que a pizza está com o **sabor errado** ou com **problema no formato/esteira**, toque no botão correspondente na linha dela (no Forno ou no Acabamento). A pizza vira **avulsa** e a pizza certa volta para o **topo** da lista de montagem. O sistema pede uma observação opcional (até 120 caracteres, exemplo: "sem cebola por engano"), que vai junto na venda da avulsa.
 
 ## 2. Acabamento e etiqueta
 
@@ -22,7 +22,7 @@ As telas Forno e Acabamento se atualizam sozinhas a cada 8 segundos. Toque em **
 
 Se a pizza saiu errada, escolha o motivo em **Refazer** e confirme. A pizza atual vira perda e uma pizza igual entra **na frente** da fila de montagem. A refação só é possível enquanto o pedido está em produção; depois disso, a recepção faz um pedido novo.
 
-**Pizzas avulsas (montagem errada):** a pizza errada aparece neste cartão. Quem vende é a recepção, pelo Novo pedido (você não lança a venda). Se não houver venda, toque em **Descartar (motivo)**: ela entra nas perdas. O ingrediente usado na montagem já foi baixado do estoque uma vez, como perda "Pizza avulsa".
+**Pizzas avulsas (montagem errada):** a pizza errada aparece neste cartão, com sabores, adicionais e observações (sem valores). Quem vende é a recepção, pelo Novo pedido (você não lança a venda). Se não houver venda, toque em **Descartar (motivo)**: ela entra nas perdas e o estoque baixa como perda (a ficha inteira se a pizza já foi ao forno; só a montagem, se não foi).
 
 **Avisos da Produção:** o cartão no alto da tela mostra montagem errada e falta de ingrediente; para você, aparece também o cliente do pedido.
 

@@ -32,7 +32,7 @@ Exclusivo de administrador e proprietário:
 
 - **Ativar ou desativar** o canal. O sistema só consulta o Anota Ai com o canal ativo **e** com o endereço e o token configurados no servidor (variáveis de ambiente, nunca na tela).
 - **Mapa de produtos:** informe o **ID externo** de cada produto, o mesmo do campo "ID Externo" do gerenciador de cardápio do Anota Ai.
-- **Aceitar sozinho:** vem desligado. Ligado, o sistema aceita o pedido sem a gerência quando o canal está ativo, a **loja está aberta** (chave da gerência), o **caixa de hoje** está aberto, **todos os itens** estão no mapa e nenhum sabor está com a venda fechada. Desligado, ou se algum critério falhar, o pedido fica para a gerência; o botão de aceitar à mão ainda não existe e depende da API (até lá, aceite pelo aplicativo do Anota Ai).
+- **Aceitar sozinho:** vem desligado. Ligado, o sistema aceita o pedido sem a gerência quando o canal está ativo, a **loja está aberta** (chave da gerência), o **caixa de hoje** está aberto, **todos os itens** estão no mapa e nenhum sabor está com a venda fechada. Desligado, ou se algum critério falhar, o pedido fica para a gerência; o botão de aceitar à mão ainda não existe e depende da API (até lá, aceite pelo aplicativo do Anota Ai). A mesma chave aparece em Administrativo > Parâmetros, no cartão **Aceite automático de pedidos dos canais** (Ligar ou Desligar por canal, com auditoria). **Atenção:** hoje a chave só fica guardada. O aceite, automático ou um a um, ainda não existe: falta criar o pedido a partir da entrada do canal, o que depende do formato do pedido da API do Anota Ai.
 
 Hoje a integração **não está conectada**: falta o token e a documentação da API do Anota Ai, que se pede por chamado. Até lá, nada é aceito automaticamente.
 

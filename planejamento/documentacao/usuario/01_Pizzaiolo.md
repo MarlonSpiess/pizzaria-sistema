@@ -33,7 +33,7 @@ Com a pizza na mão, você tem quatro botões e o de perda:
 | **Sem ingredientes** | Falta ingrediente para montar | A pizza vai para o **fim da lista** e a gerência é avisada para providenciar o ingrediente. Fica registrado como retrocesso por falta de insumo |
 | **Perdeu a pizza (motivo)** | A pizza estragou e não serve para venda | A pizza vira perda. O acabamento ou a gerência toca em **Refazer** e uma pizza igual volta para a fila, **na frente** |
 
-Cada botão pede confirmação. Tudo fica registrado com o seu nome. O botão de retroceder saiu da tela; para falta de ingrediente, use **Sem ingredientes**.
+Cada botão pede confirmação. Nos dois de montagem errada, o sistema pede também uma observação opcional (até 120 caracteres) que vai junto quando a avulsa for vendida. Tudo fica registrado com o seu nome. O botão de retroceder saiu da tela; para falta de ingrediente, use **Sem ingredientes**.
 
 Se o acabamento descobrir o erro depois (no forno ou no acabamento), ele mesmo marca a pizza como avulsa e a pizza certa volta para o **topo** da lista.
 
