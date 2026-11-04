@@ -61,10 +61,10 @@ def test_aviso_de_status_com_reenvio(client, conn_teste, cardapio, hs):  # noqa:
     conn_teste.execute("SET session_replication_role = replica")  # o gatilho de imutabilidade do pedido impede esta troca; só no teste
     conn_teste.execute("UPDATE pedido SET canal = 'anotaai', id_canal = %s WHERE id = %s", (f"EXT{pid}", pid))
     conn_teste.execute("SET session_replication_role = DEFAULT")
-    assert canais.evento_da_situacao("retirada", "acabado") == "disponivel_retirada"
-    assert canais.evento_da_situacao("entrega", "acabado") == "pronto"
-    assert canais.evento_da_situacao("entrega", "despachado ou retirado") == "saiu_entrega"
-    assert canais.evento_da_situacao("retirada", "despachado ou retirado") is None
+    assert canais.evento_da_situacao("retirada", "acabado") == "pronto"
+    assert canais.evento_da_situacao("retirada", "despachado ou retirado") == "finalizado"
+    assert canais.evento_da_situacao("entrega", "acabado") is None  # espera o entregador sair
+    assert canais.evento_da_situacao("entrega", "despachado ou retirado") == "pronto"
     assert canais.evento_da_situacao("entrega", "recebido") is None
     f = Falso()
     with pool.connection() as conn:
@@ -81,6 +81,6 @@ def test_aviso_de_status_com_reenvio(client, conn_teste, cardapio, hs):  # noqa:
         conn.execute("UPDATE aviso_canal SET proxima_tentativa = now() - interval '1 second' WHERE pedido_id = %s", (pid,))
         conn.commit()
         assert canais.enviar_avisos(conn, c["id"], f) == 1
-        assert f.avisos == [(f"EXT{pid}", "disponivel_retirada")]
+        assert f.avisos == [(f"EXT{pid}", "pronto")]
         assert canais.enviar_avisos(conn, c["id"], f) == 0  # já enviado, não repete
     client.patch(f"/api/canais/{c['id']}/ativo", json={"ativo": False}, headers=adm)

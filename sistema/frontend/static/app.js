@@ -475,6 +475,7 @@ async function abaClientes() {
   await listar();
 }
 
+let relogioCanais = null;
 async function abaCanais() {
   const alvo = h("div"); moldura(alvo);
   const msg = h("div");
@@ -493,13 +494,22 @@ async function abaCanais() {
     !podeConfigurar ? null : h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/canais/" + atual.id + "/ativo", { ativo: !atual.ativo }); abaCanais(); } catch (e) { falha(e); } } }, atual.ativo ? "Desativar canal" : "Ativar canal"),
     h("p", {}, atual.ativo ? "Canal ativo." : "Canal desativado."));
   const filaCartao = h("div", { class: "cartao" }, h("h2", {}, "Fila de entrada"), fila.length ? tabela(["Pedido no canal", "Situação", "Recebido", ""], fila.map((e) => h("tr", {},
-    h("td", {}, e.id_externo), h("td", {}, e.situacao + (e.motivo ? ": " + e.motivo : "")), h("td", {}, new Date(e.recebido_em).toLocaleString("pt-BR")),
+    h("td", {}, e.id_externo), h("td", {}, e.situacao + (e.motivo ? ": " + e.motivo : "")), h("td", {}, new Date(e.recebido_em).toLocaleString("pt-BR"), e.situacao === "pendente" ? (() => { const t = new Date(e.recebido_em).getTime(), min = Number.isFinite(t) ? Math.max(0, Math.floor((Date.now() - t) / 60000)) : null;
+      if (min === null) return "";
+      return h("span", { class: "pequeno", style: min >= 10 ? "color:var(--alerta)" : "" }, " · há " + min + " min" + (min >= 15 ? " (o Anota Ai já deve ter cancelado)" : " (o Anota Ai cancela sozinho aos 15)")); })() : ""),
     h("td", {}, e.situacao === "pendente" ? h("button", { class: "sec", onclick: async (ev) => { const m = prompt("Motivo da recusa"); if (!m) return; ev.target.disabled = true; try { await api("POST", "/canais/fila/" + e.id + "/recusar", { motivo: m }); abaCanais(); } catch (x) { falha(x); } } }, "Recusar") : "")))) : h("p", {}, "Nenhum pedido recebido."));
   const mapaCartao = h("div", { class: "cartao" }, h("h2", {}, "Mapa de produtos"), h("p", { class: "pequeno" }, "ID Externo de cada produto no canal. Sem ele o produto não é exportado."),
     tabela(["Produto", "ID Externo", ""], mapa.map((m) => { const i = h("input", { value: m.id_externo || "", placeholder: "ID no canal" });
       if (!podeConfigurar) { i.disabled = true; return h("tr", {}, h("td", {}, m.nome), h("td", {}, m.id_externo || "sem ID"), h("td", {})); }
       return h("tr", {}, h("td", {}, m.nome), h("td", {}, i), h("td", {}, h("button", { class: "sec", onclick: async () => { try { await api("PUT", "/canais/" + atual.id + "/produtos", { produto_id: m.produto_id, id_externo: i.value }); msg.replaceChildren(aviso("ok", "Mapeado.")); } catch (x) { falha(x); } } }, "Salvar"))); })));
   alvo.replaceChildren(nav, msg, estadoCartao, filaCartao, mapaCartao);
+  clearInterval(relogioCanais);
+  relogioCanais = setInterval(() => {  // o "há N min" acompanha o relógio, sem atropelar quem digita
+    if (estado.aba !== "canais" || !estado.token) { clearInterval(relogioCanais); return; }
+    const a = document.activeElement;
+    if (a && (a.tagName === "INPUT" || a.tagName === "SELECT")) return;
+    abaCanais();
+  }, 30000);
 }
 
 async function abaEntregadores() {

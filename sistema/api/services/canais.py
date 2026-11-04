@@ -11,7 +11,7 @@ from api.config import LOJA_ID
 from api.database import agora
 
 log = logging.getLogger("pizzaria.canais")
-EVENTOS = ("pronto", "saiu_entrega", "disponivel_retirada")
+EVENTOS = ("pronto", "finalizado")
 ESPERA_MAX_S = 300  # espera máxima entre tentativas de aviso
 
 
@@ -45,11 +45,17 @@ def varrer(conn, canal_id: int, adaptador: Adaptador) -> int:
 
 
 def evento_da_situacao(tipo: str, nova: str) -> str | None:
-    """Qual aviso o canal recebe quando o pedido muda de situação."""
-    if nova == "acabado":
-        return "disponivel_retirada" if tipo == "retirada" else "pronto"
-    if nova == "despachado ou retirado" and tipo == "entrega":
-        return "saiu_entrega"
+    """Qual aviso o canal recebe quando o pedido muda de situação (regra pelo manual do Anota Ai, a confirmar com a API).
+
+    No Anota Ai "Pronto" já diz ao cliente "a caminho" (entrega) ou "disponível para retirada".
+    - Retirada: pronta no balcão (acabado) = Pronto; retirada pelo cliente = Finalizado.
+    - Entrega: "Pronto" só quando o entregador sai (despachado), para o cliente não ser avisado antes da hora.
+      Finalizar a entrega (cliente recebeu) fica PENDENTE: o sistema não tem confirmação de entrega.
+    """
+    if tipo == "retirada":
+        return "pronto" if nova == "acabado" else "finalizado" if nova == "despachado ou retirado" else None
+    if tipo == "entrega" and nova == "despachado ou retirado":
+        return "pronto"
     return None
 
 
