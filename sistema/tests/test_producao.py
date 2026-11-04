@@ -334,3 +334,21 @@ def test_pegar_e_cancelar_ao_mesmo_tempo_nao_travam_nem_dao_erro_500(client, car
         restantes = [x for x in _fila(client, hs["pizzaiolo"])["pizzas"] if x["pedido_id"] == ped["id"]]
         assert restantes == []
         client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"])  # libera o pizzaiolo para a próxima rodada, se sobrou algo
+
+
+def test_pizza_perdida_na_montagem_aparece_para_refazer_e_destrava_o_pedido(client, cardapio, hs, conn_teste):
+    m = _motivos(client, hs["gerente"])
+    ped = _pagar(client, hs["atendente"], [_g(cardapio)])
+    p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    assert client.post(f"/api/producao/pizzas/{p['id']}/perder", json={"motivo_id": m["perda"]}, headers=hs["pizzaiolo"]).status_code == 200
+    for quem in ("pizzaiolo", "massa", "atendente"):  # acesso rígido: só acabamento e gerência
+        assert client.get("/api/producao/perdidas", headers=hs[quem]).status_code == 403
+    for quem in ("acabamento", "gerente"):
+        assert p["id"] in [x["id"] for x in client.get("/api/producao/perdidas", headers=hs[quem]).json()]
+    r = client.post(f"/api/producao/pizzas/{p['id']}/refazer", json={"motivo_id": m["perda"]}, headers=hs["acabamento"])
+    assert client.post(f"/api/producao/pizzas/{p['id']}/refazer", json={"motivo_id": m["perda"]}, headers=hs["pizzaiolo"]).status_code == 403
+    assert client.post(f"/api/producao/pizzas/{p['id']}/refazer", json={"motivo_id": m["perda"]}, headers=hs["gerente"]).status_code == 409  # já refeita
+    assert r.status_code == 201 and r.json()["situacao"] == "na lista"  # entra no começo da fila
+    assert client.post(f"/api/producao/pedidos/{ped['id']}/acabado", headers=hs["acabamento"]).status_code == 409  # a nova ainda não acabou
+    assert p["id"] not in [x["id"] for x in client.get("/api/producao/perdidas", headers=hs["gerente"]).json()]
+    assert conn_teste.execute("SELECT count(*) AS n FROM perda WHERE pizza_id = %s", (p["id"],)).fetchone()[0] == 1  # a perda não duplica

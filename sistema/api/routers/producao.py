@@ -105,6 +105,14 @@ def fila(situacao: Optional[str] = None,
                                           "acima_capacidade": cap is not None and no_forno > int(cap)}}
 
 
+@router.get("/perdidas")
+def perdidas_sem_refacao(sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
+    """Pizzas perdidas ainda sem refação, de pedidos em produção: sem refazer, o pedido não consegue ficar acabado."""
+    sql = (f"SELECT {_COLS} {_BASE} AND p.situacao = 'perdida' AND ped.situacao IN ('recebido','em producao') "
+           "AND NOT EXISTS (SELECT 1 FROM pizza_producao r WHERE r.original_id = p.id) ORDER BY ped.urgente DESC, p.id")
+    return [_out(r) for r in conn.execute(sql, [LOJA_ID]).fetchall()]
+
+
 @router.get("/pedidos")
 def pedidos_abertos(sessao=Depends(requer_alguma("producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
     """Todos os pedidos em aberto com o andamento das pizzas (só consulta; o pedido só vira acabado à mão)."""
