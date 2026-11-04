@@ -21,6 +21,8 @@ As telas Forno e Acabamento se atualizam sozinhas a cada 8 segundos. Toque em **
 
 Se a pizza saiu errada, escolha o motivo em **Refazer** e confirme. A pizza atual vira perda e uma pizza igual entra **na frente** da fila de montagem. A refação só é possível enquanto o pedido está em produção; depois disso, a recepção faz um pedido novo.
 
+**Pizzas perdidas para refazer:** quando o pizzaiolo perde uma pizza na montagem, aparece no Acabamento o cartão **Pizzas perdidas para refazer** (ele só aparece se houver alguma). Toque em **Refazer**, escolha o motivo (obrigatório) e confirme. Uma pizza igual entra **na frente** da fila de montagem, ligada à perdida. A perdida não conta mais como pendente: o pedido pode ser marcado acabado quando a pizza nova ficar acabada. Não há perda nem baixa de estoque em dobro; a pizza nova baixa a ficha técnica quando ficar acabada.
+
 **Pedidos em aberto:** mostra, por pedido, quantas pizzas já estão acabadas. Quando todas estiverem acabadas, toque em **Marcar pedido acabado**. Bebidas e acompanhamentos não são contados como pizzas. Pedido só com bebida ou acompanhamento aparece com "0 de 0": separe os itens e toque em **Marcar pedido acabado**.
 
 Atenção: o teste da impressora térmica Bluetooth ainda está pendente. Se a etiqueta não imprimir, avise a gerência.

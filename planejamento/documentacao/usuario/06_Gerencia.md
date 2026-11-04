@@ -62,6 +62,7 @@ Além de tudo o que o atendente faz:
 ### Como o estoque se move sozinho
 
 - A **pizza acabada** baixa os insumos pela ficha técnica; a **pizza perdida** baixa como perda o que já tinha entrado na montagem.
+- **Pizza perdida na montagem:** a gerência também vê o cartão **Pizzas perdidas para refazer** na tela do Acabamento e pode tocar em **Refazer** (motivo obrigatório). A pizza nova entra na frente da fila; o motivo da refação fica na auditoria.
 - **Bebidas e acompanhamentos** saem do estoque quando o pedido fica acabado.
 - A baixa automática **nunca trava a produção**. Se faltar saldo, o estoque fica **negativo**, para a falta aparecer. Produto sem ficha gera uma pendência em Estoque > Alertas.
 - **Alerta de estoque** (Estoque > Alertas, e alerta no BI): ingrediente **NEGATIVO**, **ZERADO**, **repor** (chegou ao ponto de pedido) ou **abaixo do mínimo** (estoque mínimo do cadastro), do mais grave para o menos grave. Vale para qualquer item com estoque mínimo, não só ingrediente. Trate na loja (conferir, repor) e, se for o caso, ajuste o saldo por um Inventário.

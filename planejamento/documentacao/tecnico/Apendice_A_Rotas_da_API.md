@@ -2,7 +2,7 @@
 
 Gerado automaticamente a partir de `sistema/api/routers/` por `planejamento/documentacao/fonte/gerar_apendice_rotas.py`. Não edite à mão: rode o script de novo quando o código mudar.
 
-Total: 249 rotas.
+Total: 250 rotas.
 
 A permissão é conferida no servidor em cada chamada (`requer` exige a permissão; `requer_alguma` aceita qualquer uma das listadas). Quais perfis têm cada permissão está na seção 5 do Manual Técnico. Além da permissão, várias rotas aplicam regras de negócio (por exemplo, caixa aberto, limite de desconto, aprovação por outra pessoa) que devolvem 400, 403 ou 409.
 
@@ -239,6 +239,7 @@ A permissão é conferida no servidor em cada chamada (`requer` exige a permiss�
 | Método | Rota | Permissão |
 |---|---|---|
 | GET | `/api/producao/fila` | `producao.montagem` ou `producao.forno` ou `producao.acabamento` ou `producao.gerir` |
+| GET | `/api/producao/perdidas` | `producao.acabamento` ou `producao.gerir` |
 | GET | `/api/producao/pedidos` | `producao.acabamento` ou `producao.gerir` |
 | POST | `/api/producao/pizzas/proxima` | `producao.montagem` |
 | POST | `/api/producao/pizzas/{pid}/produzida` | `producao.montagem` |

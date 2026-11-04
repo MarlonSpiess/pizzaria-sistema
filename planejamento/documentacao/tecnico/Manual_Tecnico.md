@@ -133,7 +133,7 @@ São 101 tabelas. O sabor com venda fechada **não é guardado**: é calculado a
 | Entidade | Estados | Quem muda |
 |---|---|---|
 | Pedido (`pedido.situacao`) | recebido → em producao → acabado → despachado ou retirado; cancelado a partir de qualquer estado antes de despachado | Produção move até acabado (o acabamento marca o pedido acabado); o balcão marca despachado ou retirado; a gerência pode mover à mão |
-| Pizza ou calzone (`pizza_producao.situacao`) | na lista → em montagem → no forno → saiu do forno → acabada; perdida; cancelada | Pizzaiolo (montagem e retrocesso), acabamento (saiu do forno, acabada, refazer) |
+| Pizza ou calzone (`pizza_producao.situacao`) | na lista → em montagem → no forno → saiu do forno → acabada; perdida; cancelada | Pizzaiolo (montagem e retrocesso), acabamento (saiu do forno, acabada, refazer). A refação cria pizza nova ligada à original (`original_id`), na frente da fila; refazer pizza já perdida não duplica perda nem baixa; a perdida deixa de contar como pendente do pedido |
 | Caixa do dia (`caixa_dia.situacao`) | aberto → contado → fechado | Atendente abre, conta e fecha; diferença acima da tolerância exige aprovação de gerente, proprietário ou administrador que não fez a contagem (subgerente não) |
 | Ingrediente em falta (`ingrediente_em_falta`) | em falta (sem `reaberto_em`) → reaberto | Gerência (`vendas.gerir`), em Estoque > Alertas |
 | Entrada do canal (`entrada_canal.situacao`) | pendente → importando → importada; bloqueada; recusada | Varredor e importação; a gerência decide as bloqueadas (tentar de novo ou recusar) |
@@ -160,12 +160,12 @@ O app conecta com um papel sem privilégio de dono (`pizzaria_app`). `scripts/pa
 
 ### 4.2 Rotas por área
 
-São 249 rotas. A lista completa, com a permissão de cada uma, está no [Apêndice A](Apendice_A_Rotas_da_API.md). Resumo por área de uso:
+São 250 rotas. A lista completa, com a permissão de cada uma, está no [Apêndice A](Apendice_A_Rotas_da_API.md). Resumo por área de uso:
 
 | Área | Grupos de rotas |
 |---|---|
 | Comum | `/auth` (login, logout, me, trocar senha), `/rh/meus-dados` |
-| Produção | `/producao/fila`, `/producao/pizzas/*` (próxima, produzida, retroceder, saiu do forno, acabada, perder, refazer), `/producao/pedidos`, `/producao/massa/*`, `/producao/motivos/*`, `/caixa/despacho*` |
+| Produção | `/producao/fila`, `/producao/pizzas/*` (próxima, produzida, retroceder, saiu do forno, acabada, perder, refazer), `/producao/perdidas` (pizzas perdidas aguardando refação: acabamento e gerência), `/producao/pedidos`, `/producao/massa/*`, `/producao/motivos/*`, `/caixa/despacho*` |
 | Vendas | `/pedidos/*` (calcular, criar, listar, situação, urgente, CF, cancelar), `/caixa/*` (abrir, movimentos, contagem, fechar, entregas, acertos, motivos, maquininhas, regras de recebimento, relatório), `/canais/*` (incluindo `/canais/loja`), `/vendas-fechadas/*`, `/clientes/*`, `/entregadores/*`, `/parametros/formas-pagamento` |
 | Administrativo | `/categorias`, `/produtos`, `/adicionais`, `/precos/pizza`, `/itens`, `/fichas/*`, `/etapas`, `/modelo-etapas`, `/estoque/*`, `/compras/*`, `/contas/*`, `/custos/*`, `/imobilizado/*`, `/rh/*`, `/bi/*`, `/usuarios/*`, `/parametros/*`, `/auditoria`, `/sistema/backup` |
 
@@ -372,8 +372,7 @@ A estrutura de menus aprovada está em [01_Estrutura_de_Menus.md](../../menus/01
 | 5 | Backup diário fora da máquina | Adiado por Marlon |
 | 6 | Aviso de cancelamento ao Anota Ai | API |
 | 7 | Cópia em C:\Maria Gabriela\Pizzaria | Pasta disponível |
-| 8 | Pizza perdida na Montagem não tem botão de refação na tela (a rota aceita); sem refação, o pedido não pode ser marcado acabado | Correção pedida ao PR #2 |
-| 9 | Valor por entrega diferente do padrão só pela API (sem tela) | Decidir se precisa de tela |
-| 10 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
+| 8 | Valor por entrega diferente do padrão só pela API (sem tela) | Decidir se precisa de tela |
+| 9 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
 
 **Recomendação:** antes do primeiro dia de uso, priorizar o teste da impressora e o pedido do token do Anota Ai, porque são os dois pontos que podem mudar o desenho (caminho de impressão e formato do pedido); o resto do sistema já roda na loja sem eles.
