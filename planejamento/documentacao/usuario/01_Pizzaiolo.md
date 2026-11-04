@@ -26,7 +26,7 @@ Você trabalha uma pizza por vez. Só pega a próxima depois de marcar a atual.
 | Situação | O que fazer |
 |---|---|
 | Não dá para montar agora (exemplo: falta um ingrediente na bancada) | Em **Retroceder**, escolha o motivo. A pizza volta uma posição na fila. O motivo é obrigatório |
-| A pizza estragou na montagem | Em **Perdeu a pizza**, escolha o motivo e confirme. A pizza vira perda. **Avise a gerência na hora.** O acabamento ou a gerência toca em **Refazer** e uma pizza igual volta para a sua fila, **na frente** |
+| A pizza estragou na montagem | Em **Perdeu a pizza**, escolha o motivo e confirme. A pizza vira perda. **Avise a gerência na hora.** O acabamento ou a gerência toca em **Refazer** e uma pizza igual volta para a sua fila, **na frente**. Em implementação: botões próprios do pizzaiolo para montagem errada no sabor, problema no formato ou esteira e falta de ingrediente; este manual será atualizado quando entrarem |
 
 Retroceder e perder ficam registrados com o seu nome e o motivo. A gerência vê isso nos relatórios. Os motivos são cadastrados pela gerência.
 

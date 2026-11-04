@@ -373,6 +373,7 @@ A estrutura de menus aprovada está em [01_Estrutura_de_Menus.md](../../menus/01
 | 6 | Aviso de cancelamento ao Anota Ai | API |
 | 7 | Cópia em C:\Maria Gabriela\Pizzaria | Pasta disponível |
 | 8 | Valor por entrega diferente do padrão só pela API (sem tela) | Decidir se precisa de tela |
-| 9 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
+| 9 | Novos botões do pizzaiolo com a pizza ativa (Finalizada a montagem; Montagem errada no sabor; Problemas no formato/esteira; Sem ingredientes), definidos por Marlon em 04/11/2026; a pizza errada no forno pode ser vendida avulsa e há alerta para massa e acabamento | Em implementação no PR #2; manuais atualizados quando terminar |
+| 10 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
 
 **Recomendação:** antes do primeiro dia de uso, priorizar o teste da impressora e o pedido do token do Anota Ai, porque são os dois pontos que podem mudar o desenho (caminho de impressão e formato do pedido); o resto do sistema já roda na loja sem eles.
