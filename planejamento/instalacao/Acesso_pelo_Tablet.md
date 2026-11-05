@@ -41,6 +41,7 @@ O sistema roda no PC da loja e abre no navegador do tablet pela rede Wi-Fi da lo
 | Sintoma | O que conferir |
 |---|---|
 | Página não carrega ou "ERR_CONNECTION_TIMED_OUT" | Regra do firewall (passo 1.4) e rede Privada (passo 1.3). |
+| "ERR_ADDRESS_UNREACHABLE" | O tablet não enxerga esse IP: IP digitado errado (o do exemplo, ou de outra placa do PC como vEthernet, VirtualBox ou VPN), tablet em outra rede, ou roteador com isolamento de clientes. Comparar o IP do tablet com o do PC: os três primeiros números devem ser iguais. |
 | "ERR_CONNECTION_REFUSED" | Janela do `start_api.bat` fechada ou com erro. |
 | Abria e parou de abrir | IP do PC mudou: rodar `ipconfig` de novo e fixar a reserva no roteador. |
 | Abre no PC e não no tablet | Tablet em outra rede (convidados, 4G) ou roteador com "isolamento de clientes" ligado. |
