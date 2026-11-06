@@ -26,32 +26,51 @@ def _sabor(conn, loja_id: int, sabor_id: int, tamanho: str) -> dict:
     return s
 
 
-def calcular_pizza(conn, loja_id: int, tamanho: str, sabor1_id: int, sabor2_id, adicional_ids: list[int]) -> dict:
-    if sabor2_id is not None:
-        if tamanho != "grande":
-            raise HTTPException(status_code=400, detail="Só a pizza Grande aceita dois sabores.")
-        if sabor2_id == sabor1_id:
-            raise HTTPException(status_code=400, detail="Escolha dois sabores diferentes ou só um sabor.")
-    s1 = _sabor(conn, loja_id, sabor1_id, tamanho)
+def conferir_sabores(tamanho: str, sabor1_id: int, sabor2_id) -> None:
+    if sabor2_id is None:
+        return
+    if tamanho != "grande":
+        raise HTTPException(status_code=400, detail="Só a pizza Grande aceita dois sabores.")
+    if sabor2_id == sabor1_id:
+        raise HTTPException(status_code=400, detail="Escolha dois sabores diferentes ou só um sabor.")
+
+
+def preco_meio_a_meio(valor1: Decimal, valor2: Decimal) -> Decimal:
+    """Grande com dois sabores: metade de cada, cada metade arredondada para cima ao centavo (T4). Única definição da regra."""
+    return metade_para_cima(valor1) + metade_para_cima(valor2)
+
+
+def preco_pizza(tamanho: str, sabores: list[dict], adicionais: list[dict]) -> dict:
+    """Regra pura: sabores e adicionais já validados, cada um com nome e valor (Decimal) no tamanho."""
     itens, total = [], Decimal("0.00")
-    if sabor2_id is not None:
-        s2 = _sabor(conn, loja_id, sabor2_id, tamanho)
-        for s in (s1, s2):
+    if len(sabores) == 2:
+        for s in sabores:
             metade = metade_para_cima(s["valor"])
             itens.append({"descricao": f"Metade {s['nome']} (Grande {fmt(s['valor']).replace('.', ',')} ÷ 2)", "valor": fmt(metade)})
             total += metade
     else:
-        itens.append({"descricao": f"{s1['nome']} ({tamanho})", "valor": fmt(s1["valor"])})
-        total += s1["valor"]
-    for aid in adicional_ids:
-        a = conn.execute(
-            "SELECT a.nome, a.ativo, (SELECT valor FROM preco_adicional WHERE adicional_id = a.id AND tamanho = %s "
-            "ORDER BY id DESC LIMIT 1) AS valor FROM adicional a WHERE a.id = %s AND a.loja_id = %s",
-            (tamanho, aid, loja_id)).fetchone()
-        if not a:
-            raise HTTPException(status_code=404, detail="Borda ou adicional não encontrado.")
-        if not a["ativo"] or a["valor"] is None:
-            raise HTTPException(status_code=400, detail=f"{a['nome']} não está disponível.")
+        itens.append({"descricao": f"{sabores[0]['nome']} ({tamanho})", "valor": fmt(sabores[0]["valor"])})
+        total += sabores[0]["valor"]
+    for a in adicionais:
         itens.append({"descricao": a["nome"], "valor": fmt(a["valor"])})
         total += a["valor"]
     return {"tamanho": tamanho, "itens": itens, "total": fmt(total)}
+
+
+def _adicional(conn, loja_id: int, adicional_id: int, tamanho: str) -> dict:
+    a = conn.execute(
+        "SELECT a.nome, a.ativo, (SELECT valor FROM preco_adicional WHERE adicional_id = a.id AND tamanho = %s "
+        "ORDER BY id DESC LIMIT 1) AS valor FROM adicional a WHERE a.id = %s AND a.loja_id = %s",
+        (tamanho, adicional_id, loja_id)).fetchone()
+    if not a:
+        raise HTTPException(status_code=404, detail="Borda ou adicional não encontrado.")
+    if not a["ativo"] or a["valor"] is None:
+        raise HTTPException(status_code=400, detail=f"{a['nome']} não está disponível.")
+    return a
+
+
+def calcular_pizza(conn, loja_id: int, tamanho: str, sabor1_id: int, sabor2_id, adicional_ids: list[int]) -> dict:
+    conferir_sabores(tamanho, sabor1_id, sabor2_id)
+    sabores = [_sabor(conn, loja_id, sid, tamanho) for sid in (sabor1_id, sabor2_id) if sid is not None]
+    adicionais = [_adicional(conn, loja_id, aid, tamanho) for aid in adicional_ids]
+    return preco_pizza(tamanho, sabores, adicionais)

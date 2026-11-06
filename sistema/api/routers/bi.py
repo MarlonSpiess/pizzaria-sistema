@@ -13,8 +13,7 @@ from api.database import agora, get_db
 from api.routers import contas as contas_r
 from api.routers import estoque as estoque_r
 from api.routers import imobilizado as imob_r
-from api.security import PERMISSOES, requer
-from api.services import contas as contas_svc
+from api.security import requer, tem_permissao
 from api.services import custos as custos_svc
 from api.services.dinheiro import fmt
 from api.services.parametros import vigentes
@@ -46,7 +45,7 @@ def _data(d: Optional[date]) -> date:
 
 
 def _pode_salarios(sessao) -> bool:
-    return "rh.salarios" in PERMISSOES.get(sessao["perfil"], set())
+    return tem_permissao(sessao, "rh.salarios")
 
 
 def _soma_mes(m: date, n: int) -> date:
@@ -96,7 +95,7 @@ def _alertas(conn, sessao) -> list[dict]:
         a = imob_r.alertas(sessao, conn)
         if a["bens_criticos_parados"]:
             saida.append({"tipo": "manutencao", "gravidade": "alta", "texto": f"{len(a['bens_criticos_parados'])} bem(ns) crítico(s) parado(s)."})
-    if "contas.ver" in PERMISSOES.get(sessao["perfil"], set()) and _pode_salarios(sessao):
+    if tem_permissao(sessao, "contas.ver") and _pode_salarios(sessao):
         f = contas_r.fluxo(30, sessao, conn)
         if Decimal(f["menor_saldo"]) < 0:
             saida.append({"tipo": "fluxo", "gravidade": "alta", "texto": f"O saldo previsto fica negativo em até 30 dias (menor: R$ {f['menor_saldo']})."})
@@ -116,7 +115,7 @@ def painel(data: Optional[date] = None, sessao=Depends(requer("bi.ver")), conn=D
     cmv = custos_svc.cmv_mes(conn, LOJA_ID, mes)
     cmv_pct = (cmv["cmv_real"] / cmv["vendas"] * 100).quantize(Q2) if cmv["vendas"] > 0 else None
     saldo = None
-    if "contas.ver" in PERMISSOES.get(sessao["perfil"], set()):
+    if tem_permissao(sessao, "contas.ver"):
         saldo = contas_r.fluxo(1, sessao, conn)["saldo_atual"]
     var = ((hoje["vendas"] - anterior["vendas"]) / anterior["vendas"] * 100).quantize(Q2) if anterior["vendas"] > 0 else None
     return {"data": dia, "vendas": fmt(hoje["vendas"]), "vendas_semana_anterior": fmt(anterior["vendas"]), "variacao_pct": fmt(var), "pedidos": hoje["pedidos"],

@@ -3,13 +3,12 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Optional
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, transacao
 from api.schemas import (AtivoIn, BaixaIn, CancelarTituloIn, CanalRepasseIn, ConciliarIn, ContaBancariaIn, ExtratoIn, RecorrenteIn, TipoDespesaIn, TituloIn)
-from api.security import PERMISSOES, requer
+from api.security import requer, tem_permissao
 from api.services import contas as svc
 from api.services.dinheiro import fmt, parse_reais
 from api.services.parametros import vigentes
@@ -21,11 +20,6 @@ TIPOS_PADRAO = [("Aluguel", "fixa"), ("Energia", "fixa"), ("Gás", "fixa"), ("Á
                 ("Pequenas despesas do caixa", "variavel"), ("Retirada de sócio", "retirada")]
 
 
-def _ex(conn, e):
-    conn.rollback()
-    raise traduzir_erro(e) from e
-
-
 # ---------------------------------------------------------------- cadastros
 @router.get("/contas-bancarias")
 def contas_bancarias(sessao=Depends(requer("contas.ver")), conn=Depends(get_db)):
@@ -35,13 +29,10 @@ def contas_bancarias(sessao=Depends(requer("contas.ver")), conn=Depends(get_db))
 
 @router.post("/contas-bancarias", status_code=201)
 def criar_conta(d: ContaBancariaIn, sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO conta_bancaria (loja_id, nome, banco, agencia, numero, tipo, saldo_inicial, saldo_inicial_data) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (LOJA_ID, d.nome, d.banco, d.agencia, d.numero, d.tipo, parse_reais(d.saldo_inicial), d.saldo_inicial_data)).fetchone()
         auditar(conn, sessao, "criar", "conta_bancaria", r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -66,12 +57,9 @@ def tipos(sessao=Depends(requer("contas.ver")), conn=Depends(get_db)):
 
 @router.post("/tipos-despesa", status_code=201)
 def criar_tipo(d: TipoDespesaIn, sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO tipo_despesa (loja_id, nome, natureza) VALUES (%s,%s,%s) RETURNING id", (LOJA_ID, d.nome, d.natureza)).fetchone()
         auditar(conn, sessao, "criar", "tipo_despesa", r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -98,12 +86,9 @@ def canais(sessao=Depends(requer("contas.ver")), conn=Depends(get_db)):
 
 @router.post("/canais", status_code=201)
 def criar_canal(d: CanalRepasseIn, sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO canal_repasse (loja_id, canal, taxa_pct, prazo_dias) VALUES (%s,%s,%s,%s) RETURNING id", (LOJA_ID, d.canal, d.taxa_pct, d.prazo_dias)).fetchone()
         auditar(conn, sessao, "criar", "canal_repasse", r["id"], depois={"canal": d.canal})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -127,14 +112,11 @@ def criar_recorrente(d: RecorrenteIn, sessao=Depends(requer("contas.operar")), c
         raise HTTPException(status_code=404, detail="Fornecedor não encontrado.")
     if d.fim and d.fim < d.inicio:
         raise HTTPException(status_code=400, detail="O fim não pode ser antes do início.")
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO recorrente (loja_id, descricao, tipo_despesa_id, fornecedor_id, valor, dia_vencimento, inicio, fim, criado_em, criado_por) "
                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id", (LOJA_ID, d.descricao, d.tipo_despesa_id, d.fornecedor_id, parse_reais(d.valor), d.dia_vencimento,
                                                                                  d.inicio, d.fim, agora(), sessao["usuario_id"])).fetchone()
         auditar(conn, sessao, "criar", "recorrente", r["id"], depois={"descricao": d.descricao, "valor": d.valor})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -165,11 +147,8 @@ _SQL_TITULO = ("SELECT t.*, f.nome AS fornecedor, d.nome AS tipo_despesa, (SELEC
 @router.post("/sincronizar")
 def sincronizar(sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
     """Traz para cá as notas, despesas do caixa, acertos de entregador, vendas a receber e recorrências ainda não lançadas."""
-    try:
+    with transacao(conn):
         n = svc.sincronizar(conn, LOJA_ID)
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return n
 
 
@@ -177,11 +156,8 @@ def sincronizar(sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
 def titulos(sentido: Optional[str] = None, situacao: Optional[str] = None, de: Optional[date] = None, ate: Optional[date] = None, atrasados: bool = False,
             sessao=Depends(requer("contas.ver")), conn=Depends(get_db)):
     """Lista os títulos. A sincronização roda antes, para a tela nunca mostrar defasagem."""
-    try:
+    with transacao(conn):
         svc.sincronizar(conn, LOJA_ID)
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     if sentido not in (None, "pagar", "receber") or situacao not in (None, "aberto", "parcial", "baixado", "cancelado", "pendente"):
         raise HTTPException(status_code=400, detail="Filtro inválido.")
     sql, p = _SQL_TITULO + " WHERE t.loja_id = %s", [LOJA_ID]
@@ -195,7 +171,7 @@ def titulos(sentido: Optional[str] = None, situacao: Optional[str] = None, de: O
         sql, p = sql + " AND t.vencimento >= %s", p + [de]
     if ate:
         sql, p = sql + " AND t.vencimento <= %s", p + [ate]
-    if "rh.salarios" not in PERMISSOES.get(sessao["perfil"], set()):
+    if not tem_permissao(sessao, "rh.salarios"):
         sql += " AND t.origem_tipo <> 'folha'"
     hoje = agora().date()
     if atrasados:
@@ -232,7 +208,7 @@ def criar_titulo(d: TituloIn, sessao=Depends(requer("contas.operar")), conn=Depe
     if parc < Decimal("0.01"):
         raise HTTPException(status_code=400, detail="O valor é pequeno demais para este número de parcelas.")
     ids, quando = [], agora()
-    try:
+    with transacao(conn):
         for i in range(d.parcelas):
             v = parc if i < d.parcelas - 1 else valor - parc * (d.parcelas - 1)  # a última absorve o centavo da divisão
             venc = svc._soma_meses(d.vencimento, i)
@@ -244,9 +220,6 @@ def criar_titulo(d: TituloIn, sessao=Depends(requer("contas.operar")), conn=Depe
         if d.parcelas > 1:
             conn.execute("UPDATE titulo SET grupo_id = %s WHERE id = ANY(%s)", (ids[0], ids))
         auditar(conn, sessao, "criar", "titulo", ids[0], depois={"sentido": d.sentido, "valor": fmt(valor), "parcelas": d.parcelas, "aprovado": aprovado})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"ids": ids, "aprovado": aprovado}
 
 
@@ -272,12 +245,9 @@ def aprovar(tid: int, sessao=Depends(requer("contas.aprovar")), conn=Depends(get
         raise HTTPException(status_code=403, detail="Quem lançou o título não pode aprová-lo.")
     ids = [x["id"] for x in conn.execute("SELECT id FROM titulo WHERE loja_id = %s AND NOT aprovado AND situacao <> 'cancelado' AND (id = %s OR (grupo_id IS NOT NULL AND grupo_id = %s)) FOR UPDATE",
                                          (LOJA_ID, tid, t["grupo_id"])).fetchall()]
-    try:
+    with transacao(conn):
         conn.execute("UPDATE titulo SET aprovado = true, aprovado_por = %s WHERE id = ANY(%s)", (sessao["usuario_id"], ids))
         auditar(conn, sessao, "aprovar", "titulo", tid, depois={"titulos": ids})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"aprovados": ids}
 
 
@@ -288,12 +258,9 @@ def cancelar(tid: int, d: CancelarTituloIn, sessao=Depends(requer("contas.operar
         raise HTTPException(status_code=409, detail="Título criado por outra área do sistema: corrija na origem.")
     if t["situacao"] != "aberto":
         raise HTTPException(status_code=409, detail="Só se cancela título sem nenhuma baixa.")
-    try:
+    with transacao(conn):
         conn.execute("UPDATE titulo SET situacao = 'cancelado', cancelado_motivo = %s WHERE id = %s", (d.motivo, tid))
         auditar(conn, sessao, "cancelar", "titulo", tid, depois={"motivo": d.motivo})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": tid, "situacao": "cancelado"}
 
 
@@ -323,14 +290,11 @@ def dar_baixa(tid: int, d: BaixaIn, sessao=Depends(requer("contas.operar")), con
         raise HTTPException(status_code=400, detail="A baixa é anterior ao saldo inicial da conta.")
     if valor - desconto + juros + multa <= 0:
         raise HTTPException(status_code=400, detail="Baixa sem movimento de dinheiro: informe o desconto menor que o valor.")
-    if (desconto + juros + multa) * 5 > valor and "contas.aprovar" not in PERMISSOES.get(sessao["perfil"], set()):
+    if (desconto + juros + multa) * 5 > valor and not tem_permissao(sessao, "contas.aprovar"):
         raise HTTPException(status_code=403, detail="Desconto, juros ou multa acima de 20% do valor: só o administrador ou o proprietário baixa assim.")
-    try:
+    with transacao(conn):
         r = svc.baixar(conn, tid, data, valor, d.forma, d.conta_id, sessao["usuario_id"], desconto, juros, multa)
         auditar(conn, sessao, "baixar", "titulo", tid, depois={"valor": fmt(valor), "desconto": fmt(desconto), "juros": fmt(juros), "multa": fmt(multa), "conta_id": d.conta_id})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"baixa_id": r["baixa_id"], "valor_movimento": fmt(r["valor_movimento"])}
 
 
@@ -341,13 +305,10 @@ def lancar_extrato(d: ExtratoIn, sessao=Depends(requer("contas.operar")), conn=D
         raise HTTPException(status_code=404, detail="Conta não encontrada.")
     neg = d.valor.startswith("-")
     v = Decimal(d.valor)
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO extrato_linha (conta_id, data, descricao, valor, usuario_id, criado_em) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id",
                          (d.conta_id, d.data, d.descricao, -abs(v) if neg else abs(v), sessao["usuario_id"], agora())).fetchone()
         auditar(conn, sessao, "criar", "extrato_linha", r["id"], depois={"conta_id": d.conta_id, "valor": d.valor})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -358,7 +319,9 @@ def pendencias_conciliacao(conta_id: int, sessao=Depends(requer("contas.ver")), 
         raise HTTPException(status_code=404, detail="Conta não encontrada.")
     ext = conn.execute("SELECT id, data, descricao, valor FROM extrato_linha e WHERE conta_id = %s AND NOT EXISTS (SELECT 1 FROM conciliacao c WHERE c.extrato_id = e.id) ORDER BY data, id", (conta_id,)).fetchall()
     bx = conn.execute("SELECT b.id, b.data, t.descricao, t.sentido, b.forma, b.valor_movimento FROM baixa_titulo b JOIN titulo t ON t.id = b.titulo_id "
-                      "WHERE b.conta_id = %s AND NOT EXISTS (SELECT 1 FROM conciliacao c WHERE c.baixa_id = b.id) ORDER BY b.data, b.id", (conta_id,)).fetchall()
+                      "WHERE b.conta_id = %s AND NOT EXISTS (SELECT 1 FROM conciliacao c WHERE c.baixa_id = b.id)"
+                      + ("" if tem_permissao(sessao, "rh.salarios") else " AND t.origem_tipo IS DISTINCT FROM 'folha'")  # folha só para quem vê salários
+                      + " ORDER BY b.data, b.id", (conta_id,)).fetchall()
     return {"extrato": [e | {"valor": fmt(e["valor"])} for e in ext],
             "baixas": [b | {"valor_movimento": fmt(b["valor_movimento"]), "valor_com_sinal": fmt(b["valor_movimento"] if b["sentido"] == "receber" else -b["valor_movimento"])} for b in bx]}
 
@@ -374,12 +337,9 @@ def conciliar(d: ConciliarIn, sessao=Depends(requer("contas.operar")), conn=Depe
     esperado = b["valor_movimento"] if b["sentido"] == "receber" else -b["valor_movimento"]
     if e["valor"] != esperado:
         raise HTTPException(status_code=400, detail=f"O extrato mostra R$ {fmt(e['valor'])} e a baixa R$ {fmt(esperado)}: ajuste a baixa (desconto, juros ou multa) antes de casar.")
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO conciliacao (extrato_id, baixa_id, usuario_id, criado_em) VALUES (%s,%s,%s,%s)", (d.extrato_id, d.baixa_id, sessao["usuario_id"], agora()))
         auditar(conn, sessao, "conciliar", "conciliacao", None, depois={"extrato_id": d.extrato_id, "baixa_id": d.baixa_id})
-        conn.commit()
-    except psycopg.Error as ex:
-        _ex(conn, ex)
     return {"conciliado": True}
 
 
@@ -389,11 +349,8 @@ def fluxo(dias: int = 30, sessao=Depends(requer("contas.ver")), conn=Depends(get
     """Saldo das contas hoje e projeção diária: títulos abertos entram no vencimento (atrasados, hoje). O dinheiro da gaveta fica no Fechamento de Caixa."""
     if not 1 <= dias <= 365:
         raise HTTPException(status_code=400, detail="Informe de 1 a 365 dias.")
-    try:
+    with transacao(conn):
         svc.sincronizar(conn, LOJA_ID)
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     hoje = agora().date()
     contas = conn.execute("SELECT * FROM conta_bancaria WHERE loja_id = %s ORDER BY nome", (LOJA_ID,)).fetchall()
     saldos = [{"id": c["id"], "nome": c["nome"], "saldo": fmt(svc.saldo_conta(conn, c)), "ativo": c["ativo"]} for c in contas]

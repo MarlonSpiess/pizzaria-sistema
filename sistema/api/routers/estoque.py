@@ -3,15 +3,13 @@ from datetime import timedelta
 from decimal import Decimal
 from typing import Optional
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, transacao
 from api.schemas import (ContagemInventarioIn, FecharInventarioIn, InventarioIn, ItemEstoqueIn, LocalIn, LocalUpdate, MovimentoEstoqueIn)
-from api.security import requer
+from api.security import requer, tem_permissao
 from api.services import estoque as svc
-from api.services.dinheiro import fmt
 from api.services.ingredientes import contagem_sabores, ingredientes_em_falta
 from api.services.parametros import vigentes
 
@@ -48,13 +46,9 @@ def iniciar_locais(sessao=Depends(requer("estoque.gerir")), conn=Depends(get_db)
 
 @router.post("/locais", status_code=201)
 def criar_local(d: LocalIn, sessao=Depends(requer("estoque.gerir")), conn=Depends(get_db)):
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO local_estoque (loja_id, nome) VALUES (%s,%s) RETURNING id, nome, ativo", (LOJA_ID, d.nome)).fetchone()
         auditar(conn, sessao, "criar", "local_estoque", r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -71,13 +65,9 @@ def alterar_local(lid: int, d: LocalUpdate, sessao=Depends(requer("estoque.gerir
         if saldo > 0:
             raise HTTPException(status_code=409, detail="Este local ainda tem estoque: transfira antes de inativar.")
     sets = ", ".join(f"{c} = %s" for c in campos)
-    try:
+    with transacao(conn):
         r = conn.execute(f"UPDATE local_estoque SET {sets} WHERE id = %s RETURNING id, nome, ativo", (*campos.values(), lid)).fetchone()
         auditar(conn, sessao, "alterar", "local_estoque", lid, depois=campos)
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -154,7 +144,7 @@ def config(iid: int, d: ItemEstoqueIn, sessao=Depends(requer("estoque.gerir")), 
         raise HTTPException(status_code=404, detail="Local não encontrado ou inativo.")
     if novo["fornecedor_habitual_id"] is not None and not conn.execute("SELECT 1 FROM fornecedor WHERE id = %s AND loja_id = %s AND ativo", (novo["fornecedor_habitual_id"], LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Fornecedor não encontrado ou inativo.")
-    try:
+    with transacao(conn):
         conn.execute(
             "INSERT INTO item_estoque (item_id, loja_id, unidade_compra, fator_compra, local_padrao_id, estoque_minimo, ponto_pedido, estoque_maximo, controla_lote, critico, "
             "fornecedor_habitual_id, atualizado_em, atualizado_por) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
@@ -164,10 +154,6 @@ def config(iid: int, d: ItemEstoqueIn, sessao=Depends(requer("estoque.gerir")), 
             (iid, LOJA_ID, novo["unidade_compra"], novo["fator_compra"], novo["local_padrao_id"], mn, pp, mx, novo["controla_lote"], novo["critico"],
              novo["fornecedor_habitual_id"], agora(), sessao["usuario_id"]))
         auditar(conn, sessao, "config", "item_estoque", iid, antes={k: str(atual[k]) for k in _CFG}, depois={k: str(novo[k]) for k in _CFG})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _cfg_out(svc.config_item(conn, LOJA_ID, iid))
 
 
@@ -192,7 +178,7 @@ def movimentar(d: MovimentoEstoqueIn, sessao=Depends(requer("estoque.mover")), c
     """Perda, consumo interno, estoque inicial e transferência entre locais. A entrada de compra vem do recebimento; o ajuste, do inventário."""
     if d.tipo in ("perda", "consumo_interno", "entrada_inicial") and not d.motivo:
         raise HTTPException(status_code=400, detail="Informe o motivo.")
-    if d.tipo == "entrada_inicial" and "estoque.gerir" not in _permissoes(sessao):
+    if d.tipo == "entrada_inicial" and not tem_permissao(sessao, "estoque.gerir"):
         raise HTTPException(status_code=403, detail="Perfil insuficiente para esta operação")
     cfg = svc.config_item(conn, LOJA_ID, d.item_id)
     if not cfg["ativo"]:
@@ -201,7 +187,7 @@ def movimentar(d: MovimentoEstoqueIn, sessao=Depends(requer("estoque.mover")), c
         if lid is not None and not conn.execute("SELECT 1 FROM local_estoque WHERE id = %s AND loja_id = %s AND ativo", (lid, LOJA_ID)).fetchone():
             raise HTTPException(status_code=404, detail="Local não encontrado ou inativo.")
     quando, qtd = agora(), Decimal(d.quantidade)
-    try:
+    with transacao(conn):
         if d.tipo == "entrada_inicial":
             if d.custo_unit is None:
                 raise HTTPException(status_code=400, detail="Informe o custo unitário do estoque inicial.")
@@ -219,16 +205,7 @@ def movimentar(d: MovimentoEstoqueIn, sessao=Depends(requer("estoque.mover")), c
         else:  # perda e consumo interno não são barrados por falta de saldo: o saldo pode ficar negativo e o alerta avisa
             movs = svc.saida(conn, LOJA_ID, d.item_id, qtd, d.tipo, sessao["usuario_id"], quando, d.motivo, local_id=d.local_id, lote_id=d.lote_id, permitir_negativo=True)
         auditar(conn, sessao, d.tipo, "movimento_estoque", movs[0], depois={"item_id": d.item_id, "quantidade": d.quantidade, "motivo": d.motivo})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"movimentos": movs, "saldo": svc.txt(svc.saldo_item(conn, d.item_id))}
-
-
-def _permissoes(sessao):
-    from api.security import PERMISSOES
-    return PERMISSOES.get(sessao["perfil"], set())
 
 
 # ---------------------------------------------------------------- alertas e pendências
@@ -298,16 +275,12 @@ def abrir_inventario(d: InventarioIn, sessao=Depends(requer("estoque.mover")), c
         ids = [r["id"] for r in conn.execute("SELECT id FROM item WHERE loja_id = %s AND ativo AND classe <> 'preparo'", (LOJA_ID,)).fetchall()]
     if not ids:
         raise HTTPException(status_code=400, detail="Nenhum item para contar: marque os itens críticos ou cadastre itens.")
-    try:
+    with transacao(conn):
         inv = conn.execute("INSERT INTO inventario (loja_id, tipo, observacao, aberto_por, aberto_em) VALUES (%s,%s,%s,%s,%s) RETURNING *",
                            (LOJA_ID, d.tipo, d.observacao, sessao["usuario_id"], agora())).fetchone()
         for i in ids:
             conn.execute("INSERT INTO inventario_linha (inventario_id, item_id) VALUES (%s,%s)", (inv["id"], i))
         auditar(conn, sessao, "abrir", "inventario", inv["id"], depois={"tipo": d.tipo, "itens": len(ids)})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _inv_out(conn, inv)
 
 
@@ -362,7 +335,7 @@ def fechar(iid: int, d: FecharInventarioIn, sessao=Depends(requer("estoque.gerir
     if faltam or set(motivos) - {l["item_id"] for l in com_dif}:
         raise HTTPException(status_code=400, detail="Informe o motivo de cada diferença, e só das diferenças.")
     quando = agora()
-    try:
+    with transacao(conn):
         for l in com_dif:
             mot = motivos[l["item_id"]]
             conn.execute("UPDATE inventario_linha SET motivo = %s WHERE inventario_id = %s AND item_id = %s", (mot, iid, l["item_id"]))
@@ -373,8 +346,4 @@ def fechar(iid: int, d: FecharInventarioIn, sessao=Depends(requer("estoque.gerir
                 svc.saida(conn, LOJA_ID, l["item_id"], -l["diferenca"], "ajuste_inventario", sessao["usuario_id"], quando, mot, origem=("inventario", iid), permitir_negativo=True)
         conn.execute("UPDATE inventario SET situacao = 'fechado', fechado_por = %s, fechado_em = %s WHERE id = %s", (sessao["usuario_id"], quando, iid))
         auditar(conn, sessao, "fechar", "inventario", iid, depois={"ajustes": len(com_dif), "nao_contados": len(nao_contados)})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _inv_out(conn, _inv(conn, iid))
