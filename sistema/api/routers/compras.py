@@ -393,42 +393,57 @@ def recebimentos(sessao=Depends(requer("compras.ver")), conn=Depends(get_db)):
         "FROM recebimento r JOIN fornecedor f ON f.id = r.fornecedor_id LEFT JOIN usuario c ON c.id = r.conferente_id WHERE r.loja_id = %s ORDER BY r.id DESC LIMIT 100", (LOJA_ID,)).fetchall()]
 
 
+def _pedido_a_receber(conn, pedido_id):
+    """Pedido travado e seus itens por item_id; (None, {}) quando a entrega vem sem pedido."""
+    if pedido_id is None:
+        return None, {}
+    pedido = conn.execute("SELECT * FROM pedido_compra WHERE id = %s AND loja_id = %s FOR UPDATE", (pedido_id, LOJA_ID)).fetchone()
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido de compra não encontrado.")
+    if pedido["situacao"] not in ("emitido", "parcial"):
+        raise HTTPException(status_code=409, detail=f"Pedido {pedido['situacao']}: não recebe mais entrega.")
+    return pedido, {r["item_id"]: r for r in _pedido_out(conn, pedido_id)["itens"]}
+
+
+def _linha_recebida(conn, x, pedido, itens_pedido) -> tuple:
+    """Confere um item da nota contra o cadastro e o pedido: (config, quantidade, preço unitário, valor, pedida, entrada)."""
+    c = est.config_item(conn, LOJA_ID, x.item_id)
+    if not c["ativo"]:
+        raise HTTPException(status_code=400, detail=f"{c['nome']} está inativo.")
+    qtd = Decimal(x.quantidade)
+    _, unit = svc.converter_preco(conn, LOJA_ID, x.item_id, Decimal(x.preco))
+    pedida = None
+    if pedido:
+        ip = itens_pedido.get(x.item_id)
+        if not ip:
+            raise HTTPException(status_code=400, detail=f"{c['nome']} não está neste pedido.")
+        pedida = Decimal(ip["quantidade"]) - Decimal(ip["recebido"])
+        if (qtd != pedida or abs(unit - Decimal(ip["preco_unit"])) > Decimal("0.001")) and not x.diferenca_motivo:
+            raise HTTPException(status_code=400, detail=f"{c['nome']}: quantidade ou preço diferente do pedido, informe o motivo da diferença.")
+    return c, qtd, unit, (qtd * unit).quantize(Q2), pedida, x
+
+
+def _conferir_sangria(conn, movimento_id: int, total: Decimal) -> None:
+    s = conn.execute("SELECT tipo, valor FROM movimento_caixa WHERE id = %s AND loja_id = %s", (movimento_id, LOJA_ID)).fetchone()
+    if not s or s["tipo"] != "sangria":
+        raise HTTPException(status_code=404, detail="Sangria não encontrada.")
+    if s["valor"] != total:
+        raise HTTPException(status_code=400, detail=f"A sangria é de R$ {fmt(s['valor'])} e a nota de R$ {fmt(total)}: os valores precisam ser iguais.")
+
+
 @router.post("/recebimentos", status_code=201)
 def receber(d: RecebimentoIn, sessao=Depends(requer("compras.operar")), conn=Depends(get_db)):
     """Confere a entrega contra o pedido, dá entrada no estoque (lote e custo médio), guarda o preço pago e deixa a nota pronta para Contas a Pagar."""
     quando = agora()
-    pedido, itens_pedido, forn_id = None, {}, d.fornecedor_id
-    if d.pedido_id is not None:
-        pedido = conn.execute("SELECT * FROM pedido_compra WHERE id = %s AND loja_id = %s FOR UPDATE", (d.pedido_id, LOJA_ID)).fetchone()
-        if not pedido:
-            raise HTTPException(status_code=404, detail="Pedido de compra não encontrado.")
-        if pedido["situacao"] not in ("emitido", "parcial"):
-            raise HTTPException(status_code=409, detail=f"Pedido {pedido['situacao']}: não recebe mais entrega.")
-        forn_id = pedido["fornecedor_id"]
-        itens_pedido = {r["item_id"]: r for r in _pedido_out(conn, d.pedido_id)["itens"]}
+    pedido, itens_pedido = _pedido_a_receber(conn, d.pedido_id)
+    forn_id = pedido["fornecedor_id"] if pedido else d.fornecedor_id
     if forn_id is None:
         raise HTTPException(status_code=400, detail="Informe o fornecedor (ou o pedido).")
     forn = _fornecedor_ativo(conn, forn_id)
     if d.conferente_id is not None and not conn.execute("SELECT 1 FROM usuario WHERE id = %s AND loja_id = %s AND ativo", (d.conferente_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Conferente não encontrado.")
-    linhas, total_itens = [], Decimal("0.00")
-    for x in d.itens:
-        c = est.config_item(conn, LOJA_ID, x.item_id)
-        if not c["ativo"]:
-            raise HTTPException(status_code=400, detail=f"{c['nome']} está inativo.")
-        qtd = Decimal(x.quantidade)
-        fator, unit = svc.converter_preco(conn, LOJA_ID, x.item_id, Decimal(x.preco))
-        pedida = None
-        if pedido:
-            ip = itens_pedido.get(x.item_id)
-            if not ip:
-                raise HTTPException(status_code=400, detail=f"{c['nome']} não está neste pedido.")
-            pedida = Decimal(ip["quantidade"]) - Decimal(ip["recebido"])
-            if (qtd != pedida or abs(unit - Decimal(ip["preco_unit"])) > Decimal("0.001")) and not x.diferenca_motivo:
-                raise HTTPException(status_code=400, detail=f"{c['nome']}: quantidade ou preço diferente do pedido, informe o motivo da diferença.")
-        valor = (qtd * unit).quantize(Q2)
-        total_itens += valor
-        linhas.append((c, qtd, unit, valor, pedida, x))
+    linhas = [_linha_recebida(conn, x, pedido, itens_pedido) for x in d.itens]
+    total_itens = sum((linha[3] for linha in linhas), Decimal("0.00"))
     frete = parse_reais(d.frete) if d.frete is not None else Decimal("0.00")
     desconto = parse_reais(d.desconto) if d.desconto is not None else Decimal("0.00")
     total = total_itens + frete - desconto
@@ -438,11 +453,7 @@ def receber(d: RecebimentoIn, sessao=Depends(requer("compras.operar")), conn=Dep
     prazo = pedido["prazo_dias"] if pedido and pedido["prazo_dias"] is not None else forn["prazo_dias"]
     venc = d.vencimento or (d.data_nota + timedelta(days=prazo) if prazo is not None else None)
     if d.movimento_caixa_id is not None:  # compra urgente paga com o dinheiro do caixa
-        s = conn.execute("SELECT tipo, valor FROM movimento_caixa WHERE id = %s AND loja_id = %s", (d.movimento_caixa_id, LOJA_ID)).fetchone()
-        if not s or s["tipo"] != "sangria":
-            raise HTTPException(status_code=404, detail="Sangria não encontrada.")
-        if s["valor"] != total:
-            raise HTTPException(status_code=400, detail=f"A sangria é de R$ {fmt(s['valor'])} e a nota de R$ {fmt(total)}: os valores precisam ser iguais.")
+        _conferir_sangria(conn, d.movimento_caixa_id, total)
         forma, venc = "dinheiro", d.data_nota
     with transacao(conn):
         r = conn.execute("INSERT INTO recebimento (loja_id, pedido_id, fornecedor_id, numero_nota, data_nota, conferente_id, frete, desconto, total_nota, forma_pagamento, vencimento, movimento_caixa_id, observacao, criado_por, criado_em) "
