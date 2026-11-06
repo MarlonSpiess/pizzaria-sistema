@@ -49,6 +49,20 @@ O sistema roda no PC da loja e abre no navegador do tablet pela rede Wi-Fi da lo
 
 Não abrir a porta 8080 para a internet: o sistema foi feito para a rede local da loja.
 
+## Diagnóstico passo a passo (rede interna)
+
+Fazer na ordem e parar no primeiro passo que falhar. Os comandos rodam no Prompt de Comando do PC da loja (os de firewall, como administrador).
+
+1. **O sistema está escutando na rede?** `netstat -ano | findstr :8080`. Deve aparecer `0.0.0.0:8080 ... LISTENING`. Se aparecer `127.0.0.1:8080` ou nada, o sistema não foi aberto pelo `start_api.bat` (ele usa `--host 0.0.0.0`).
+2. **Abre pelo IP no próprio PC?** No navegador do PC, `http://192.168.1.11:8080` (o IP, não `localhost`). Se não abrir, voltar ao passo 1.
+3. **O PC enxerga o tablet?** `ping 192.168.1.20` e depois `arp -a | findstr 192.168.1.20`. Se o ping der "Host de destino inacessível" ou o `arp` não mostrar o tablet, o problema é a rede (Wi-Fi), não o sistema: ir ao passo 6.
+4. **Perfil de rede é Privado?** No PowerShell: `Get-NetConnectionProfile`. `NetworkCategory` deve ser `Private`. Se for `Public`, trocar em Configurações, Rede e Internet, Wi-Fi, nome da rede, Tipo de perfil de rede.
+5. **Regra do firewall existe?** `netsh advfirewall firewall show rule name="Pizzaria 8080"`. Se não existir, criar com o comando do passo 1.4. Para isolar a dúvida, desligar o firewall do perfil Privado por 1 minuto (`netsh advfirewall set privateprofile state off`), testar no tablet e religar (`netsh advfirewall set privateprofile state on`). Se só funcionar desligado, a regra está errada.
+6. **Isolamento do Wi-Fi.** Redes com final `_Ext` são de repetidor. Muitos repetidores e redes de convidados bloqueiam a conversa entre aparelhos ("isolamento de clientes" ou "AP isolation"); o sintoma é exatamente `ERR_ADDRESS_UNREACHABLE` com os dois IPs na mesma faixa. Testes: ligar PC e tablet na rede principal do roteador (sem `_Ext`), ou o PC por cabo no roteador. Se funcionar, desativar o isolamento no painel do repetidor ou deixar a loja na rede principal.
+7. **No tablet**, um app de varredura de rede (por exemplo Fing) mostra se o PC `192.168.1.11` aparece na rede. Se não aparecer, confirma o passo 6.
+
+O erro mostrado no Chrome também ajuda: `ERR_ADDRESS_UNREACHABLE` indica rede (passos 3 e 6); `ERR_CONNECTION_TIMED_OUT` indica firewall (passos 4 e 5); `ERR_CONNECTION_REFUSED` indica sistema fora do ar (passos 1 e 2).
+
 ## Recomendação
 
 Fazer a reserva de IP no roteador antes de criar os atalhos nos tablets, porque o atalho guarda o endereço e deixaria de funcionar se o IP mudar. Atenção também para a impressora térmica Bluetooth: o Chrome só libera Bluetooth para páginas em HTTPS ou no próprio aparelho, e o sistema hoje abre por `http://` na rede; esse teste pendente deve ser feito cedo para escolhermos o caminho de impressão.
