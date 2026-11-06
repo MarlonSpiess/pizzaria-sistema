@@ -94,6 +94,6 @@ def test_inteiro_pos():
 
 
 def test_todo_tipo_do_catalogo_tem_regra():
-    """Um tipo novo no catálogo sem regra de validação seria recusado sempre; este teste avisa antes."""
+    """Um tipo novo no catálogo sem regra daria KeyError (500) ao salvar; este teste avisa antes de chegar à loja."""
     from api.services.parametros import _REGRAS
     assert {t for t, _, _ in CATALOGO.values()} - {"formas"} <= set(_REGRAS)

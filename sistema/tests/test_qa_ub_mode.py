@@ -61,7 +61,7 @@ def test_transferencia_nao_deixa_o_local_de_origem_negativo(client, hs):
     assert por_local.get(a, 0) == 0 and por_local[b] == 15
 
 
-def test_sangrias_simultaneas_nao_furam_o_limite_acumulado(client):
+def test_sangrias_simultaneas_nao_furam_o_limite_acumulado(client, conn_teste):
     """A6: dois terminais com sangria de R$ 90 e limite acumulado de R$ 100: só uma passa sem gerente."""
     import os
     import threading
@@ -71,12 +71,14 @@ def test_sangrias_simultaneas_nao_furam_o_limite_acumulado(client):
 
     from tests.conftest import BASE
     ha = entrar(client, "administrador")[1]
-    client.put("/api/parametros/sangria_limite_gerente", json={"valor": "100,00"}, headers=ha)
     client.post("/api/caixa/motivos/iniciar-padrao", headers=ha)
     mot = next(m for m in client.get("/api/caixa/motivos", headers=ha).json() if m["tipo"] == "sangria" and not m["vira_despesa"])
     st = client.get("/api/caixa/hoje", headers=ha).json()
     if not st.get("caixa") or st["caixa"]["situacao"] != "aberto":
         assert client.post("/api/caixa/abrir", json={"fundo_troco": "200,00"}, headers=ha).status_code == 201
+    ja = conn_teste.execute("SELECT COALESCE(sum(valor), 0) FROM movimento_caixa WHERE tipo = 'sangria' AND autorizado_por IS NULL "
+                            "AND data = current_date").fetchone()[0]  # outras sangrias do dia na suíte
+    assert client.put("/api/parametros/sangria_limite_gerente", json={"valor": f"{ja + 100:.2f}"}, headers=ha).status_code == 200
     hs = [entrar(client, "atendente")[1] for _ in range(2)]
     res = []
     trava = psycopg.connect(dbname=os.environ["DB_NAME"], **BASE)
@@ -95,13 +97,15 @@ def test_folha_nao_aparece_para_o_gerente_na_conciliacao_nem_na_auditoria(client
     """A1: só administrador e proprietário veem salários; a baixa do título da folha também é salário."""
     ha, hg = entrar(client, "administrador")[1], entrar(client, "gerente")[1]
     client.post("/api/contas/tipos-despesa/iniciar-padrao", headers=hg)
+    assert client.post("/api/contas/tipos-despesa", json={"nome": "Folha de pagamento", "natureza": "pessoal"}, headers=ha).status_code in (201, 409)
     client.post("/api/rh/iniciar-padrao", headers=hg)
     funcao = client.get("/api/rh/funcoes", headers=hg).json()[0]["id"]
     fid = client.post("/api/rh/funcionarios", json={"nome": novo_login("Sal"), "funcao_id": funcao,
                                                     "admissao": str(date.today() - timedelta(days=400))}, headers=hg).json()["id"]
     assert client.post(f"/api/rh/funcionarios/{fid}/contratos", json={"tipo": "clt", "forma_pagamento": "mensal", "valor": "4321,00",
                                                                      "vigente_desde": str(date.today() - timedelta(days=300))}, headers=ha).status_code == 201
-    r = client.post("/api/rh/folha/lancar", json={"competencia": date.today().strftime("%Y-%m")}, headers=ha)
+    mes = (date.today().replace(day=1) - timedelta(days=100)).strftime("%Y-%m")  # mês que nenhum outro teste lança
+    r = client.post("/api/rh/folha/lancar", json={"competencia": mes}, headers=ha)
     assert r.status_code == 201, r.text
     tid = r.json()["titulo_id"]
     conta = client.post("/api/contas/contas-bancarias", json={"nome": novo_login("Bco"), "saldo_inicial": "0",
