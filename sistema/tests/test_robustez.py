@@ -167,3 +167,15 @@ def test_papel_restrito_nao_altera_nem_desliga_a_auditoria(client, admin, conn_t
     finally:
         conn_teste.execute(f"DROP OWNED BY {papel}")
         conn_teste.execute(f"DROP ROLE {papel}")
+
+
+def test_tabela_travada_alem_do_limite_responde_503_e_nao_500(client, conn_teste):
+    """Trava de outra transação passa do lock_timeout: é falta momentânea (tente de novo), não erro interno."""
+    _, h = entrar(client, "administrador")
+    with conn_teste.transaction():
+        conn_teste.execute("LOCK TABLE parametro IN ACCESS EXCLUSIVE MODE")
+        r = client.get("/api/parametros", headers=h)
+    assert r.status_code == 503, r.text
+    assert r.json()["detail"] == "Servidor ocupado. Tente novamente em instantes."
+    assert r.headers.get("retry-after") == "2"
+    assert client.get("/api/parametros", headers=h).status_code == 200  # a conexão voltou ao pool utilizável

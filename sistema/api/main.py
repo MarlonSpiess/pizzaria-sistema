@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import psycopg
+import psycopg.errors
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.gzip import GZipMiddleware
@@ -94,6 +95,18 @@ async def _validacao(request: Request, exc: RequestValidationError):
         msg = e["msg"].removeprefix("Value error, ")
         msgs.append(f"{campo}: {msg}" if campo else msg)
     return JSONResponse(status_code=422, content={"detail": "; ".join(msgs) or "Dados inválidos."})
+
+
+# Falta momentânea do banco (trava presa além do lock_timeout, consulta além do statement_timeout, deadlock,
+# conflito de serialização): o cliente pode repetir, como no pool cheio. Não é erro interno.
+@app.exception_handler(psycopg.errors.LockNotAvailable)
+@app.exception_handler(psycopg.errors.QueryCanceled)
+@app.exception_handler(psycopg.errors.DeadlockDetected)
+@app.exception_handler(psycopg.errors.SerializationFailure)
+async def _banco_ocupado(request: Request, exc: Exception):
+    log.warning("Banco ocupado em %s %s: %s", request.method, request.url.path, type(exc).__name__)
+    return JSONResponse(status_code=503, content={"detail": "Servidor ocupado. Tente novamente em instantes."},
+                        headers={"Retry-After": "2"})
 
 
 @app.exception_handler(Exception)
