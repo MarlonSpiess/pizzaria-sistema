@@ -14,7 +14,6 @@ from api.services.parametros import vigentes
 MOTIVOS_RETROCESSO_PADRAO = (("Falta de insumo", True), ("Saída do pizzaiolo", False), ("Erro na borda", False), ("Outros", False))
 MOTIVOS_PERDA_PADRAO = ("Queimou", "Saiu errada", "Caiu", "Outros")
 MOTIVO_CANCELAMENTO = "Cancelamento do pedido"
-EM_ANDAMENTO = ("em montagem", "no forno", "saiu do forno", "acabada")
 
 
 def evento(conn, pizza_id: int, situacao: str, usuario_id, quando) -> None:

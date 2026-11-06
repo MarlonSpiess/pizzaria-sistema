@@ -129,12 +129,23 @@ def funcionarios(ativo: Optional[bool] = None, sessao=Depends(requer("rh.ver")),
     return [_func_out(conn, f, _pode_salarios(sessao)) for f in conn.execute(sql + " ORDER BY f.nome", p).fetchall()]
 
 
+def _conferir_vinculo(conn, sessao, usuario_id) -> None:
+    """Login ligado ao funcionário: o desligamento bloqueia esse login. Ligar o login de alguém da gerência
+    só com usuarios.gerir, senão quem tem rh.operar desativaria por aqui o login de um gerente."""
+    if not usuario_id:
+        return
+    u = conn.execute("SELECT perfil FROM usuario WHERE id = %s AND loja_id = %s AND ativo", (usuario_id, LOJA_ID)).fetchone()
+    if not u:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado ou inativo.")
+    if u["perfil"] in ("administrador", "proprietario", "gerente", "subgerente") and not tem_permissao(sessao, "usuarios.gerir"):
+        raise HTTPException(status_code=403, detail="Só o administrador ou o proprietário liga o login de alguém da gerência a um funcionário.")
+
+
 @router.post("/funcionarios", status_code=201)
 def criar_funcionario(d: FuncionarioIn, sessao=Depends(requer("rh.operar")), conn=Depends(get_db)):
     if not conn.execute("SELECT 1 FROM funcao_rh WHERE id = %s AND loja_id = %s AND ativo", (d.funcao_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Função não encontrada.")
-    if d.usuario_id and not conn.execute("SELECT 1 FROM usuario WHERE id = %s AND loja_id = %s AND ativo", (d.usuario_id, LOJA_ID)).fetchone():
-        raise HTTPException(status_code=404, detail="Usuário não encontrado ou inativo.")
+    _conferir_vinculo(conn, sessao, d.usuario_id)
     with transacao(conn):
         r = conn.execute("INSERT INTO funcionario (loja_id, nome, telefone, funcao_id, usuario_id, admissao, preco_especial, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (LOJA_ID, d.nome, d.telefone, d.funcao_id, d.usuario_id, d.admissao, d.preco_especial, agora(), sessao["usuario_id"])).fetchone()
@@ -150,8 +161,7 @@ def alterar_funcionario(fid: int, d: FuncionarioUpdate, sessao=Depends(requer("r
     _func(conn, fid, ativo=True)
     if campos.get("funcao_id") and not conn.execute("SELECT 1 FROM funcao_rh WHERE id = %s AND loja_id = %s AND ativo", (campos["funcao_id"], LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Função não encontrada.")
-    if campos.get("usuario_id") and not conn.execute("SELECT 1 FROM usuario WHERE id = %s AND loja_id = %s AND ativo", (campos["usuario_id"], LOJA_ID)).fetchone():
-        raise HTTPException(status_code=404, detail="Usuário não encontrado ou inativo.")
+    _conferir_vinculo(conn, sessao, campos.get("usuario_id"))
     with transacao(conn):
         conn.execute(f"UPDATE funcionario SET {', '.join(f'{c} = %s' for c in campos)} WHERE id = %s", (*campos.values(), fid))
         auditar(conn, sessao, "alterar", "funcionario", fid, depois={k: str(v) for k, v in campos.items()})

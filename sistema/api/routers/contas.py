@@ -319,7 +319,9 @@ def pendencias_conciliacao(conta_id: int, sessao=Depends(requer("contas.ver")), 
         raise HTTPException(status_code=404, detail="Conta não encontrada.")
     ext = conn.execute("SELECT id, data, descricao, valor FROM extrato_linha e WHERE conta_id = %s AND NOT EXISTS (SELECT 1 FROM conciliacao c WHERE c.extrato_id = e.id) ORDER BY data, id", (conta_id,)).fetchall()
     bx = conn.execute("SELECT b.id, b.data, t.descricao, t.sentido, b.forma, b.valor_movimento FROM baixa_titulo b JOIN titulo t ON t.id = b.titulo_id "
-                      "WHERE b.conta_id = %s AND NOT EXISTS (SELECT 1 FROM conciliacao c WHERE c.baixa_id = b.id) ORDER BY b.data, b.id", (conta_id,)).fetchall()
+                      "WHERE b.conta_id = %s AND NOT EXISTS (SELECT 1 FROM conciliacao c WHERE c.baixa_id = b.id)"
+                      + ("" if tem_permissao(sessao, "rh.salarios") else " AND t.origem_tipo IS DISTINCT FROM 'folha'")  # folha só para quem vê salários
+                      + " ORDER BY b.data, b.id", (conta_id,)).fetchall()
     return {"extrato": [e | {"valor": fmt(e["valor"])} for e in ext],
             "baixas": [b | {"valor_movimento": fmt(b["valor_movimento"]), "valor_com_sinal": fmt(b["valor_movimento"] if b["sentido"] == "receber" else -b["valor_movimento"])} for b in bx]}
 

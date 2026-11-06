@@ -22,6 +22,12 @@ def test_traduzir_erro(erro, status, msg):
     assert (h.status_code, h.detail) == (status, msg)
 
 
+def test_gatilho_do_banco_vira_409_e_nao_500():
+    """QA cego A14: RAISE EXCEPTION dos gatilhos (P0001) caía no erro geral 500."""
+    h = traduzir_erro(psycopg.errors.RaiseException())
+    assert (h.status_code, h.detail) == (409, "Operação recusada pelas regras do banco.")
+
+
 def test_erro_que_nao_e_de_dado_segue_adiante():
     with pytest.raises(psycopg.OperationalError):
         traduzir_erro(psycopg.OperationalError("caiu"))

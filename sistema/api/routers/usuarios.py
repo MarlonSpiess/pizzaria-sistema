@@ -2,7 +2,7 @@ import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, run, traduzir_erro
+from api.database import agora, auditar, get_db, traduzir_erro
 from api.schemas import RedefinirSenhaIn, UsuarioCreate, UsuarioUpdate
 from api.security import hash_senha, invalidar_sessoes_usuario, requer
 
@@ -25,7 +25,7 @@ def _obter(conn, uid: int) -> dict:
 
 @router.get("")
 def listar(sessao=Depends(requer("usuarios.gerir")), conn=Depends(get_db)):
-    return run(conn, f"SELECT {_COLS} FROM usuario WHERE loja_id = %s ORDER BY nome", (LOJA_ID,), "all")
+    return conn.execute(f"SELECT {_COLS} FROM usuario WHERE loja_id = %s ORDER BY nome", (LOJA_ID,)).fetchall()
 
 
 @router.post("", status_code=201)

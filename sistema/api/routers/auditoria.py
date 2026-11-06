@@ -17,6 +17,8 @@ def listar(entidade: Optional[str] = Query(default=None, max_length=40), limite:
         filtro, params = " AND entidade = %s", [LOJA_ID, entidade]
     if not tem_permissao(sessao, "rh.salarios"):  # salário e folha não aparecem para quem não os vê
         filtro += " AND NOT (entidade = 'funcionario' AND acao IN ('contrato','beneficio','folha_resumo')) AND NOT (entidade = 'beneficio_funcionario') AND acao <> 'lancar_folha'"
+        filtro += (" AND NOT (entidade = 'titulo' AND entidade_id IN (SELECT id::text FROM titulo WHERE loja_id = %s AND origem_tipo = 'folha'))")
+        params.append(LOJA_ID)
     total = conn.execute(f"SELECT count(*) AS n FROM auditoria WHERE loja_id = %s{filtro}", params).fetchone()["n"]
     dados = conn.execute(
         "SELECT id, quando, usuario, acao, entidade, entidade_id, antes, depois FROM auditoria "

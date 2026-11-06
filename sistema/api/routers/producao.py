@@ -252,6 +252,9 @@ def perder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.perda")), con
     if p["situacao"] == "em montagem" and p["responsavel_id"] != sessao["usuario_id"] and not _gerencia(sessao) \
             and not tem_permissao(sessao, "producao.acabamento"):
         raise HTTPException(status_code=403, detail="Esta pizza está com outro pizzaiolo.")
+    if p["situacao"] != "em montagem" and not (_gerencia(sessao) or tem_permissao(sessao, "producao.forno")
+                                               or tem_permissao(sessao, "producao.acabamento")):
+        raise HTTPException(status_code=403, detail="Depois da montagem, a perda é do acabamento.")  # acesso rígido por função
     m = _motivo(conn, "motivo_perda", d.motivo_id)
     quando = agora()
     svc.mover(conn, pid, "perdida", sessao["usuario_id"], quando)

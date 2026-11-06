@@ -51,6 +51,21 @@ def test_editar_funcionario(client):
     r = client.patch(f"/api/rh/funcionarios/{fid}", json={"nome": "Nome Novo", "funcao_id": funcs["Massa"], "usuario_id": uid}, headers=h)
     assert r.status_code == 200
     f = next(x for x in client.get("/api/rh/funcionarios", headers=h).json() if x["id"] == fid)
-    assert f["nome"] == "Nome Novo"
+    assert (f["nome"], f["funcao"], f["usuario_id"]) == ("Nome Novo", "Massa", uid)
     assert client.post(f"/api/rh/funcionarios/{fid}/desligar", json={"data": str(date.today()), "motivo": "pedido"}, headers=h).status_code == 200
     assert client.patch(f"/api/rh/funcionarios/{fid}", json={"nome": "Outro"}, headers=h).status_code in (404, 409)  # desligado não se edita
+
+
+def test_gerente_nao_liga_login_da_gerencia_a_funcionario(client):
+    """QA cego A3: ligar o login e depois desligar o funcionário bloqueava o login de um gerente sem usuarios.gerir."""
+    h = entrar(client, "subgerente")[1]
+    client.post("/api/rh/iniciar-padrao", headers=h)
+    funcao = client.get("/api/rh/funcoes", headers=h).json()[0]["id"]
+    login_g, h_g = entrar(client, "gerente")
+    uid = next(u["id"] for u in client.get("/api/usuarios", headers=entrar(client, "administrador")[1]).json() if u["usuario"] == login_g)
+    corpo = {"nome": novo_login("Fx"), "funcao_id": funcao, "usuario_id": uid, "admissao": str(date.today() - timedelta(days=10))}
+    assert client.post("/api/rh/funcionarios", json=corpo, headers=h).status_code == 403
+    fid = client.post("/api/rh/funcionarios", json={**corpo, "usuario_id": None}, headers=h).json()["id"]
+    assert client.patch(f"/api/rh/funcionarios/{fid}", json={"usuario_id": uid}, headers=h).status_code == 403
+    assert client.get("/api/auth/me", headers=h_g).status_code == 200
+    assert client.patch(f"/api/rh/funcionarios/{fid}", json={"usuario_id": uid}, headers=entrar(client, "administrador")[1]).status_code == 200

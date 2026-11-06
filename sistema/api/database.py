@@ -89,6 +89,8 @@ def traduzir_erro(e: psycopg.Error) -> HTTPException:
         return HTTPException(status_code=400, detail="Campo obrigatório não informado.")
     if isinstance(e, psycopg.errors.DataError):
         return HTTPException(status_code=400, detail="Dado inválido para este campo.")
+    if isinstance(e, psycopg.errors.RaiseException):  # gatilho do banco recusou (RAISE EXCEPTION, SQLSTATE P0001)
+        return HTTPException(status_code=409, detail=(e.diag.message_primary or "Operação recusada pelas regras do banco."))
     if isinstance(e, psycopg.errors.IntegrityError):
         return HTTPException(status_code=400, detail="Operação viola uma regra de integridade do banco.")
     raise e
@@ -111,18 +113,6 @@ def gravar_um(conn: psycopg.Connection, sql: str, params) -> dict | None:
     try:
         return conn.execute(sql, params).fetchone()
     except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
-
-
-def run(conn: psycopg.Connection, sql: str, params=None, fetch: str = "none"):
-    """Executa SQL parametrizado e comita. fetch: "none" (rowcount), "one" (dict ou None) ou "all" (lista)."""
-    try:
-        cur = conn.execute(sql, params or ())
-        resultado = cur.fetchone() if fetch == "one" else cur.fetchall() if fetch == "all" else cur.rowcount
-        conn.commit()
-        return resultado
-    except (psycopg.errors.IntegrityError, psycopg.errors.DataError) as e:
         conn.rollback()
         raise traduzir_erro(e) from e
 

@@ -256,6 +256,8 @@ def movimentar(d: MovimentoIn, request: Request, sessao=Depends(requer("caixa.op
         # Limite não definido vale 0 (como nos descontos) e conta o acumulado do dia, para não fatiar a retirada.
         lim = vigentes(conn, LOJA_ID)["sangria_limite_gerente"]["valor"]
         lim = Decimal(lim) if lim is not None else svc.ZERO
+        # Uma sangria sem autorização por vez na loja: duas simultâneas não furam o limite acumulado.
+        conn.execute("SELECT pg_advisory_xact_lock(7201, %s)", (LOJA_ID,))
         if _sangria_sem_autorizacao(conn, svc.faixa(conn, LOJA_ID, c)) + valor > lim:
             if not d.autorizacao:
                 raise HTTPException(status_code=403, detail=f"A soma das sangrias passa de R$ {fmt(lim)}: peça a autorização de um gerente.")
@@ -444,4 +446,7 @@ def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
 # ---------------------------------------------------------------- relatório de uma data (por último: o caminho aceita qualquer data)
 @router.get("/{data}/relatorio")
 def relatorio(data: date, sessao=Depends(requer("caixa.ver")), conn=Depends(get_db)):
-    return _status(conn, svc.caixa_do_dia(conn, LOJA_ID, data), sessao)
+    c = svc.caixa_do_dia(conn, LOJA_ID, data)
+    if not c:  # sem isto, o relatório de um dia sem caixa mostrava o dia de hoje
+        raise HTTPException(status_code=404, detail="Não houve caixa nesta data.")
+    return _status(conn, c, sessao)
