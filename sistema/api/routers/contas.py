@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, traduzir_erro
 from api.schemas import (AtivoIn, BaixaIn, CancelarTituloIn, CanalRepasseIn, ConciliarIn, ContaBancariaIn, ExtratoIn, RecorrenteIn, TipoDespesaIn, TituloIn)
-from api.security import PERMISSOES, requer
+from api.security import requer, tem_permissao
 from api.services import contas as svc
 from api.services.dinheiro import fmt, parse_reais
 from api.services.parametros import vigentes
@@ -195,7 +195,7 @@ def titulos(sentido: Optional[str] = None, situacao: Optional[str] = None, de: O
         sql, p = sql + " AND t.vencimento >= %s", p + [de]
     if ate:
         sql, p = sql + " AND t.vencimento <= %s", p + [ate]
-    if "rh.salarios" not in PERMISSOES.get(sessao["perfil"], set()):
+    if not tem_permissao(sessao, "rh.salarios"):
         sql += " AND t.origem_tipo <> 'folha'"
     hoje = agora().date()
     if atrasados:
@@ -323,7 +323,7 @@ def dar_baixa(tid: int, d: BaixaIn, sessao=Depends(requer("contas.operar")), con
         raise HTTPException(status_code=400, detail="A baixa é anterior ao saldo inicial da conta.")
     if valor - desconto + juros + multa <= 0:
         raise HTTPException(status_code=400, detail="Baixa sem movimento de dinheiro: informe o desconto menor que o valor.")
-    if (desconto + juros + multa) * 5 > valor and "contas.aprovar" not in PERMISSOES.get(sessao["perfil"], set()):
+    if (desconto + juros + multa) * 5 > valor and not tem_permissao(sessao, "contas.aprovar"):
         raise HTTPException(status_code=403, detail="Desconto, juros ou multa acima de 20% do valor: só o administrador ou o proprietário baixa assim.")
     try:
         r = svc.baixar(conn, tid, data, valor, d.forma, d.conta_id, sessao["usuario_id"], desconto, juros, multa)

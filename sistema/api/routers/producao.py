@@ -11,7 +11,7 @@ from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, traduzir_erro
 from api.routers.vendas import _pedido, mudar_situacao
 from api.schemas import ContagemMassaIn, LoteMassaIn, MontagemErradaIn, MotivoIn, MotivoRef, MotivoUpdate, PerdaMassaIn
-from api.security import PERMISSOES, requer, requer_alguma
+from api.security import permissoes_de, requer, requer_alguma, tem_permissao
 from api.services import estoque, producao as svc
 from api.services.parametros import vigentes
 
@@ -30,8 +30,8 @@ def _out(r: dict) -> dict:
 
 
 def _pizza(conn, pid: int, travar=False) -> dict:
-    p = conn.execute(f"SELECT p.id, p.pedido_id, p.tipo, p.tamanho, p.sabores, p.adicionais, p.observacoes, p.situacao, p.ordem, p.responsavel_id, p.original_id "
-                     f"FROM pizza_producao p WHERE p.id = %s AND p.loja_id = %s" + (" FOR UPDATE" if travar else ""), (pid, LOJA_ID)).fetchone()
+    p = conn.execute("SELECT p.id, p.pedido_id, p.tipo, p.tamanho, p.sabores, p.adicionais, p.observacoes, p.situacao, p.ordem, p.responsavel_id, p.original_id "
+                     "FROM pizza_producao p WHERE p.id = %s AND p.loja_id = %s" + (" FOR UPDATE" if travar else ""), (pid, LOJA_ID)).fetchone()
     if not p:
         raise HTTPException(status_code=404, detail="Pizza não encontrada.")
     return p
@@ -52,7 +52,7 @@ def _exigir(p: dict, *situacoes: str) -> None:
 
 
 def _gerencia(sessao) -> bool:
-    return "producao.gerir" in PERMISSOES.get(sessao["perfil"], set())
+    return tem_permissao(sessao, "producao.gerir")
 
 
 def _motivo(conn, tabela: str, motivo_id: int) -> dict:
@@ -76,7 +76,7 @@ def fila(situacao: Optional[str] = None,
     filtro = situacao or None
     if filtro and filtro not in todas:
         raise HTTPException(status_code=400, detail="Situação inválida.")
-    perms = PERMISSOES.get(sessao["perfil"], set())
+    perms = permissoes_de(sessao)
     if "producao.gerir" in perms:
         permitidas, ve_cliente, ve_forno = set(todas), True, True
     else:
@@ -254,7 +254,7 @@ def perder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.perda")), con
     if ped["situacao"] in ("cancelado", "despachado ou retirado"):
         raise HTTPException(status_code=409, detail=f"Pedido {ped['situacao']}: não há mais o que perder aqui.")
     if p["situacao"] == "em montagem" and p["responsavel_id"] != sessao["usuario_id"] and not _gerencia(sessao) \
-            and "producao.acabamento" not in PERMISSOES.get(sessao["perfil"], set()):
+            and not tem_permissao(sessao, "producao.acabamento"):
         raise HTTPException(status_code=403, detail="Esta pizza está com outro pizzaiolo.")
     m = _motivo(conn, "motivo_perda", d.motivo_id)
     quando = agora()
@@ -298,7 +298,7 @@ def montagem_errada(pid: int, d: MontagemErradaIn, sessao=Depends(requer_alguma(
     se foi o acabamento (ou a gerência) que achou o erro, com a pizza no forno ou fora dele. Massa, montagem e acabamento recebem o aviso."""
     p, ped = _pizza_travada(conn, pid)
     _exigir(p, "em montagem", "no forno", "saiu do forno")
-    perms = PERMISSOES.get(sessao["perfil"], set())
+    perms = permissoes_de(sessao)
     if p["situacao"] == "em montagem":
         _minha(p, sessao)
     elif "producao.acabamento" not in perms and not _gerencia(sessao):
@@ -397,7 +397,7 @@ _ROTULO_AVISO = {"sabor_errado": "Montagem errada no sabor", "formato": "Problem
 @router.get("/avisos")
 def avisos(sessao=Depends(requer_alguma("producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
     """Avisos abertos das últimas 6 horas, para todos os setores da Produção. Só o acabamento e a gerência veem o cliente."""
-    perms = PERMISSOES.get(sessao["perfil"], set())
+    perms = permissoes_de(sessao)
     ve_cliente = "producao.acabamento" in perms or "producao.gerir" in perms
     desde = agora() - timedelta(hours=6) if "producao.gerir" not in perms else agora() - timedelta(days=3)  # a gerência vê o que ninguém resolveu
     rows = conn.execute(
@@ -461,7 +461,7 @@ def perda_massa(d: PerdaMassaIn, sessao=Depends(requer("producao.perda_massa")),
 # ---------------------------------------------------------------- motivos (listas em tabela)
 @router.get("/motivos")
 def motivos(sessao=Depends(requer_alguma("producao.montagem", "producao.perda", "producao.perda_massa", "producao.refazer", "producao.gerir")), conn=Depends(get_db)):
-    perms = PERMISSOES.get(sessao["perfil"], set())
+    perms = permissoes_de(sessao)
     ve_retro = bool(perms & {"producao.montagem", "producao.gerir"})  # cada função recebe só a lista de motivos que usa
     ve_perda = bool(perms & {"producao.perda", "producao.perda_massa", "producao.refazer", "producao.gerir"})
     return {"retrocesso": conn.execute("SELECT id, nome, avisa_estoque, ativo FROM motivo_retrocesso WHERE loja_id = %s ORDER BY id", (LOJA_ID,)).fetchall() if ve_retro else [],

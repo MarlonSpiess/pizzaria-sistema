@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, hoje, traduzir_erro
 from api.schemas import CfIn, PedidoCalcular, PedidoCancelar, PedidoCreate, PedidoSituacao, PedidoUrgente
-from api.security import PERMISSOES, requer
+from api.security import requer, tem_permissao
 from api.services import parametros as svc_parametros
 from api.services import producao as svc_producao
 from api.services import canais, estoque
@@ -41,7 +41,7 @@ def _resumo_calculo(t: dict) -> dict:
 
 
 def _gerencia(sessao) -> bool:
-    return "vendas.gerir" in PERMISSOES.get(sessao["perfil"], set())
+    return tem_permissao(sessao, "vendas.gerir")
 
 
 def _precisa_autorizacao(sessao, t, lim) -> bool:
@@ -298,7 +298,7 @@ def mudar_situacao(conn, sessao, p: dict, nova: str) -> dict:
 @router.post("/{pid}/situacao")
 def situacao(pid: int, d: PedidoSituacao, sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
     # O balcão marca despachado ou retirado; as etapas anteriores são da Produção ou, à mão, da gerência.
-    if d.situacao != "despachado ou retirado" and "vendas.gerir" not in PERMISSOES.get(sessao["perfil"], set()):
+    if d.situacao != "despachado ou retirado" and not tem_permissao(sessao, "vendas.gerir"):
         raise HTTPException(status_code=403, detail="Perfil insuficiente para esta operação")
     p = mudar_situacao(conn, sessao, _pedido(conn, pid, travar=True), d.situacao)
     conn.commit()

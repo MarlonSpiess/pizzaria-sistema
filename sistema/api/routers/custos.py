@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, traduzir_erro
 from api.schemas import FatorCorrecaoIn, FecharCmvIn
-from api.security import PERMISSOES, requer
+from api.security import requer, tem_permissao
 from api.services import custos as svc
 from api.services.dinheiro import fmt
 
@@ -158,7 +158,7 @@ def resultado(mes: Optional[str] = None, sessao=Depends(requer("custos.ver")), c
     """Receita, CMV, custos variáveis e fixos do mês, margem de contribuição e ponto de equilíbrio (competência pela data da venda e do título)."""
     r = svc.resultado_mes(conn, LOJA_ID, _mes(mes))
     r["fixos_detalhe"] = {k: fmt(v) for k, v in r["fixos_detalhe"].items()}
-    if "rh.salarios" not in PERMISSOES.get(sessao["perfil"], set()):  # a folha aparece nas fixas, no resultado e no ponto de equilíbrio
+    if not tem_permissao(sessao, "rh.salarios"):  # a folha aparece nas fixas, no resultado e no ponto de equilíbrio
         for k in ("custos_fixos", "resultado_operacional", "ponto_equilibrio"):
             r[k] = None
         r["fixos_detalhe"]["pessoal"] = None

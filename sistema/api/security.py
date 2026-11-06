@@ -15,7 +15,7 @@ from api.database import get_db
 PERFIS = ("administrador", "proprietario", "gerente", "subgerente", "atendente", "massa", "pizzaiolo", "acabamento")
 
 # Permissões por perfil. Perfil ausente ou permissão ausente = negado.
-# administrador e proprietário têm tudo; as demais permissões entram nas fatias seguintes.
+# administrador e proprietário têm tudo.
 _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar",
           "cardapio.ver", "cardapio.editar", "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar",
           "ficha.ver", "ficha.editar", "vendas.ver", "vendas.criar", "vendas.gerir", "canais.configurar",
@@ -25,19 +25,15 @@ _TODAS = {"usuarios.gerir", "parametros.ver", "parametros.editar", "auditoria.ve
           "estoque.ver", "estoque.mover", "estoque.gerir", "compras.ver", "compras.operar", "compras.aprovar",
           "contas.ver", "contas.operar", "contas.aprovar", "custos.ver", "custos.gerir", "imobilizado.ver", "imobilizado.operar", "imobilizado.aprovar",
           "rh.ver", "rh.operar", "rh.aprovar", "rh.salarios", "rh.proprio", "bi.ver"}
-_GERENCIA = {"parametros.ver", "auditoria.ver", "sistema.backup.ver", "sistema.backup.rodar", "cardapio.ver", "cardapio.editar",
-             "clientes.ver", "clientes.editar", "entregadores.ver", "entregadores.editar", "ficha.ver", "ficha.editar",
-             "vendas.ver", "vendas.criar", "vendas.gerir",
-             "producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.perda",
-             "producao.refazer", "producao.gerir", "producao.perda_massa",
-             "caixa.ver", "caixa.operar", "caixa.gerir", "entregas.despachar",
-             "estoque.ver", "estoque.mover", "estoque.gerir", "compras.ver", "compras.operar", "compras.aprovar",
-             "contas.ver", "contas.operar", "custos.ver", "custos.gerir", "imobilizado.ver", "imobilizado.operar", "rh.ver", "rh.operar", "rh.proprio", "bi.ver"}  # subgerente: tudo do gerente, menos aprovar diferença de caixa
-PERMISSOES = {
+# Só administrador e proprietário: usuários, parâmetros, canais de venda, aprovações de contas e imobilizado, salários.
+_SO_DONO = {"usuarios.gerir", "parametros.editar", "canais.configurar", "contas.aprovar", "imobilizado.aprovar", "rh.salarios"}
+# Base da gerência; o gerente soma as duas aprovações abaixo e o subgerente fica sem elas.
+_GERENCIA = _TODAS - _SO_DONO - {"caixa.aprovar", "rh.aprovar"}
+_MATRIZ = {
     "administrador": _TODAS,
     "proprietario": _TODAS,
     "gerente": _GERENCIA | {"caixa.aprovar", "rh.aprovar"},
-    # Subgerente: permissões do gerente, exceto aprovar diferença de caixa (decisão de 19/10/2026; entra na fatia 1E).
+    # Subgerente: permissões do gerente, exceto aprovar diferença de caixa (decisão de 19/10/2026) e aprovações de RH.
     "subgerente": _GERENCIA,
     # Atendente consulta o cardápio e os entregadores e cadastra cliente na primeira compra.
     "atendente": {"rh.proprio", "cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver",
@@ -47,6 +43,17 @@ PERMISSOES = {
     "pizzaiolo": {"rh.proprio", "producao.montagem", "producao.perda"},  # forno é do acabamento (decisão de Marlon, 03/11/2026)
     "acabamento": {"rh.proprio", "entregas.despachar", "producao.forno", "producao.acabamento", "producao.perda", "producao.refazer"},
 }
+# Imutável: administrador e proprietário partem do mesmo conjunto, e nenhuma rota pode alterar a matriz em execução.
+PERMISSOES = {perfil: frozenset(p) for perfil, p in _MATRIZ.items()}
+_NENHUMA = frozenset()
+
+
+def permissoes_de(sessao: dict) -> frozenset:
+    return PERMISSOES.get(sessao["perfil"], _NENHUMA)
+
+
+def tem_permissao(sessao: dict, permissao: str) -> bool:
+    return permissao in permissoes_de(sessao)
 
 
 def hash_senha(senha: str) -> str:
@@ -154,22 +161,16 @@ def get_current_session(authorization: Optional[str] = Header(default=None), con
 
 
 def requer_alguma(*permissoes: str):
-    """Como requer, mas basta uma das permissões. Usado em leituras de tela compartilhada (acesso rígido por função)."""
+    """Dependency: exige uma das permissões no perfil ATUAL; bloqueia quem ainda deve trocar a senha.
+    Com várias, serve às leituras de tela compartilhada (acesso rígido por função)."""
     def _guard(sessao: dict = Depends(get_current_session)) -> dict:
         if sessao["deve_trocar_senha"]:
             raise HTTPException(status_code=403, detail="Troque a senha antes de continuar.")
-        if not PERMISSOES.get(sessao["perfil"], set()).intersection(permissoes):
+        if not permissoes_de(sessao).intersection(permissoes):
             raise HTTPException(status_code=403, detail="Perfil insuficiente para esta operação")
         return sessao
     return _guard
 
 
 def requer(permissao: str):
-    """Dependency: exige a permissão no perfil ATUAL; bloqueia quem ainda deve trocar a senha."""
-    def _guard(sessao: dict = Depends(get_current_session)) -> dict:
-        if sessao["deve_trocar_senha"]:
-            raise HTTPException(status_code=403, detail="Troque a senha antes de continuar.")
-        if permissao not in PERMISSOES.get(sessao["perfil"], set()):
-            raise HTTPException(status_code=403, detail="Perfil insuficiente para esta operação")
-        return sessao
-    return _guard
+    return requer_alguma(permissao)

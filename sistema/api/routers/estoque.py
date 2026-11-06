@@ -9,9 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, traduzir_erro
 from api.schemas import (ContagemInventarioIn, FecharInventarioIn, InventarioIn, ItemEstoqueIn, LocalIn, LocalUpdate, MovimentoEstoqueIn)
-from api.security import requer
+from api.security import requer, tem_permissao
 from api.services import estoque as svc
-from api.services.dinheiro import fmt
 from api.services.ingredientes import contagem_sabores, ingredientes_em_falta
 from api.services.parametros import vigentes
 
@@ -192,7 +191,7 @@ def movimentar(d: MovimentoEstoqueIn, sessao=Depends(requer("estoque.mover")), c
     """Perda, consumo interno, estoque inicial e transferência entre locais. A entrada de compra vem do recebimento; o ajuste, do inventário."""
     if d.tipo in ("perda", "consumo_interno", "entrada_inicial") and not d.motivo:
         raise HTTPException(status_code=400, detail="Informe o motivo.")
-    if d.tipo == "entrada_inicial" and "estoque.gerir" not in _permissoes(sessao):
+    if d.tipo == "entrada_inicial" and not tem_permissao(sessao, "estoque.gerir"):
         raise HTTPException(status_code=403, detail="Perfil insuficiente para esta operação")
     cfg = svc.config_item(conn, LOJA_ID, d.item_id)
     if not cfg["ativo"]:
@@ -224,11 +223,6 @@ def movimentar(d: MovimentoEstoqueIn, sessao=Depends(requer("estoque.mover")), c
         conn.rollback()
         raise traduzir_erro(e) from e
     return {"movimentos": movs, "saldo": svc.txt(svc.saldo_item(conn, d.item_id))}
-
-
-def _permissoes(sessao):
-    from api.security import PERMISSOES
-    return PERMISSOES.get(sessao["perfil"], set())
 
 
 # ---------------------------------------------------------------- alertas e pendências

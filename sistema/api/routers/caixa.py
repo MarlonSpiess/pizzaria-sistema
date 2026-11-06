@@ -1,7 +1,6 @@
 """Fechamento de caixa: abertura, sangria e suprimento, contagem cega, fechamento com aprovação, entregas e acerto dos entregadores."""
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 
 import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -10,7 +9,7 @@ from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, hoje, traduzir_erro
 from api.schemas import (AcertoIn, CaixaAbrir, ContagemIn, EntregaIn, FecharIn, MaquininhaIn, MaquininhaUpdate, MotivoMovimentoIn,
                          MotivoMovimentoUpdate, MovimentoIn, RegraRecebimentoIn)
-from api.security import PERMISSOES, requer
+from api.security import requer, tem_permissao
 from api.services import caixa as svc
 from api.services import canais
 from api.services.dinheiro import fmt, parse_reais
@@ -23,7 +22,7 @@ MOTIVOS_PADRAO = (("Despesa pequena", "sangria", True), ("Depósito", "sangria",
 
 
 def _aprova(sessao) -> bool:
-    return "caixa.aprovar" in PERMISSOES.get(sessao["perfil"], set())
+    return tem_permissao(sessao, "caixa.aprovar")
 
 
 def _dinheiro_param(par: dict, chave: str) -> Decimal:
@@ -233,7 +232,7 @@ def abrir(d: CaixaAbrir, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
     padrao = par["fundo_troco_padrao"]["valor"]
     if d.fundo_troco is not None:
         fundo = parse_reais(d.fundo_troco)
-        if (padrao is None or fundo != Decimal(padrao)) and "caixa.gerir" not in PERMISSOES.get(sessao["perfil"], set()):
+        if (padrao is None or fundo != Decimal(padrao)) and not tem_permissao(sessao, "caixa.gerir"):
             raise HTTPException(status_code=403, detail="Fundo de troco diferente do padrão: só a gerência define.")
     else:
         fundo = Decimal(padrao) if padrao is not None else svc.ZERO
@@ -420,7 +419,7 @@ def _atribuir(conn, sessao, pedido_id: int, d: EntregaIn, origem: str):
         raise HTTPException(status_code=404, detail="Entregador não encontrado ou inativo.")
     padrao = _dinheiro_param(vigentes(conn, LOJA_ID), "valor_entrega_padrao")
     valor = parse_reais(d.valor_entrega) if d.valor_entrega is not None else padrao
-    if valor != padrao and "caixa.gerir" not in PERMISSOES.get(sessao["perfil"], set()):
+    if valor != padrao and not tem_permissao(sessao, "caixa.gerir"):
         raise HTTPException(status_code=403, detail="Valor de entrega diferente do padrão: só a gerência define.")
     try:
         conn.execute("INSERT INTO entrega (pedido_id, loja_id, data, entregador_id, valor_entrega, atribuido_por, atribuido_em) VALUES (%s,%s,%s,%s,%s,%s,%s)",
@@ -459,7 +458,7 @@ def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
     else:
         padrao = _dinheiro_param(vigentes(conn, LOJA_ID), "diaria_entregador_padrao")
         diaria = parse_reais(d.diaria) if d.diaria is not None else padrao
-        if diaria != padrao and "caixa.gerir" not in PERMISSOES.get(sessao["perfil"], set()):
+        if diaria != padrao and not tem_permissao(sessao, "caixa.gerir"):
             raise HTTPException(status_code=403, detail="Diária diferente do padrão: só a gerência define.")
     devido = valor_entregas + diaria
     try:

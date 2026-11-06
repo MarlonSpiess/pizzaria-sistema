@@ -6,7 +6,6 @@ import math
 from datetime import timedelta
 from decimal import Decimal
 
-from fastapi import HTTPException
 
 from api.config import LOJA_ID
 from api.services import estoque

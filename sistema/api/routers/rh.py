@@ -1,6 +1,6 @@
 """RH gerencial: funcionários, contratos, escala, ponto, banco de horas, ausências, documentos e folha. Salário só para quem tem rh.salarios."""
 from calendar import monthrange
-from datetime import date, datetime, time, timedelta
+from datetime import date, time, timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -11,7 +11,7 @@ from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, traduzir_erro
 from api.schemas import (AtivoIn, AusenciaIn, BancoHorasIn, BeneficioIn, ContratoIn, DesligarIn, DocumentoRhIn, EscalaTipoIn, FolhaLancarIn, FolhaResumoIn, FuncaoRhIn, FuncionarioIn,
                          FuncionarioUpdate, PontoIn, TurnoIn)
-from api.security import PERMISSOES, requer
+from api.security import requer, tem_permissao
 from api.services import contas as contas_svc
 from api.services.dinheiro import fmt, parse_reais
 from api.services.parametros import vigentes
@@ -34,7 +34,7 @@ def _hm(v: str) -> int:
 
 
 def _pode_salarios(sessao) -> bool:
-    return "rh.salarios" in PERMISSOES.get(sessao["perfil"], set())
+    return tem_permissao(sessao, "rh.salarios")
 
 
 def _mes(m: Optional[str]) -> date:
