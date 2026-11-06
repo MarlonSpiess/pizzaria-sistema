@@ -4,11 +4,10 @@ from datetime import date, time, timedelta
 from decimal import Decimal
 from typing import Optional
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, transacao
 from api.schemas import (AtivoIn, AusenciaIn, BancoHorasIn, BeneficioIn, ContratoIn, DesligarIn, DocumentoRhIn, EscalaTipoIn, FolhaLancarIn, FolhaResumoIn, FuncaoRhIn, FuncionarioIn,
                          FuncionarioUpdate, PontoIn, TurnoIn)
 from api.security import requer, tem_permissao
@@ -21,11 +20,6 @@ ZERO = Decimal("0.00")
 FUNCOES_PADRAO = ["Massa", "Pizzaiolo", "Acabamento", "Atendimento", "Gerência", "Limpeza"]
 ESCALAS_PADRAO = [("6x1", 6, 1, "44"), ("5x2", 5, 2, "40")]  # ponto de partida; a legislação pode mudar, por isso é cadastro
 COM_ENCARGOS = ("clt", "intermitente")
-
-
-def _ex(conn, e):
-    conn.rollback()
-    raise traduzir_erro(e) from e
 
 
 def _hm(v: str) -> int:
@@ -66,12 +60,9 @@ def funcoes(sessao=Depends(requer("rh.ver")), conn=Depends(get_db)):
 
 @router.post("/funcoes", status_code=201)
 def criar_funcao(d: FuncaoRhIn, sessao=Depends(requer("rh.operar")), conn=Depends(get_db)):
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO funcao_rh (loja_id, nome) VALUES (%s,%s) RETURNING id", (LOJA_ID, d.nome)).fetchone()
         auditar(conn, sessao, "criar", "funcao_rh", r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -107,12 +98,9 @@ def escalas(sessao=Depends(requer("rh.ver")), conn=Depends(get_db)):
 def criar_escala(d: EscalaTipoIn, sessao=Depends(requer("rh.operar")), conn=Depends(get_db)):
     if d.dias_trabalho + d.dias_folga > 7:
         raise HTTPException(status_code=400, detail="Dias de trabalho mais folga passam de 7.")
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO escala_tipo (loja_id, nome, dias_trabalho, dias_folga, horas_semana) VALUES (%s,%s,%s,%s,%s) RETURNING id", (LOJA_ID, d.nome, d.dias_trabalho, d.dias_folga, d.horas_semana)).fetchone()
         auditar(conn, sessao, "criar", "escala_tipo", r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -147,13 +135,10 @@ def criar_funcionario(d: FuncionarioIn, sessao=Depends(requer("rh.operar")), con
         raise HTTPException(status_code=404, detail="Função não encontrada.")
     if d.usuario_id and not conn.execute("SELECT 1 FROM usuario WHERE id = %s AND loja_id = %s AND ativo", (d.usuario_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Usuário não encontrado ou inativo.")
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO funcionario (loja_id, nome, telefone, funcao_id, usuario_id, admissao, preco_especial, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (LOJA_ID, d.nome, d.telefone, d.funcao_id, d.usuario_id, d.admissao, d.preco_especial, agora(), sessao["usuario_id"])).fetchone()
         auditar(conn, sessao, "criar", "funcionario", r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -167,12 +152,9 @@ def alterar_funcionario(fid: int, d: FuncionarioUpdate, sessao=Depends(requer("r
         raise HTTPException(status_code=404, detail="Função não encontrada.")
     if campos.get("usuario_id") and not conn.execute("SELECT 1 FROM usuario WHERE id = %s AND loja_id = %s AND ativo", (campos["usuario_id"], LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Usuário não encontrado ou inativo.")
-    try:
+    with transacao(conn):
         conn.execute(f"UPDATE funcionario SET {', '.join(f'{c} = %s' for c in campos)} WHERE id = %s", (*campos.values(), fid))
         auditar(conn, sessao, "alterar", "funcionario", fid, depois={k: str(v) for k, v in campos.items()})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": fid}
 
 
@@ -188,15 +170,12 @@ def desligar(fid: int, d: DesligarIn, sessao=Depends(requer("rh.operar")), conn=
         raise HTTPException(status_code=400, detail="O desligamento não pode ser antes da admissão.")
     if f["usuario_id"] and conn.execute("SELECT 1 FROM usuario WHERE id = %s AND perfil IN ('administrador','proprietario')", (f["usuario_id"],)).fetchone():
         raise HTTPException(status_code=409, detail="Este funcionário é o administrador ou proprietário do sistema: o login dele não é bloqueado pelo desligamento. Desvincule o usuário antes.")
-    try:
+    with transacao(conn):
         conn.execute("UPDATE funcionario SET ativo = false, desligamento = %s, desligamento_motivo = %s WHERE id = %s", (d.data, d.motivo, fid))
         conn.execute("UPDATE contrato SET vigente_ate = GREATEST(%s, vigente_desde) WHERE funcionario_id = %s AND vigente_ate IS NULL", (d.data, fid))
         if f["usuario_id"]:
             conn.execute("UPDATE usuario SET ativo = false WHERE id = %s", (f["usuario_id"],))
         auditar(conn, sessao, "desligar", "funcionario", fid, depois={"data": str(d.data), "motivo": d.motivo, "login_bloqueado": bool(f["usuario_id"])})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": fid, "ativo": False}
 
 
@@ -219,15 +198,12 @@ def novo_contrato(fid: int, d: ContratoIn, sessao=Depends(requer("rh.salarios"))
     vig = conn.execute("SELECT id, vigente_desde FROM contrato WHERE funcionario_id = %s AND vigente_ate IS NULL FOR UPDATE", (fid,)).fetchone()
     if vig and d.vigente_desde <= vig["vigente_desde"]:
         raise HTTPException(status_code=400, detail="O novo contrato precisa começar depois do contrato vigente.")
-    try:
+    with transacao(conn):
         if vig:
             conn.execute("UPDATE contrato SET vigente_ate = %s WHERE id = %s", (d.vigente_desde - timedelta(days=1), vig["id"]))
         r = conn.execute("INSERT INTO contrato (funcionario_id, tipo, escala_id, forma_pagamento, valor, vigente_desde, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (fid, d.tipo, d.escala_id, d.forma_pagamento, parse_reais(d.valor), d.vigente_desde, agora(), sessao["usuario_id"])).fetchone()
         auditar(conn, sessao, "contrato", "funcionario", fid, depois={"tipo": d.tipo, "forma": d.forma_pagamento, "valor": d.valor})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -285,13 +261,10 @@ def lancar_turno(d: TurnoIn, sessao=Depends(requer("rh.operar")), conn=Depends(g
     aus = _em_ausencia(conn, d.funcionario_id, d.data)
     if aus:
         raise HTTPException(status_code=409, detail=f"A pessoa está de {aus} neste dia.")
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO turno (funcionario_id, data, funcao_id, inicio, fim) VALUES (%s,%s,%s,%s,%s) ON CONFLICT (funcionario_id, data) DO UPDATE SET funcao_id = EXCLUDED.funcao_id, inicio = EXCLUDED.inicio, fim = EXCLUDED.fim",
                      (d.funcionario_id, d.data, d.funcao_id, d.inicio, d.fim))
         auditar(conn, sessao, "turno", "funcionario", d.funcionario_id, depois={"data": str(d.data), "inicio": d.inicio, "fim": d.fim})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"funcionario_id": d.funcionario_id, "data": d.data}
 
 
@@ -333,13 +306,10 @@ def lancar_ponto(d: PontoIn, sessao=Depends(requer("rh.operar")), conn=Depends(g
     if d.saida == d.entrada:
         raise HTTPException(status_code=400, detail="A saída não pode ser igual à entrada (saída menor que a entrada vira o dia).")
     antes = conn.execute("SELECT entrada, saida FROM ponto WHERE funcionario_id = %s AND data = %s", (d.funcionario_id, d.data)).fetchone()
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO ponto (funcionario_id, data, entrada, saida, lancado_por, criado_em) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (funcionario_id, data) DO UPDATE SET entrada = EXCLUDED.entrada, saida = EXCLUDED.saida, lancado_por = EXCLUDED.lancado_por, criado_em = EXCLUDED.criado_em",
                      (d.funcionario_id, d.data, d.entrada, d.saida, sessao["usuario_id"], agora()))
         auditar(conn, sessao, "ponto", "funcionario", d.funcionario_id, antes={"entrada": str(antes["entrada"]), "saida": str(antes["saida"])} if antes else None, depois={"data": str(d.data), "entrada": d.entrada, "saida": d.saida})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"funcionario_id": d.funcionario_id, "data": d.data}
 
 
@@ -504,13 +474,10 @@ def resumo_contador(d: FolhaResumoIn, sessao=Depends(requer("rh.salarios")), con
     _func(conn, d.funcionario_id)
     if conn.execute("SELECT 1 FROM titulo WHERE origem_tipo = 'folha' AND competencia = %s AND situacao <> 'cancelado'", (ini,)).fetchone():
         raise HTTPException(status_code=409, detail="A folha deste mês já foi lançada em Contas a Pagar.")
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO folha_resumo (loja_id, competencia, funcionario_id, bruto, encargos, beneficios, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
                      (LOJA_ID, ini, d.funcionario_id, parse_reais(d.bruto), parse_reais(d.encargos), parse_reais(d.beneficios), agora(), sessao["usuario_id"]))
         auditar(conn, sessao, "folha_resumo", "funcionario", d.funcionario_id, depois={"competencia": d.competencia, "bruto": d.bruto})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"competencia": d.competencia}
 
 
@@ -529,14 +496,11 @@ def lancar_folha(d: FolhaLancarIn, sessao=Depends(requer("rh.salarios")), conn=D
     if total <= 0:
         raise HTTPException(status_code=400, detail="Não há valor de folha neste mês.")
     venc = d.vencimento or ini.replace(year=ini.year + (ini.month == 12), month=ini.month % 12 + 1, day=5)
-    try:
+    with transacao(conn):
         tid = contas_svc._novo(conn, loja_id=LOJA_ID, sentido="pagar", descricao=f"Folha {ini.strftime('%m/%Y')} ({origem})", tipo_despesa_id=tipo["id"], valor=total, vencimento=venc, competencia=ini,
                                origem_tipo="folha", origem_id=int(ini.strftime("%Y%m")), criado_em=agora(), criado_por=sessao["usuario_id"])
         if not tid:
             conn.rollback()
             raise HTTPException(status_code=409, detail="A folha deste mês já foi lançada.")
         auditar(conn, sessao, "lancar_folha", "titulo", tid, depois={"competencia": d.competencia, "total": fmt(total), "origem": origem})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"titulo_id": tid, "total": fmt(total), "origem": origem}

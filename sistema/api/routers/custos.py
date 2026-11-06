@@ -3,11 +3,10 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, transacao
 from api.schemas import FatorCorrecaoIn, FecharCmvIn
 from api.security import requer, tem_permissao
 from api.services import custos as svc
@@ -103,15 +102,11 @@ def fatores(sessao=Depends(requer("custos.ver")), conn=Depends(get_db)):
 def definir_fator(item_id: int, d: FatorCorrecaoIn, sessao=Depends(requer("custos.gerir")), conn=Depends(get_db)):
     if not conn.execute("SELECT 1 FROM item WHERE id = %s AND loja_id = %s AND classe IN ('insumo','preparo')", (item_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Item não encontrado.")
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO item_custo (item_id, loja_id, fator_correcao, atualizado_em, atualizado_por) VALUES (%s,%s,%s,%s,%s) "
                      "ON CONFLICT (item_id) DO UPDATE SET fator_correcao = EXCLUDED.fator_correcao, atualizado_em = EXCLUDED.atualizado_em, atualizado_por = EXCLUDED.atualizado_por",
                      (item_id, LOJA_ID, Decimal(d.fator_correcao), agora(), sessao["usuario_id"]))
         auditar(conn, sessao, "fator", "item_custo", item_id, depois={"fator_correcao": d.fator_correcao})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"item_id": item_id, "fator_correcao": d.fator_correcao}
 
 
@@ -141,15 +136,11 @@ def fechar_cmv(d: FecharCmvIn, sessao=Depends(requer("custos.gerir")), conn=Depe
     c = svc.cmv_mes(conn, LOJA_ID, m)
     if m.year < 2020 or not any(c[k] for k in ("estoque_inicial", "compras", "estoque_final", "vendas", "cmv_real")):
         raise HTTPException(status_code=400, detail="Mês sem movimento: não há CMV para fechar.")
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO fechamento_cmv (loja_id, mes, estoque_inicial, compras, estoque_final, cmv_real, cmv_teorico, perdas, consumo_interno, vendas, fechado_por, fechado_em) "
                      "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (LOJA_ID, m, c["estoque_inicial"], c["compras"], c["estoque_final"], c["cmv_real"], c["cmv_teorico"], c["perdas"], c["consumo_interno"],
                                                                       c["vendas"], sessao["usuario_id"], agora()))
         auditar(conn, sessao, "fechar_cmv", "fechamento_cmv", None, depois={"mes": d.mes, "cmv_real": fmt(c["cmv_real"])})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _cmv_out(c)
 
 

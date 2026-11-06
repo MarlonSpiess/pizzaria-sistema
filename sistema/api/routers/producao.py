@@ -8,7 +8,7 @@ import psycopg.errors
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, transacao
 from api.routers.vendas import _pedido, mudar_situacao
 from api.schemas import ContagemMassaIn, LoteMassaIn, MontagemErradaIn, MotivoIn, MotivoRef, MotivoUpdate, PerdaMassaIn
 from api.security import permissoes_de, requer, requer_alguma, tem_permissao
@@ -194,15 +194,11 @@ def retroceder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.montagem"
         nova = prox[0]["ordem"] + 1
     else:
         nova = p["ordem"]
-    try:
+    with transacao(conn):
         conn.execute("UPDATE pizza_producao SET ordem = %s WHERE id = %s", (nova, pid))
         svc.mover(conn, pid, "na lista", sessao["usuario_id"], quando, responsavel=None)
         conn.execute("INSERT INTO retrocesso (pizza_id, motivo_id, usuario_id, criado_em) VALUES (%s,%s,%s,%s)", (pid, m["id"], sessao["usuario_id"], quando))
         auditar(conn, sessao, "retroceder", "pizza_producao", pid, depois={"motivo": m["nome"], "avisa_estoque": m.get("avisa_estoque")})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"id": pid, "situacao": "na lista", "avisa_estoque": bool(m.get("avisa_estoque"))}
 
 
@@ -340,17 +336,13 @@ def sem_ingredientes(pid: int, sessao=Depends(requer("producao.montagem")), conn
     quando = agora()
     conn.execute("SELECT pg_advisory_xact_lock(5, %s)", (LOJA_ID,))
     fim = conn.execute("SELECT COALESCE(max(ordem), 0) + 1 AS o FROM pizza_producao WHERE loja_id = %s", (LOJA_ID,)).fetchone()["o"]
-    try:
+    with transacao(conn):
         conn.execute("UPDATE pizza_producao SET ordem = %s WHERE id = %s", (fim, pid))
         svc.mover(conn, pid, "na lista", sessao["usuario_id"], quando, responsavel=None)
         conn.execute("INSERT INTO retrocesso (pizza_id, motivo_id, usuario_id, criado_em) VALUES (%s,%s,%s,%s)", (pid, m["id"], sessao["usuario_id"], quando))
         conn.execute("INSERT INTO aviso_producao (loja_id, tipo, pizza_id, criado_por, criado_em) SELECT %s,'sem_ingredientes',%s,%s,%s "
                      "WHERE NOT EXISTS (SELECT 1 FROM aviso_producao WHERE pizza_id = %s AND tipo = 'sem_ingredientes' AND resolvido_em IS NULL)", (LOJA_ID, pid, sessao["usuario_id"], quando, pid))
         auditar(conn, sessao, "sem_ingredientes", "pizza_producao", pid, depois={"motivo": m["nome"]})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"id": pid, "situacao": "na lista", "avisa_estoque": True}
 
 
@@ -493,16 +485,12 @@ def _tabela(tipo: str) -> str:
 @router.post("/motivos/{tipo}", status_code=201)
 def criar_motivo(tipo: str, d: MotivoIn, sessao=Depends(requer("producao.gerir")), conn=Depends(get_db)):
     t = _tabela(tipo)
-    try:
+    with transacao(conn):
         if t == "motivo_retrocesso":
             r = conn.execute("INSERT INTO motivo_retrocesso (loja_id, nome, avisa_estoque) VALUES (%s,%s,%s) RETURNING id, nome, avisa_estoque, ativo", (LOJA_ID, d.nome, d.avisa_estoque)).fetchone()
         else:
             r = conn.execute("INSERT INTO motivo_perda (loja_id, nome) VALUES (%s,%s) RETURNING id, nome, ativo", (LOJA_ID, d.nome)).fetchone()
         auditar(conn, sessao, "criar", t, r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -517,11 +505,7 @@ def alterar_motivo(tipo: str, mid: int, d: MotivoUpdate, sessao=Depends(requer("
     if not conn.execute(f"SELECT 1 FROM {t} WHERE id = %s AND loja_id = %s", (mid, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Motivo não encontrado.")
     sets = ", ".join(f"{c} = %s" for c in campos)  # nomes de coluna vêm só do schema
-    try:
+    with transacao(conn):
         r = conn.execute(f"UPDATE {t} SET {sets} WHERE id = %s RETURNING *", (*campos.values(), mid)).fetchone()
         auditar(conn, sessao, "alterar", t, mid, depois={"campos": sorted(campos)})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r

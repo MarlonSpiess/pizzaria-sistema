@@ -7,7 +7,7 @@ import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, traduzir_erro, transacao
 from api.schemas import (AtivoIn, BaixaBemIn, BemIn, BemUpdate, CategoriaBemIn, ConferenciaBemIn, LeituraIn, LimiteLeituraIn, OsFecharIn, OsIn, OsIniciarIn, OsPecaIn, PlanoIn)
 from api.security import requer
 from api.services import contas as contas_svc
@@ -22,11 +22,6 @@ CATEGORIAS_PADRAO = [("Máquinas e equipamentos", "10", False), ("Móveis e uten
 CAMPOS_DEPRECIACAO = ("inicio_uso", "metodo", "vida_util_meses", "valor_residual")
 
 
-def _ex(conn, e):
-    conn.rollback()
-    raise traduzir_erro(e) from e
-
-
 # ---------------------------------------------------------------- categorias
 @router.get("/categorias")
 def categorias(sessao=Depends(requer("imobilizado.ver")), conn=Depends(get_db)):
@@ -35,12 +30,9 @@ def categorias(sessao=Depends(requer("imobilizado.ver")), conn=Depends(get_db)):
 
 @router.post("/categorias", status_code=201)
 def criar_categoria(d: CategoriaBemIn, sessao=Depends(requer("imobilizado.operar")), conn=Depends(get_db)):
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO categoria_bem (loja_id, nome, taxa_fiscal_pct, veiculo) VALUES (%s,%s,%s,%s) RETURNING id", (LOJA_ID, d.nome, d.taxa_fiscal_pct, d.veiculo)).fetchone()
         auditar(conn, sessao, "criar", "categoria_bem", r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -85,11 +77,8 @@ _SQL_BEM = ("SELECT b.*, c.nome AS categoria, c.taxa_fiscal_pct, c.veiculo, f.no
 
 @router.get("/bens")
 def bens(situacao: Optional[str] = None, sessao=Depends(requer("imobilizado.ver")), conn=Depends(get_db)):
-    try:
+    with transacao(conn):
         svc.gerar_depreciacao(conn, LOJA_ID)
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     sql, p = _SQL_BEM, [LOJA_ID]
     if situacao in ("ativo", "baixado"):
         sql, p = sql + " AND b.situacao = %s", p + [situacao]
@@ -127,15 +116,12 @@ def criar_bem(d: BemIn, sessao=Depends(requer("imobilizado.operar")), conn=Depen
         raise HTTPException(status_code=404, detail="Fornecedor não encontrado.")
     if d.inicio_uso and d.inicio_uso < d.data_aquisicao:
         raise HTTPException(status_code=400, detail="O início de uso não pode ser antes da compra.")
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO bem (loja_id, codigo, nome, categoria_id, valor_aquisicao, data_aquisicao, inicio_uso, fornecedor_id, numero_nota, local_texto, responsavel, numero_serie, placa, quilometragem, "
                          "critico, metodo, vida_util_meses, valor_residual, garantia_ate, seguro_ate, apolice, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (LOJA_ID, d.codigo, d.nome, d.categoria_id, valor, d.data_aquisicao, d.inicio_uso, d.fornecedor_id, d.numero_nota, d.local_texto, d.responsavel, d.numero_serie, d.placa, d.quilometragem,
                           d.critico, d.metodo, d.vida_util_meses, residual, d.garantia_ate, d.seguro_ate, d.apolice, agora(), sessao["usuario_id"])).fetchone()
         auditar(conn, sessao, "criar", "bem", r["id"], depois={"codigo": d.codigo, "valor": fmt(valor)})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -165,12 +151,9 @@ def alterar_bem(bid: int, d: BemUpdate, sessao=Depends(requer("imobilizado.opera
     if (campos.get("metodo") or b["metodo"]) == "vida_util" and not (campos.get("vida_util_meses") or b["vida_util_meses"]):
         raise HTTPException(status_code=400, detail="Informe a vida útil em meses.")
     sets = ", ".join(f"{c} = %s" for c in campos)
-    try:
+    with transacao(conn):
         conn.execute(f"UPDATE bem SET {sets} WHERE id = %s", (*campos.values(), bid))
         auditar(conn, sessao, "alterar", "bem", bid, depois={k: str(v) for k, v in campos.items()})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": bid}
 
 
@@ -189,13 +172,10 @@ def baixar_bem(bid: int, d: BaixaBemIn, sessao=Depends(requer("imobilizado.aprov
         raise HTTPException(status_code=409, detail="A data da baixa não pode ser anterior ao último mês já depreciado.")
     if conn.execute("SELECT 1 FROM ordem_servico WHERE bem_id = %s AND situacao IN ('aberta','em_execucao') LIMIT 1", (bid,)).fetchone():
         raise HTTPException(status_code=409, detail="Feche ou cancele as ordens de serviço do bem antes da baixa.")
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO baixa_bem (bem_id, tipo, data, valor, motivo, aprovado_por, criado_em) VALUES (%s,%s,%s,%s,%s,%s,%s)", (bid, d.tipo, d.data, parse_reais(d.valor), d.motivo, sessao["usuario_id"], agora()))
         conn.execute("UPDATE bem SET situacao = 'baixado' WHERE id = %s", (bid,))
         auditar(conn, sessao, "baixar", "bem", bid, depois={"tipo": d.tipo, "valor": d.valor, "motivo": d.motivo})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": bid, "situacao": "baixado"}
 
 
@@ -203,15 +183,12 @@ def baixar_bem(bid: int, d: BaixaBemIn, sessao=Depends(requer("imobilizado.aprov
 def conferir(bid: int, d: ConferenciaBemIn, sessao=Depends(requer("imobilizado.operar")), conn=Depends(get_db)):
     if not conn.execute("SELECT 1 FROM bem WHERE id = %s AND loja_id = %s AND situacao = 'ativo'", (bid, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Bem não encontrado ou baixado.")
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO conferencia_bem (bem_id, data, encontrado, local_encontrado, observacao, usuario_id, criado_em) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (bid, agora().date(), d.encontrado, d.local_encontrado, d.observacao, sessao["usuario_id"], agora())).fetchone()
         if d.encontrado and d.local_encontrado:
             conn.execute("UPDATE bem SET local_texto = %s WHERE id = %s", (d.local_encontrado, bid))
         auditar(conn, sessao, "conferir", "bem", bid, depois={"encontrado": d.encontrado})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -247,13 +224,10 @@ def _planos(conn, bid=None):
 def criar_plano(bid: int, d: PlanoIn, sessao=Depends(requer("imobilizado.operar")), conn=Depends(get_db)):
     if not conn.execute("SELECT 1 FROM bem WHERE id = %s AND loja_id = %s AND situacao = 'ativo'", (bid, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Bem não encontrado ou baixado.")
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO plano_manutencao (bem_id, tarefa, periodicidade_dias, antecedencia_dias, base_em, criado_em) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id",
                          (bid, d.tarefa, d.periodicidade_dias, d.antecedencia_dias, d.base_em or agora().date(), agora())).fetchone()
         auditar(conn, sessao, "criar", "plano_manutencao", r["id"], depois={"bem_id": bid, "tarefa": d.tarefa})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"]}
 
 
@@ -279,13 +253,10 @@ def definir_limite(bid: int, d: LimiteLeituraIn, sessao=Depends(requer("imobiliz
         raise HTTPException(status_code=400, detail="O mínimo não pode passar do máximo.")
     if not conn.execute("SELECT 1 FROM bem WHERE id = %s AND loja_id = %s AND situacao = 'ativo'", (bid, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Bem não encontrado ou baixado.")
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO limite_leitura (bem_id, grandeza, unidade, minimo, maximo) VALUES (%s,%s,%s,%s,%s) ON CONFLICT (bem_id, grandeza) DO UPDATE SET unidade = EXCLUDED.unidade, minimo = EXCLUDED.minimo, maximo = EXCLUDED.maximo",
                      (bid, d.grandeza, d.unidade, d.minimo, d.maximo))
         auditar(conn, sessao, "limite", "bem", bid, depois={"grandeza": d.grandeza, "minimo": d.minimo, "maximo": d.maximo})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"bem_id": bid, "grandeza": d.grandeza}
 
 
@@ -300,12 +271,9 @@ def leitura(bid: int, d: LeituraIn, sessao=Depends(requer("imobilizado.operar"))
     data = d.data or agora().date()
     if data > agora().date():
         raise HTTPException(status_code=400, detail="A leitura não pode ter data futura.")
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO leitura_bem (bem_id, grandeza, valor, data, fora_do_normal, usuario_id, criado_em) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id", (bid, d.grandeza, v, data, fora, sessao["usuario_id"], agora())).fetchone()
         auditar(conn, sessao, "leitura", "bem", bid, depois={"grandeza": d.grandeza, "valor": d.valor, "fora": fora})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": r["id"], "fora_do_normal": fora}
 
 
@@ -370,13 +338,10 @@ def abrir_os(d: OsIn, sessao=Depends(requer("imobilizado.operar")), conn=Depends
     if d.plano_id and not conn.execute("SELECT 1 FROM plano_manutencao WHERE id = %s AND bem_id = %s", (d.plano_id, d.bem_id)).fetchone():
         raise HTTPException(status_code=404, detail="Plano não encontrado neste bem.")
     quando = agora()
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO ordem_servico (loja_id, bem_id, tipo, plano_id, descricao, parada_inicio, aberta_em, aberta_por) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (LOJA_ID, d.bem_id, d.tipo, d.plano_id, d.descricao, quando if d.parou else None, quando, sessao["usuario_id"])).fetchone()
         auditar(conn, sessao, "abrir", "ordem_servico", r["id"], depois={"bem_id": d.bem_id, "tipo": d.tipo})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return _os_out(conn, _os(conn, r["id"]))
 
 
@@ -391,12 +356,9 @@ def iniciar_os(oid: int, d: OsIniciarIn, sessao=Depends(requer("imobilizado.oper
         raise HTTPException(status_code=400, detail="Informe o funcionário.")
     if d.fornecedor_id and not conn.execute("SELECT 1 FROM fornecedor WHERE id = %s AND loja_id = %s", (d.fornecedor_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Fornecedor não encontrado.")
-    try:
+    with transacao(conn):
         conn.execute("UPDATE ordem_servico SET situacao = 'em_execucao', executor_tipo = %s, executor_nome = %s, fornecedor_id = %s WHERE id = %s", (d.executor_tipo, d.executor_nome, d.fornecedor_id, oid))
         auditar(conn, sessao, "iniciar", "ordem_servico", oid)
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return _os_out(conn, _os(conn, oid))
 
 
@@ -418,7 +380,8 @@ def peca(oid: int, d: OsPecaIn, sessao=Depends(requer("imobilizado.operar")), co
         auditar(conn, sessao, "peca", "ordem_servico", oid, depois={"item_id": d.item_id, "quantidade": d.quantidade})
         conn.commit()
     except psycopg.Error as e:
-        _ex(conn, e)
+        conn.rollback()
+        raise traduzir_erro(e) from e
     except HTTPException:
         conn.rollback()
         raise
@@ -434,12 +397,9 @@ def aprovar_os(oid: int, sessao=Depends(requer("imobilizado.aprovar")), conn=Dep
         raise HTTPException(status_code=409, detail="A ordem já foi aprovada.")
     if o["aberta_por"] == sessao["usuario_id"]:
         raise HTTPException(status_code=403, detail="Quem abriu a ordem não pode aprová-la.")
-    try:
+    with transacao(conn):
         conn.execute("UPDATE ordem_servico SET aprovado_por = %s, aprovado_valor = custo_total WHERE id = %s", (sessao["usuario_id"], oid))
         auditar(conn, sessao, "aprovar", "ordem_servico", oid)
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return _os_out(conn, _os(conn, oid))
 
 
@@ -461,7 +421,7 @@ def fechar_os(oid: int, d: OsFecharIn, sessao=Depends(requer("imobilizado.operar
     if mao > 0 and o["executor_tipo"] == "terceiro" and not d.tipo_despesa_id and not conn.execute("SELECT 1 FROM tipo_despesa WHERE loja_id = %s AND lower(nome) = 'manutenção' AND ativo", (LOJA_ID,)).fetchone():
         raise HTTPException(status_code=400, detail="Informe o tipo de despesa da mão de obra (ou cadastre o tipo 'Manutenção').")
     quando = agora()
-    try:
+    with transacao(conn):
         conn.execute("UPDATE ordem_servico SET situacao = 'fechada', servico_feito = %s, causa = %s, mao_obra = %s, custo_total = %s, precisa_aprovacao = %s, parada_fim = CASE WHEN parada_inicio IS NOT NULL THEN %s END, "
                      "fechada_em = %s, fechada_por = %s WHERE id = %s", (d.servico_feito, d.causa, mao, total, precisa, quando, quando, sessao["usuario_id"], oid))
         if o["plano_id"]:
@@ -472,9 +432,6 @@ def fechar_os(oid: int, d: OsFecharIn, sessao=Depends(requer("imobilizado.operar
                 contas_svc._novo(conn, loja_id=LOJA_ID, sentido="pagar", descricao=f"Manutenção, ordem {o['numero']} ({o['bem']})", fornecedor_id=o["fornecedor_id"], tipo_despesa_id=tipo, valor=mao,
                                  vencimento=d.vencimento or quando.date(), competencia=quando.date().replace(day=1), origem_tipo="manutencao", origem_id=oid, bem_id=o["bem_id"], criado_em=quando, criado_por=sessao["usuario_id"])
         auditar(conn, sessao, "fechar", "ordem_servico", oid, depois={"custo_total": fmt(total)})
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return _os_out(conn, _os(conn, oid))
 
 
@@ -485,12 +442,9 @@ def cancelar_os(oid: int, sessao=Depends(requer("imobilizado.operar")), conn=Dep
         raise HTTPException(status_code=409, detail="A ordem já está encerrada.")
     if conn.execute("SELECT 1 FROM os_peca WHERE os_id = %s LIMIT 1", (oid,)).fetchone():
         raise HTTPException(status_code=409, detail="Já saíram peças do estoque: feche a ordem em vez de cancelar.")
-    try:
+    with transacao(conn):
         conn.execute("UPDATE ordem_servico SET situacao = 'cancelada', parada_fim = CASE WHEN parada_inicio IS NOT NULL THEN %s END WHERE id = %s", (agora(), oid))
         auditar(conn, sessao, "cancelar", "ordem_servico", oid)
-        conn.commit()
-    except psycopg.Error as e:
-        _ex(conn, e)
     return {"id": oid, "situacao": "cancelada"}
 
 

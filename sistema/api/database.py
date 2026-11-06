@@ -4,6 +4,7 @@ Toda regra específica de banco fica isolada aqui; routers e services nunca mont
 com dado de usuário (placeholder `%s`, nunca f-string).
 """
 import json
+from contextlib import contextmanager
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -91,6 +92,27 @@ def traduzir_erro(e: psycopg.Error) -> HTTPException:
     if isinstance(e, psycopg.errors.IntegrityError):
         return HTTPException(status_code=400, detail="Operação viola uma regra de integridade do banco.")
     raise e
+
+
+@contextmanager
+def transacao(conn: psycopg.Connection):
+    """Bloco de gravação: comita no fim; erro do banco desfaz tudo e vira mensagem em português.
+    Uma HTTPException levantada no meio também impede o commit (a conexão volta ao pool com rollback)."""
+    try:
+        yield conn
+        conn.commit()
+    except psycopg.Error as e:
+        conn.rollback()
+        raise traduzir_erro(e) from e
+
+
+def gravar_um(conn: psycopg.Connection, sql: str, params) -> dict | None:
+    """Executa um comando de gravação e devolve a linha do RETURNING, sem comitar (quem chama audita e comita)."""
+    try:
+        return conn.execute(sql, params).fetchone()
+    except psycopg.Error as e:
+        conn.rollback()
+        raise traduzir_erro(e) from e
 
 
 def run(conn: psycopg.Connection, sql: str, params=None, fetch: str = "none"):

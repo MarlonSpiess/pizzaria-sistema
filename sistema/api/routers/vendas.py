@@ -7,7 +7,7 @@ import psycopg.errors
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, hoje, traduzir_erro
+from api.database import agora, auditar, get_db, hoje, traduzir_erro, transacao
 from api.schemas import CfIn, PedidoCalcular, PedidoCancelar, PedidoCreate, PedidoSituacao, PedidoUrgente
 from api.security import requer, tem_permissao
 from api.services import parametros as svc_parametros
@@ -342,7 +342,7 @@ def cancelar(pid: int, d: PedidoCancelar, request: Request, sessao=Depends(reque
         if p["situacao"] in ("cancelado", "despachado ou retirado"):
             raise HTTPException(status_code=409, detail=f"Pedido {p['situacao']} não pode ser cancelado.")
     quando = agora()
-    try:
+    with transacao(conn):
         exigir_nao_encerrado(conn, LOJA_ID, quando.date(), False)
         for e in conn.execute("SELECT forma, sum(valor - troco) AS valor FROM pagamento WHERE pedido_id = %s GROUP BY forma HAVING sum(valor - troco) > 0",
                               (pid,)).fetchall():  # devolução ao cliente: uma linha por forma, na data do cancelamento
@@ -357,8 +357,4 @@ def cancelar(pid: int, d: PedidoCancelar, request: Request, sessao=Depends(reque
                      (pid, sessao["usuario_id"], quando))
         auditar(conn, sessao, "cancelar", "pedido", pid, antes={"situacao": p["situacao"]},
                 depois={"motivo": d.motivo, "autorizado_por": autorizador})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _out(_pedido(conn, pid))

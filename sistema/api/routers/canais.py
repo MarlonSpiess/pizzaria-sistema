@@ -1,9 +1,8 @@
 """Canais de venda: cadastro, fila de entrada e mapa de produtos. Estrutura apenas, sem chamada externa."""
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, transacao
 from api.schemas import Base
 from api.security import requer
 
@@ -143,13 +142,9 @@ def mapear(cid: int, d: MapaIn, sessao=Depends(requer("canais.configurar")), con
     ext = _texto(d.id_externo, 80)
     if not conn.execute("SELECT 1 FROM produto WHERE id = %s AND loja_id = %s AND ativo", (d.produto_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO mapa_produto_canal (canal_id, produto_id, id_externo) VALUES (%s,%s,%s) "
                      "ON CONFLICT (canal_id, produto_id) DO UPDATE SET id_externo = EXCLUDED.id_externo, "
                      "pausado_no_canal = CASE WHEN mapa_produto_canal.id_externo = EXCLUDED.id_externo THEN mapa_produto_canal.pausado_no_canal ELSE false END", (cid, d.produto_id, ext))
         auditar(conn, sessao, "mapear", "mapa_produto_canal", d.produto_id, depois={"canal_id": cid, "id_externo": ext})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"produto_id": d.produto_id, "id_externo": ext}
