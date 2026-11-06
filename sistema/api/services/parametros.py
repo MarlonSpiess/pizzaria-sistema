@@ -5,7 +5,7 @@ Limites iniciais ficam vazios até Marlon definir (decisão de 16/10/2026).
 """
 import json
 import re
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from fastapi import HTTPException
 
@@ -61,10 +61,7 @@ def descrever() -> list[dict]:
 def _dec(texto: str, minimo: Decimal, maximo: Decimal | None = None) -> Decimal:
     if not _NUMERO.match(texto):  # só dígitos ASCII, com ponto ou vírgula decimal
         raise ValueError("Número inválido.")
-    try:
-        v = Decimal(texto.replace(",", "."))
-    except InvalidOperation:
-        raise ValueError("Número inválido.")
+    v = Decimal(texto.replace(",", "."))  # a expressão acima garante um número que o Decimal aceita
     if not v.is_finite() or v < minimo or (maximo is not None and v > maximo):
         raise ValueError("Valor fora da faixa permitida.")
     return v

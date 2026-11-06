@@ -42,5 +42,5 @@ def test_fmt_e_parse_reais():
     assert fmt("1000000") == "1000000.00"
     assert parse_reais(" 35,5 ") == Decimal("35.50")
     for ruim in ("-1", "1e2", "35,555", "", 35):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="^Valor em reais inválido. Use números, com ponto ou vírgula e até 2 casas.$"):
             parse_reais(ruim)
