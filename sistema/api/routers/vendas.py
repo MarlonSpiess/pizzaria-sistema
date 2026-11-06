@@ -122,6 +122,50 @@ def calcular(d: PedidoCalcular, sessao=Depends(requer("vendas.criar")), conn=Dep
     return r
 
 
+def _conferir_entrega_e_cliente(conn, d: PedidoCreate, t: dict) -> None:
+    if d.tipo == "entrega":
+        if d.cliente_id is None:
+            raise HTTPException(status_code=400, detail="Entrega exige cliente com endereço.")
+        if t["taxa"] != t["taxa_padrao"] and not d.taxa_motivo:
+            raise HTTPException(status_code=400, detail="Informe o motivo de a taxa de entrega diferir do padrão.")
+    if d.cliente_id is None:
+        return
+    cliente = conn.execute("SELECT id, endereco, ativo FROM cliente WHERE id = %s AND loja_id = %s",
+                           (d.cliente_id, LOJA_ID)).fetchone()
+    if not cliente or not cliente["ativo"]:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado.")
+    if d.tipo == "entrega" and not cliente["endereco"]:
+        raise HTTPException(status_code=400, detail="O cliente não tem endereço cadastrado.")
+
+
+def _autorizador(conn, request: Request, d: PedidoCreate, t: dict, sessao: dict):
+    """Acima do limite do perfil: gerente (ou acima) confirma com login e senha, antes de gravar qualquer coisa."""
+    lim = limite_desconto(conn, LOJA_ID, sessao["perfil"])
+    if not _precisa_autorizacao(sessao, t, lim):
+        return None
+    if not d.autorizacao:
+        raise HTTPException(status_code=403, detail="Esta operação passa do seu limite (desconto ou taxa de entrega menor que a padrão). "
+                                                     "Peça a autorização de um gerente.")
+    return autorizar(conn, request, d.autorizacao, sessao["usuario_id"],
+                     t["desconto"] if excede_limite(t["desconto"], t["subtotal"], lim) else None, t["subtotal"])
+
+
+def _gravar_itens(conn, pedido_id: int, d: PedidoCreate, t: dict, sessao: dict, quando) -> None:
+    for seq, (it, calc) in enumerate(zip(d.itens, t["itens"]), start=1):
+        item = conn.execute(
+            "INSERT INTO item_pedido (pedido_id, seq, tipo, produto_id, sabor2_id, tamanho, descricao, preco_unit, quantidade, observacoes, avulsa_pizza_id) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+            (pedido_id, seq, it.tipo, it.produto_id, it.sabor2_id, calc["tamanho"], calc["descricao"], calc["preco_unit"],
+             it.quantidade, it.observacoes, it.avulsa_id)).fetchone()
+        if it.avulsa_id:
+            conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, usuario_id, criado_em, pedido_id) VALUES (%s,'vendida',%s,%s,%s)",
+                         (it.avulsa_id, sessao["usuario_id"], quando, pedido_id))
+            estoque.baixar_pizza(conn, LOJA_ID, it.avulsa_id, "acabada", sessao["usuario_id"], quando)  # consumo da ficha inteira, como saída de venda
+        for a in calc["adicionais"]:
+            conn.execute("INSERT INTO item_adicional (item_id, adicional_id, nome, valor) VALUES (%s,%s,%s,%s)",
+                         (item["id"], a["id"], a["nome"], a["valor"]))
+
+
 @router.post("", status_code=201)
 def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
     if d.chave:  # reenvio do mesmo pedido (duplo clique, rede lenta): devolve o que já existe
@@ -141,30 +185,10 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
     t = totais(conn, LOJA_ID, d)
     if t["total"] <= 0:
         raise HTTPException(status_code=400, detail="O total do pedido deve ser maior que zero.")
-    if d.tipo == "entrega":
-        if d.cliente_id is None:
-            raise HTTPException(status_code=400, detail="Entrega exige cliente com endereço.")
-        if t["taxa"] != t["taxa_padrao"] and not d.taxa_motivo:
-            raise HTTPException(status_code=400, detail="Informe o motivo de a taxa de entrega diferir do padrão.")
-    cliente = None
-    if d.cliente_id is not None:
-        cliente = conn.execute("SELECT id, endereco, ativo FROM cliente WHERE id = %s AND loja_id = %s",
-                               (d.cliente_id, LOJA_ID)).fetchone()
-        if not cliente or not cliente["ativo"]:
-            raise HTTPException(status_code=404, detail="Cliente não encontrado.")
-        if d.tipo == "entrega" and not cliente["endereco"]:
-            raise HTTPException(status_code=400, detail="O cliente não tem endereço cadastrado.")
+    _conferir_entrega_e_cliente(conn, d, t)
     formas = svc_parametros.vigentes(conn, LOJA_ID)["formas_pagamento_aceitas"]["valor"]
     pagamentos = repartir_pagamentos(t["total"], d.pagamentos, formas)
-    # Acima do limite do perfil: gerente (ou acima) confirma com login e senha, antes de gravar qualquer coisa.
-    autorizador = None
-    lim = limite_desconto(conn, LOJA_ID, sessao["perfil"])
-    if _precisa_autorizacao(sessao, t, lim):
-        if not d.autorizacao:
-            raise HTTPException(status_code=403, detail="Esta operação passa do seu limite (desconto ou taxa de entrega menor que a padrão). "
-                                                         "Peça a autorização de um gerente.")
-        autorizador = autorizar(conn, request, d.autorizacao, sessao["usuario_id"],
-                                t["desconto"] if excede_limite(t["desconto"], t["subtotal"], lim) else None, t["subtotal"])
+    autorizador = _autorizador(conn, request, d, t, sessao)
     quando, dia = agora(), hoje()
     try:
         exigir_nao_encerrado(conn, LOJA_ID, dia, svc_parametros.vigentes(conn, LOJA_ID)["venda_exige_caixa_aberto"]["valor"] == "sim")
@@ -178,19 +202,7 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
             f"VALUES (%s,%s,%s,'balcao',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING {_COLS}",
             (LOJA_ID, dia, id_dia, d.cliente_id, d.tipo, d.urgente, t["subtotal"], t["desconto"], t["acrescimo"], t["taxa"],
              d.taxa_motivo, t["total"], d.observacoes, d.chave, quando, sessao["usuario_id"])).fetchone()
-        for seq, (it, calc) in enumerate(zip(d.itens, t["itens"]), start=1):
-            item = conn.execute(
-                "INSERT INTO item_pedido (pedido_id, seq, tipo, produto_id, sabor2_id, tamanho, descricao, preco_unit, quantidade, observacoes, avulsa_pizza_id) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                (ped["id"], seq, it.tipo, it.produto_id, it.sabor2_id, calc["tamanho"], calc["descricao"], calc["preco_unit"],
-                 it.quantidade, it.observacoes, it.avulsa_id)).fetchone()
-            if it.avulsa_id:
-                conn.execute("INSERT INTO pizza_avulsa_destino (pizza_id, destino, usuario_id, criado_em, pedido_id) VALUES (%s,'vendida',%s,%s,%s)",
-                             (it.avulsa_id, sessao["usuario_id"], quando, ped["id"]))
-                estoque.baixar_pizza(conn, LOJA_ID, it.avulsa_id, "acabada", sessao["usuario_id"], quando)  # consumo da ficha inteira, como saída de venda
-            for a in calc["adicionais"]:
-                conn.execute("INSERT INTO item_adicional (item_id, adicional_id, nome, valor) VALUES (%s,%s,%s,%s)",
-                             (item["id"], a["id"], a["nome"], a["valor"]))
+        _gravar_itens(conn, ped["id"], d, t, sessao, quando)
         for l in pagamentos:
             conn.execute("INSERT INTO pagamento (pedido_id, forma, valor, troco, criado_em) VALUES (%s,%s,%s,%s,%s)",
                          (ped["id"], l["forma"], l["valor"], l["troco"], quando))
