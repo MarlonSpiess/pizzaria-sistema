@@ -125,6 +125,22 @@ def criar_bem(d: BemIn, sessao=Depends(requer("imobilizado.operar")), conn=Depen
     return {"id": r["id"]}
 
 
+def _mudancas_do_bem(conn, b: dict, campos: dict) -> dict:
+    """Só o que de fato muda (valor igual ao gravado não é mudança), conferido contra as regras de depreciação."""
+    if "valor_residual" in campos:
+        campos["valor_residual"] = parse_reais(campos["valor_residual"])
+        if campos["valor_residual"] >= b["valor_aquisicao"]:
+            raise HTTPException(status_code=400, detail="O valor residual precisa ser menor que o valor do bem.")
+    campos = {c: v for c, v in campos.items() if not (c in CAMPOS_DEPRECIACAO and v == b[c])}
+    if any(c in campos for c in CAMPOS_DEPRECIACAO) and conn.execute("SELECT 1 FROM depreciacao_bem WHERE bem_id = %s LIMIT 1", (b["id"],)).fetchone():
+        raise HTTPException(status_code=409, detail="A depreciação deste bem já começou: início de uso, método, vida útil e valor residual não mudam mais.")
+    if campos.get("inicio_uso") and campos["inicio_uso"] < b["data_aquisicao"]:
+        raise HTTPException(status_code=400, detail="O início de uso não pode ser antes da compra.")
+    if (campos.get("metodo") or b["metodo"]) == "vida_util" and not (campos.get("vida_util_meses") or b["vida_util_meses"]):
+        raise HTTPException(status_code=400, detail="Informe a vida útil em meses.")
+    return campos
+
+
 @router.patch("/bens/{bid}")
 def alterar_bem(bid: int, d: BemUpdate, sessao=Depends(requer("imobilizado.operar")), conn=Depends(get_db)):
     campos = d.model_dump(exclude_unset=True)
@@ -135,21 +151,9 @@ def alterar_bem(bid: int, d: BemUpdate, sessao=Depends(requer("imobilizado.opera
         raise HTTPException(status_code=404, detail="Bem não encontrado.")
     if b["situacao"] == "baixado":
         raise HTTPException(status_code=409, detail="Bem baixado não muda.")
-    if "valor_residual" in campos:
-        campos["valor_residual"] = parse_reais(campos["valor_residual"])
-        if campos["valor_residual"] >= b["valor_aquisicao"]:
-            raise HTTPException(status_code=400, detail="O valor residual precisa ser menor que o valor do bem.")
-    for c in CAMPOS_DEPRECIACAO:  # valor igual ao atual não é mudança
-        if c in campos and campos[c] == b[c] if c != "valor_residual" else False:
-            campos.pop(c)
+    campos = _mudancas_do_bem(conn, b, campos)
     if not campos:
         return {"id": bid}
-    if any(c in campos for c in CAMPOS_DEPRECIACAO) and conn.execute("SELECT 1 FROM depreciacao_bem WHERE bem_id = %s LIMIT 1", (bid,)).fetchone():
-        raise HTTPException(status_code=409, detail="A depreciação deste bem já começou: início de uso, método, vida útil e valor residual não mudam mais.")
-    if campos.get("inicio_uso") and campos["inicio_uso"] < b["data_aquisicao"]:
-        raise HTTPException(status_code=400, detail="O início de uso não pode ser antes da compra.")
-    if (campos.get("metodo") or b["metodo"]) == "vida_util" and not (campos.get("vida_util_meses") or b["vida_util_meses"]):
-        raise HTTPException(status_code=400, detail="Informe a vida útil em meses.")
     sets = ", ".join(f"{c} = %s" for c in campos)
     with transacao(conn):
         conn.execute(f"UPDATE bem SET {sets} WHERE id = %s", (*campos.values(), bid))
