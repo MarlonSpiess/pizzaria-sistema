@@ -38,13 +38,13 @@ def test_metade_para_cima(v, metade):
 def test_dois_sabores_so_na_grande():
     with pytest.raises(HTTPException) as e:
         conferir_sabores("broto", 1, 2)
-    assert e.value.detail == "Só a pizza Grande aceita dois sabores."
+    assert (e.value.status_code, e.value.detail) == (400, "Só a pizza Grande aceita dois sabores.")
 
 
 def test_dois_sabores_iguais_recusados():
     with pytest.raises(HTTPException) as e:
         conferir_sabores("grande", 3, 3)
-    assert e.value.status_code == 400
+    assert (e.value.status_code, e.value.detail) == (400, "Escolha dois sabores diferentes ou só um sabor.")
 
 
 def test_um_sabor_em_qualquer_tamanho_passa():

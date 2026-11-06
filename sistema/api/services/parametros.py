@@ -124,10 +124,7 @@ def normalizar(chave: str, valor) -> str | None:
             return _formas(valor)
         if not isinstance(valor, str):
             raise ValueError("Valor deve ser texto ou número em texto.")
-        regra = _REGRAS.get(tipo)
-        if regra is None:
-            raise HTTPException(status_code=400, detail="Tipo de parâmetro não suportado.")
-        return regra(valor)
+        return _REGRAS[tipo](valor)  # todo tipo do catálogo tem regra (teste de unidade garante)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

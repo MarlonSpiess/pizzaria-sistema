@@ -14,7 +14,7 @@ def erro(chave, valor):
 
 
 def test_chave_desconhecida_e_404():
-    assert erro("nao_existe", "1")[0] == 404
+    assert erro("nao_existe", "1") == (404, "Parâmetro desconhecido.")
 
 
 @pytest.mark.parametrize("vazio", [None, "", []])
@@ -22,13 +22,16 @@ def test_vazio_limpa_o_parametro(vazio):
     assert normalizar("loja_nome", vazio) is None
 
 
-def test_formas_ordena_pela_ordem_do_catalogo():
-    assert json.loads(normalizar("formas_pagamento_aceitas", ["pix", "dinheiro"])) == ["dinheiro", "pix"]
+def test_formas_ordena_pela_ordem_do_catalogo_nao_alfabetica():
+    assert json.loads(normalizar("formas_pagamento_aceitas", ["debito", "credito", "pix"])) == ["pix", "credito", "debito"]
 
 
-@pytest.mark.parametrize("valor", [["pix", "pix"], ["cheque"], "pix", [1]])
-def test_formas_invalidas(valor):
-    assert erro("formas_pagamento_aceitas", valor)[0] == 400
+@pytest.mark.parametrize("valor,msg", [(["pix", "pix"], "Forma de pagamento inválida ou repetida."),
+                                       (["cheque"], "Forma de pagamento inválida ou repetida."),
+                                       ("pix", "Informe a lista de formas de pagamento."),
+                                       ([1], "Informe a lista de formas de pagamento.")])
+def test_formas_invalidas(valor, msg):
+    assert erro("formas_pagamento_aceitas", valor) == (400, msg)
 
 
 def test_nao_texto_e_recusado():
@@ -51,9 +54,10 @@ def test_pct(entrada, gravado):
     assert normalizar("limite_desconto_atendente_pct", entrada) == gravado
 
 
-@pytest.mark.parametrize("valor", ["100.01", "-1", "1e2", "abc", "１"])
-def test_pct_fora(valor):
-    assert erro("limite_desconto_atendente_pct", valor)[0] == 400
+@pytest.mark.parametrize("valor,msg", [("100.01", "Valor fora da faixa permitida."), ("-1", "Número inválido."),
+                                       ("1e2", "Número inválido."), ("abc", "Número inválido."), ("１", "Número inválido.")])
+def test_pct_fora(valor, msg):
+    assert erro("limite_desconto_atendente_pct", valor) == (400, msg)
 
 
 def test_dinheiro():
@@ -79,6 +83,7 @@ def test_decimal_pos():
 
 
 def test_inteiro_pos():
+    assert normalizar("forno_pizzas_por_vez", "1") == "1"
     assert normalizar("forno_pizzas_por_vez", "4") == "4"
     assert normalizar("forno_pizzas_por_vez", "4,0") == "4"
     assert normalizar("forno_pizzas_por_vez", "1000") == "1000"
@@ -89,8 +94,5 @@ def test_inteiro_pos():
 
 def test_todo_tipo_do_catalogo_tem_regra():
     """Um tipo novo no catálogo sem regra de validação seria recusado sempre; este teste avisa antes."""
-    for chave in CATALOGO:
-        try:
-            normalizar(chave, "1")
-        except HTTPException as e:
-            assert e.detail != "Tipo de parâmetro não suportado.", chave
+    from api.services.parametros import _REGRAS
+    assert {t for t, _, _ in CATALOGO.values()} - {"formas"} <= set(_REGRAS)
