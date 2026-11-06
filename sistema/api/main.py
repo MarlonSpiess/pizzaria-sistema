@@ -11,8 +11,9 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from api.config import DB_CONFIG, DOCS_ENABLED
+from api.config import DOCS_ENABLED
 from api.database import pool
+from psycopg_pool import PoolTimeout
 from api.services import varredor
 from api.routers import auditoria, auth, cardapio, parametros, pessoas, receitas, sistema, usuarios, vendas, producao, caixa, estoque, compras, contas, custos, imobilizado, rh, bi, canais, vendas_fechadas
 
@@ -98,15 +99,20 @@ async def _validacao(request: Request, exc: RequestValidationError):
 
 
 # Falta momentânea do banco (trava presa além do lock_timeout, consulta além do statement_timeout, deadlock,
-# conflito de serialização): o cliente pode repetir, como no pool cheio. Não é erro interno.
+# conflito de serialização): não é erro interno. Só a leitura recebe Retry-After; a gravação pede conferência.
 @app.exception_handler(psycopg.errors.LockNotAvailable)
 @app.exception_handler(psycopg.errors.QueryCanceled)
 @app.exception_handler(psycopg.errors.DeadlockDetected)
 @app.exception_handler(psycopg.errors.SerializationFailure)
 async def _banco_ocupado(request: Request, exc: Exception):
-    log.warning("Banco ocupado em %s %s: %s", request.method, request.url.path, type(exc).__name__)
-    return JSONResponse(status_code=503, content={"detail": "Servidor ocupado. Tente novamente em instantes."},
-                        headers={"Retry-After": "2"})
+    diag = getattr(exc, "diag", None)
+    log.error("Banco ocupado em %s %s: %s (%s) %s", request.method, request.url.path, type(exc).__name__,
+              getattr(exc, "sqlstate", None), getattr(diag, "message_primary", None) or str(exc))
+    if request.method in ("GET", "HEAD"):  # leitura: repetir é seguro
+        return JSONResponse(status_code=503, content={"detail": "Servidor ocupado. Tente novamente em instantes."},
+                            headers={"Retry-After": "2"})
+    # Gravação: o erro pode ter vindo depois do commit (ao montar a resposta). Repetir às cegas duplicaria.
+    return JSONResponse(status_code=503, content={"detail": "Servidor ocupado. Antes de repetir, atualize a tela e confira se a operação já foi gravada."})
 
 
 @app.exception_handler(Exception)
@@ -118,12 +124,11 @@ async def _erro_geral(request: Request, exc: Exception):
 @app.get("/health")
 def health():
     """200 se o servidor e o banco respondem. Sem dado sensível na resposta."""
-    try:
-        with psycopg.connect(host=DB_CONFIG["host"], port=DB_CONFIG["port"], dbname=DB_CONFIG["dbname"],
-                             user=DB_CONFIG["user"], password=DB_CONFIG["password"], connect_timeout=3) as c:
+    try:  # pelo pool: uma rajada de /health não abre uma conexão nova por chamada
+        with pool.connection(timeout=3) as c:
             c.execute("SELECT 1")
         return {"status": "ok"}
-    except psycopg.Error:
+    except (psycopg.Error, PoolTimeout):
         return JSONResponse(status_code=503, content={"status": "db_indisponivel"})
 
 

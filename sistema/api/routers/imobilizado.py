@@ -128,6 +128,8 @@ def criar_bem(d: BemIn, sessao=Depends(requer("imobilizado.operar")), conn=Depen
 def _mudancas_do_bem(conn, b: dict, campos: dict) -> dict:
     """Só o que de fato muda (valor igual ao gravado não é mudança), conferido contra as regras de depreciação."""
     if "valor_residual" in campos:
+        if campos["valor_residual"] is None:
+            raise HTTPException(status_code=400, detail="Informe o valor residual (0 se não houver).")
         campos["valor_residual"] = parse_reais(campos["valor_residual"])
         if campos["valor_residual"] >= b["valor_aquisicao"]:
             raise HTTPException(status_code=400, detail="O valor residual precisa ser menor que o valor do bem.")

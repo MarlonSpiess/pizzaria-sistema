@@ -59,7 +59,7 @@ def descrever() -> list[dict]:
 
 
 def _dec(texto: str, minimo: Decimal, maximo: Decimal | None = None) -> Decimal:
-    if not _NUMERO.match(texto):  # só dígitos ASCII, com ponto ou vírgula decimal
+    if not _NUMERO.fullmatch(texto):  # só dígitos ASCII, com ponto ou vírgula decimal (fullmatch: "$" aceitaria "5\n")
         raise ValueError("Número inválido.")
     v = Decimal(texto.replace(",", "."))  # a expressão acima garante um número que o Decimal aceita
     if not v.is_finite() or v < minimo or (maximo is not None and v > maximo):

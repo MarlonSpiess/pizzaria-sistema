@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 
 from api.services.dinheiro import metade_para_cima
-from api.services.preco import conferir_sabores, preco_pizza
+from api.services.preco import conferir_sabores, preco_meio_a_meio, preco_pizza
 
 
 def S(nome, valor):
@@ -50,3 +50,10 @@ def test_dois_sabores_iguais_recusados():
 def test_um_sabor_em_qualquer_tamanho_passa():
     conferir_sabores("broto", 1, None)
     conferir_sabores("grande", 1, 2)
+
+
+def test_meio_a_meio_e_a_mesma_regra_no_caixa_e_nos_custos():
+    """QA não cego A1: Custos usava a média com arredondamento bancário (42,50); o caixa cobra 42,51."""
+    assert preco_meio_a_meio(Decimal("35.01"), Decimal("50.00")) == Decimal("42.51")
+    r = preco_pizza("grande", [S("A", "35.01"), S("B", "50.00")], [])
+    assert r["total"] == str(preco_meio_a_meio(Decimal("35.01"), Decimal("50.00")))

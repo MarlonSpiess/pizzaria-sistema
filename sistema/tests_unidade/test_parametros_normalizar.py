@@ -55,7 +55,8 @@ def test_pct(entrada, gravado):
 
 
 @pytest.mark.parametrize("valor,msg", [("100.01", "Valor fora da faixa permitida."), ("-1", "Número inválido."),
-                                       ("1e2", "Número inválido."), ("abc", "Número inválido."), ("１", "Número inválido.")])
+                                       ("1e2", "Número inválido."), ("abc", "Número inválido."), ("１", "Número inválido."),
+                                       ("5\n", "Número inválido.")])
 def test_pct_fora(valor, msg):
     assert erro("limite_desconto_atendente_pct", valor) == (400, msg)
 

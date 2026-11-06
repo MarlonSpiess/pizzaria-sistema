@@ -11,6 +11,7 @@ from api.schemas import FatorCorrecaoIn, FecharCmvIn
 from api.security import requer, tem_permissao
 from api.services import custos as svc
 from api.services.dinheiro import fmt
+from api.services.preco import preco_meio_a_meio
 
 router = APIRouter(prefix="/custos", tags=["custos"])
 ZERO = Decimal("0")
@@ -61,6 +62,8 @@ def produto(pid: int, tamanho: str, sabor2_id: Optional[int] = None, margem_dese
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
     if sabor2_id and not (p["tipo"] == "pizza" and tamanho == "grande"):
         raise HTTPException(status_code=400, detail="Só a pizza Grande leva dois sabores.")
+    if sabor2_id == pid:
+        raise HTTPException(status_code=400, detail="Escolha dois sabores diferentes ou só um sabor.")
     if sabor2_id and not conn.execute("SELECT 1 FROM produto WHERE id = %s AND loja_id = %s AND tipo = 'pizza'", (sabor2_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Segundo sabor não encontrado.")
     taxa = svc.taxa_cartao_media(conn, LOJA_ID)
@@ -68,7 +71,7 @@ def produto(pid: int, tamanho: str, sabor2_id: Optional[int] = None, margem_dese
     preco = svc.preco_vigente(conn, pid, tamanho)
     if sabor2_id:
         p2 = svc.preco_vigente(conn, sabor2_id, tamanho)
-        preco = ((preco + p2) / 2).quantize(Decimal("0.01")) if preco is not None and p2 is not None else None
+        preco = preco_meio_a_meio(preco, p2) if preco is not None and p2 is not None else None
     m, mp = _margem(preco, c["total"], taxa)
     out = {"produto": p["nome"], "tamanho": tamanho, "sabor2_id": sabor2_id, "preco": fmt(preco), "custo": fmt(c["total"]), "margem": fmt(m), "margem_pct": fmt(mp), "taxa_cartao_media_pct": fmt(taxa),
            "sem_ficha": c["sem_ficha"], "itens_sem_custo": c["sem_custo"],

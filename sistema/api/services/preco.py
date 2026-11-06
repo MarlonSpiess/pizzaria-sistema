@@ -35,6 +35,11 @@ def conferir_sabores(tamanho: str, sabor1_id: int, sabor2_id) -> None:
         raise HTTPException(status_code=400, detail="Escolha dois sabores diferentes ou só um sabor.")
 
 
+def preco_meio_a_meio(valor1: Decimal, valor2: Decimal) -> Decimal:
+    """Grande com dois sabores: metade de cada, cada metade arredondada para cima ao centavo (T4). Única definição da regra."""
+    return metade_para_cima(valor1) + metade_para_cima(valor2)
+
+
 def preco_pizza(tamanho: str, sabores: list[dict], adicionais: list[dict]) -> dict:
     """Regra pura: sabores e adicionais já validados, cada um com nome e valor (Decimal) no tamanho."""
     itens, total = [], Decimal("0.00")
