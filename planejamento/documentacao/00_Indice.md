@@ -1,10 +1,10 @@
 # Documentação do Sistema Integrado da Pizzaria
 
-Versão 2.0, 04/11/2026. Fiel ao código do PR #2 (commit `a55b10d`). Comece por aqui.
+Versão 2.1, 23/11/2026. Fiel ao código da branch main depois dos PRs #2 a #5 e da integração do trabalho local de 16/11 (Checklists). Comece por aqui.
 
 ## Para quem instala e mantém
 
-- [Manual Técnico](tecnico/Manual_Tecnico.md): arquitetura, banco e migrações (até a 023), API, segurança, instalação, operação, integração Anota Ai, testes e pendências.
+- [Manual Técnico](tecnico/Manual_Tecnico.md): arquitetura, banco e migrações (até a 024), API, segurança, instalação, operação, integração Anota Ai, testes e pendências.
 - [Apêndice A: rotas da API e permissão](tecnico/Apendice_A_Rotas_da_API.md) e [Apêndice B: permissões por perfil](tecnico/Apendice_B_Permissoes_por_Perfil.md), gerados do código.
 - [Roteiro de instalação na loja](../instalacao/Roteiro_de_Instalacao_Loja.md).
 

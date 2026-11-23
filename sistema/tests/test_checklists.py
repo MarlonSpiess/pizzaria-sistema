@@ -364,3 +364,48 @@ def test_item_automatico_nao_conforme_vira_pendencia_na_conclusao(client, hs3, c
     ig, _ = _itens(client, hs3["gerente"], eid)
     assert ig["auto"]["resposta"]["resultado"] == "nao_conforme" and ig["auto"]["resposta"]["automatica"] is True
     assert ig["auto"]["resposta"]["respondida_por_nome"]  # mostra quem estava com o checklist ao concluir
+
+
+def test_item_periodico_corrigido_para_nao_conforme_continua_vencido(client, hs3, conn_teste):
+    """Revisão cega da integração (23/11/2026): só vale a resposta vigente de cada execução."""
+    codigo, vid = _modelo(conn_teste, [_item(codigo="s", texto="Semanal", recorrencia="semanal")])
+    e1 = _iniciar(client, hs3["gerente"], codigo)
+    i1, _ = _itens(client, hs3["gerente"], e1)
+    assert _resp(client, hs3["gerente"], e1, i1["s"]["id"], resultado="conforme").status_code == 200
+    r = _resp(client, hs3["gerente"], e1, i1["s"]["id"], resultado="nao_conforme", acao_corretiva="Não foi feito de verdade")
+    assert r.status_code == 200, r.text
+    e2 = conn_teste.execute("INSERT INTO checklist_execucao (loja_id, versao_id, data, turno, iniciada_em) VALUES (1, %s, %s, 't3', now()) RETURNING id",
+                            (vid, hoje() + timedelta(days=3))).fetchone()[0]
+    assert "s" in _itens(client, hs3["gerente"], e2)[0]  # a última resposta foi não conforme: o item continua cobrado
+
+
+def test_item_numerico_aceita_nao_conforme_explicito(client, hs3, conn_teste):
+    """Sem limite definido, quem mede ainda pode marcar não conforme (termômetro quebrado, leitura suspeita), com ação."""
+    codigo, _ = _modelo(conn_teste, [_item(codigo="t", texto="Câmara", perfil_responsavel="massa", tipo_resposta="numero", unidade="°C")])
+    eid = _iniciar(client, hs3["massa"], codigo)
+    it, _ = _itens(client, hs3["massa"], eid)
+    assert _resp(client, hs3["massa"], eid, it["t"]["id"], valor_numerico="4", resultado="nao_conforme").status_code == 400  # sem ação
+    r = _resp(client, hs3["massa"], eid, it["t"]["id"], valor_numerico="4", resultado="nao_conforme", acao_corretiva="Termômetro trocado")
+    assert r.status_code == 200, r.text
+    assert r.json()["resultado"] == "nao_conforme"
+
+
+def test_checklist_usa_a_data_do_caixa_aberto_depois_da_meia_noite(client, hs3, conn_teste):
+    """Caixa de ontem ainda aberto (depois da meia-noite): o checklist do dia é o de ontem, como vendas e caixa."""
+    from tests.test_qa_cego_ub2 import _forcar_fechamento, _usuario_qualquer
+    ontem = hoje() - timedelta(days=1)
+    if conn_teste.execute("SELECT 1 FROM caixa_dia WHERE situacao <> 'fechado'").fetchone():
+        pytest.skip("há caixa em uso deixado por outro teste")
+    conn_teste.execute("INSERT INTO caixa_dia (loja_id, data, fundo_troco, aberto_por, aberto_em) VALUES (1, %s, 0, %s, now() - interval '1 day')",
+                       (ontem, _usuario_qualquer(conn_teste)))
+    try:
+        codigo, _ = _modelo(conn_teste, [_item(codigo="f", texto="Fechar")])
+        assert client.get("/api/checklists/hoje", headers=hs3["gerente"]).json()["data"] == str(ontem)
+        eid = _iniciar(client, hs3["gerente"], codigo)
+        assert conn_teste.execute("SELECT data FROM checklist_execucao WHERE id = %s", (eid,)).fetchone()[0] == ontem
+    finally:
+        _forcar_fechamento(ontem)
+        with psycopg.connect(dbname=conn_teste.info.dbname, autocommit=True, host=conn_teste.info.host, port=conn_teste.info.port,
+                             user=conn_teste.info.user, password=conn_teste.info.password) as c:
+            c.execute("SET session_replication_role = replica")
+            c.execute("DELETE FROM caixa_dia WHERE data = %s", (ontem,))

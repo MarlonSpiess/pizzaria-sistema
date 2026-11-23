@@ -503,7 +503,17 @@ async function abaCanais() {
   const nav = h("div", { class: "subnav" }, canais.map((c) => h("button", { class: c.id === atual.id ? "ativo" : "", onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome + (c.pendentes ? " (" + c.pendentes + ")" : ""))));
   const lojaCartao = h("div", { class: "cartao" }, h("h2", {}, "Loja: " + (loja.loja_aberta ? "ABERTA para pedidos" : "fechada")),
     h("p", { class: "pequeno" }, "Chave manual da gerência. Ligue quando já puder receber pedidos e desligue ao fechar; ela não muda sozinha." + (loja.desde ? " Última troca: " + new Date(loja.desde).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) + "." : "")),
-    h("button", { class: loja.loja_aberta ? "sec" : "principal", onclick: async (ev) => { ev.target.disabled = true; try { await api("PATCH", "/canais/loja", { ativo: !loja.loja_aberta }); abaCanais(); } catch (e) { falha(e); ev.target.disabled = false; } } }, loja.loja_aberta ? "Fechar a loja" : "Abrir a loja"));
+    h("button", { class: loja.loja_aberta ? "sec" : "principal", onclick: async (ev) => { ev.target.disabled = true;
+      const trocar = async (corpo) => { const r = await api("PATCH", "/canais/loja", corpo); if (r && r.aviso_checklist) window.alert(r.aviso_checklist); abaCanais(); };
+      try { await trocar({ ativo: !loja.loja_aberta }); }
+      catch (e) {
+        // checklist de início pendente com bloqueio ligado: a gerência pode liberar informando o motivo (fica na auditoria)
+        if (!loja.loja_aberta && /motivo para liberar/.test(e.message)) {
+          const m = window.prompt(e.message + " Motivo para liberar a abertura:");
+          if (m && m.trim()) { try { await trocar({ ativo: true, liberar_motivo: m.trim() }); return; } catch (x) { falha(x); } }
+        } else falha(e);
+        ev.target.disabled = false;
+      } } }, loja.loja_aberta ? "Fechar a loja" : "Abrir a loja"));
   const estadoCartao = h("div", { class: "cartao" }, h("h2", {}, atual.nome), h("p", { class: "pequeno" }, "Integração ainda não conectada: falta o token do canal. Aqui ficam só a estrutura, a fila de entrada e o mapa de produtos."),
     !podeConfigurar ? null : h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/canais/" + atual.id + "/ativo", { ativo: !atual.ativo }); abaCanais(); } catch (e) { falha(e); } } }, atual.ativo ? "Desativar canal" : "Ativar canal"),
     h("p", {}, atual.ativo ? "Canal ativo." : "Canal desativado."),

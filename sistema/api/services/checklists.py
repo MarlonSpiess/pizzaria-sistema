@@ -130,10 +130,13 @@ def _vencido(conn, modelo_id: int, item: dict, data: date) -> bool:
     if not dias:
         return True
     # só vale resposta de execução anterior à avaliada (data menor, ou mesma data e id menor): reabrir uma execução antiga não muda o que ela mostra
+    # vale só a resposta vigente (a última) de cada execução: conforme corrigido para não conforme não conta
     r = conn.execute(
-        "SELECT max(e2.data) AS ultima FROM checklist_resposta r JOIN checklist_item i ON i.id = r.item_id "
+        "SELECT max(u.data) AS ultima FROM (SELECT DISTINCT ON (r.execucao_id, r.item_id) r.resultado, e2.data "
+        "FROM checklist_resposta r JOIN checklist_item i ON i.id = r.item_id "
         "JOIN checklist_versao v ON v.id = i.versao_id JOIN checklist_execucao e2 ON e2.id = r.execucao_id "
-        "WHERE v.modelo_id = %s AND i.codigo = %s AND r.resultado = 'conforme' AND (e2.data < %s OR (e2.data = %s AND e2.id < %s))",
+        "WHERE v.modelo_id = %s AND i.codigo = %s AND (e2.data < %s OR (e2.data = %s AND e2.id < %s)) "
+        "ORDER BY r.execucao_id, r.item_id, r.id DESC) u WHERE u.resultado = 'conforme'",
         (modelo_id, item["codigo"], data, data, item["execucao_id"])).fetchone()
     return not r["ultima"] or r["ultima"] + timedelta(days=dias) <= data
 
@@ -222,6 +225,8 @@ def hoje_do_perfil(conn, sessao, loja_id: int, data: date) -> dict:
 def iniciar(conn, sessao, loja_id: int, codigo: str, turno: str | None, data: date) -> dict:
     """Uma execução por modelo, dia e turno (idempotente). Acompanhamento sem turno: devolve a rodada aberta ou abre a próxima."""
     m = _modelo_vigente(conn, loja_id, codigo)
+    # trava o modelo: dois tablets (ou uma nova versão publicada) não criam duas execuções do mesmo modelo, dia e turno
+    conn.execute("SELECT id FROM checklist_modelo WHERE id = %s FOR UPDATE", (m["modelo_id"],))
     if not any(_pode_item(sessao["perfil"], i) for i in conn.execute("SELECT perfil_responsavel FROM checklist_item WHERE versao_id = %s", (m["versao_id"],)).fetchall()):
         raise HTTPException(status_code=403, detail="Este checklist não tem itens para a sua função.")
     existentes = conn.execute(
@@ -303,9 +308,10 @@ def responder(conn, sessao, loja_id: int, exec_id: int, item_id: int, d) -> dict
         valor = _dec(d.valor_numerico)
         lmin, lmax = _limites(i, vigentes(conn, loja_id))
         fora = (lmin is not None and valor < lmin) or (lmax is not None and valor > lmax)
-        resultado = "nao_conforme" if fora else "conforme"
-        if fora and not acao:
-            raise HTTPException(status_code=400, detail="Valor fora do limite: informe a ação corretiva.")
+        # fora do limite é sempre não conforme; dentro do limite (ou sem limite) vale o "não conforme" explícito de quem mediu
+        resultado = "nao_conforme" if fora or d.resultado == "nao_conforme" else "conforme"
+        if resultado == "nao_conforme" and not acao:
+            raise HTTPException(status_code=400, detail="Valor fora do limite: informe a ação corretiva." if fora else "Informe a ação corretiva.")
     else:
         if d.resultado is None:
             raise HTTPException(status_code=400, detail="Informe conforme, não conforme ou não se aplica.")

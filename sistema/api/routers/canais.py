@@ -2,10 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, hoje, transacao
+from api.database import agora, auditar, get_db, transacao
 from api.schemas import Base, LojaAbertaIn
 from api.security import requer
 from api.services import checklists
+from api.services.caixa import data_do_lancamento
 from api.services.parametros import vigentes
 
 router = APIRouter(prefix="/canais", tags=["canais"])
@@ -67,7 +68,7 @@ def definir_loja(d: LojaAbertaIn, sessao=Depends(requer("vendas.gerir")), conn=D
         conn.rollback()
         return {"loja_aberta": d.ativo, "desde": conn.execute("SELECT loja_aberta_desde FROM loja WHERE id = %s", (LOJA_ID,)).fetchone()["loja_aberta_desde"]}
     aviso = None
-    if d.ativo and checklists.inicio_pendente(conn, LOJA_ID, hoje()):  # só cobra se a loja instalou o checklist de início
+    if d.ativo and checklists.inicio_pendente(conn, LOJA_ID, data_do_lancamento(conn, LOJA_ID)):  # só cobra se a loja instalou o checklist de início
         if vigentes(conn, LOJA_ID)["checklist_bloqueia_loja_aberta"]["valor"] == "sim":
             if not d.liberar_motivo:
                 conn.rollback()

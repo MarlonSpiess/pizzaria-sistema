@@ -40,7 +40,7 @@ No cartão **3. Resumo** aparecem o nome, o telefone e (na entrega) o endereço 
 |---|---|
 | **Avançar para despachado ou retirado** | O cliente retirou no balcão, ou o entregador saiu com o pedido. Só depois de o acabamento marcar o pedido acabado. Entrega do Anota Ai exige o entregador atribuído antes |
 | **Urgente** ou **Tirar urgência** | Só enquanto o pedido está "recebido" (antes de a produção começar) |
-| **Cancelar** | Motivo obrigatório. Como todo pedido está pago, um gerente confirma com login e senha. O valor fica registrado como estorno no caixa do dia, por forma de pagamento; a devolução ao cliente (dinheiro, Pix ou estorno na maquininha) é feita fora do sistema |
+| **Cancelar** | Motivo obrigatório. Como todo pedido está pago, um gerente confirma com login e senha. O valor fica registrado como estorno no caixa do dia, por forma de pagamento; a devolução ao cliente (dinheiro, Pix ou estorno na maquininha) é feita fora do sistema. Bebidas e acompanhamentos já baixados voltam ao estoque; pizza já feita vira perda |
 | **Ver** | Detalhes do pedido, pagamentos e histórico |
 
 ## 3. Entregas
