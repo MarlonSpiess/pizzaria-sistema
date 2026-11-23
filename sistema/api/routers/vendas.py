@@ -7,15 +7,15 @@ import psycopg.errors
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, hoje, traduzir_erro, transacao
+from api.database import agora, auditar, get_db, traduzir_erro, transacao
 from api.schemas import CfIn, PedidoCalcular, PedidoCancelar, PedidoCreate, PedidoSituacao, PedidoUrgente
 from api.security import requer, tem_permissao
 from api.services import parametros as svc_parametros
 from api.services import producao as svc_producao
 from api.services import canais, estoque
-from api.services.caixa import exigir_nao_encerrado
+from api.services.caixa import data_do_lancamento, exigir_nao_encerrado
 from api.services.dinheiro import fmt
-from api.services.ingredientes import produtos_fechados
+from api.services.ingredientes import base_e_adicionais_fechados, produtos_fechados
 from api.services.vendas import SITUACOES, autorizar, excede_limite, limite_desconto, repartir_pagamentos, totais
 
 router = APIRouter(prefix="/pedidos", tags=["vendas"])
@@ -92,13 +92,20 @@ def avulsas_disponiveis(sessao=Depends(requer("vendas.criar")), conn=Depends(get
 
 def _sabor_fechado(conn, d, ignorar_avulsas: bool = False) -> Optional[str]:
     """Texto dos sabores com venda FECHADA (ingrediente em falta) no pedido, ou None. Estoque baixo apenas não fecha."""
-    ids = {x for it in d.itens if not (ignorar_avulsas and it.avulsa_id) for x in (it.produto_id, it.sabor2_id) if x}  # a avulsa já está pronta
+    itens = [it for it in d.itens if not (ignorar_avulsas and it.avulsa_id)]  # a avulsa já está pronta
+    ids = {x for it in itens for x in (it.produto_id, it.sabor2_id) if x}
     fech = produtos_fechados(conn)
     ruins = [i for i in ids if i in fech]
+    partes = []
     if ruins:
         nomes = {p["id"]: p["nome"] for p in conn.execute("SELECT id, nome FROM produto WHERE id = ANY(%s)", (ruins,)).fetchall()}
-        return "Venda fechada para: " + "; ".join(f"{nomes.get(i, i)} (falta {', '.join(fech[i])})" for i in ruins) + ". Remova do pedido."
-    return None
+        partes += [f"{nomes.get(i, i)} (falta {', '.join(fech[i])})" for i in ruins]
+    outros = base_e_adicionais_fechados(conn)  # base do tamanho e adicional/borda (decisão de Marlon, 23/11/2026)
+    chaves = {it.tamanho for it in itens if it.tipo == "pizza" and it.tamanho in outros["tamanhos"]}
+    chaves |= {(a, it.tamanho) for it in itens for a in it.adicional_ids if (a, it.tamanho) in outros["adicionais"]}
+    for k in sorted(chaves, key=str):
+        partes.append(f"{outros['nomes'][k]} (falta {', '.join(outros['tamanhos' if isinstance(k, str) else 'adicionais'][k])})")
+    return "Venda fechada para: " + "; ".join(partes) + ". Remova do pedido." if partes else None
 
 
 def _recusar_sabor_fechado(conn, d, ignorar_avulsas: bool = False) -> None:
@@ -189,7 +196,7 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
     formas = svc_parametros.vigentes(conn, LOJA_ID)["formas_pagamento_aceitas"]["valor"]
     pagamentos = repartir_pagamentos(t["total"], d.pagamentos, formas)
     autorizador = _autorizador(conn, request, d, t, sessao)
-    quando, dia = agora(), hoje()
+    quando, dia = agora(), data_do_lancamento(conn, LOJA_ID)
     try:
         exigir_nao_encerrado(conn, LOJA_ID, dia, svc_parametros.vigentes(conn, LOJA_ID)["venda_exige_caixa_aberto"]["valor"] == "sim")
         id_dia = conn.execute(
@@ -253,7 +260,7 @@ def listar(data: Optional[date] = None, situacao: Optional[str] = Query(default=
         raise HTTPException(status_code=400, detail="Situação inválida.")
     sql = (f"SELECT p.{_COLS.replace(', ', ', p.')}, c.nome AS cliente_nome FROM pedido p LEFT JOIN cliente c ON c.id = p.cliente_id "
            "WHERE p.loja_id = %s AND p.data = %s")
-    params = [LOJA_ID, data or hoje()]
+    params = [LOJA_ID, data or data_do_lancamento(conn, LOJA_ID)]
     if situacao:
         sql, params = sql + " AND p.situacao = %s", params + [situacao]
     return [_out(r) for r in conn.execute(sql + " ORDER BY p.id_dia", params).fetchall()]
@@ -289,7 +296,7 @@ def mudar_situacao(conn, sessao, p: dict, nova: str) -> dict:
     atual = p["situacao"]
     if atual not in SITUACOES or nova not in SITUACOES or SITUACOES.index(nova) != SITUACOES.index(atual) + 1:
         raise HTTPException(status_code=409, detail=f"Não é possível ir de '{atual}' para '{nova}'.")
-    if nova == "acabado" and svc_producao.pizzas_pendentes(conn, p["id"]):
+    if nova in ("acabado", "despachado ou retirado") and svc_producao.pizzas_pendentes(conn, p["id"]):
         raise HTTPException(status_code=409, detail="Ainda há pizza para acabar neste pedido.")
     if nova == "despachado ou retirado" and p["tipo"] == "entrega" and p["canal"] != "balcao" and not conn.execute(
             "SELECT 1 FROM entrega WHERE pedido_id = %s", (p["id"],)).fetchone():
@@ -304,6 +311,19 @@ def mudar_situacao(conn, sessao, p: dict, nova: str) -> dict:
     canais.enfileirar_aviso(conn, p["id"], p["canal"], p["tipo"], nova)
     if nova == "acabado":  # bebidas e acompanhamentos saem do estoque pela ficha do produto
         estoque.baixar_itens_do_pedido(conn, LOJA_ID, p["id"], sessao["usuario_id"], quando)
+    return _pedido(conn, p["id"])
+
+
+def voltar_para_producao(conn, sessao, p: dict, motivo: str) -> dict:
+    """Único retorno de situação: pedido acabado com pizza perdida volta para 'em producao' até a refação ficar pronta
+    (decisão de Marlon, 23/11/2026). Quem chama já travou o pedido e comita. O canal não é avisado: lá o pedido segue em preparo."""
+    if p["situacao"] != "acabado":
+        return p
+    quando = agora()
+    conn.execute("UPDATE pedido SET situacao = 'em producao' WHERE id = %s", (p["id"],))
+    conn.execute("INSERT INTO evento_pedido (pedido_id, situacao, usuario_id, criado_em) VALUES (%s,'em producao',%s,%s)",
+                 (p["id"], sessao["usuario_id"], quando))
+    auditar(conn, sessao, "voltar_producao", "pedido", p["id"], antes={"situacao": "acabado"}, depois={"situacao": "em producao", "motivo": motivo})
     return _pedido(conn, p["id"])
 
 
@@ -355,16 +375,18 @@ def cancelar(pid: int, d: PedidoCancelar, request: Request, sessao=Depends(reque
             raise HTTPException(status_code=409, detail=f"Pedido {p['situacao']} não pode ser cancelado.")
     quando = agora()
     with transacao(conn):
-        exigir_nao_encerrado(conn, LOJA_ID, quando.date(), False)
+        dia = data_do_lancamento(conn, LOJA_ID)
+        exigir_nao_encerrado(conn, LOJA_ID, dia, False)
         for e in conn.execute("SELECT forma, sum(valor - troco) AS valor FROM pagamento WHERE pedido_id = %s GROUP BY forma HAVING sum(valor - troco) > 0",
                               (pid,)).fetchall():  # devolução ao cliente: uma linha por forma, na data do cancelamento
             conn.execute("INSERT INTO estorno (loja_id, data, pedido_id, forma, valor, motivo, usuario_id, autorizado_por, criado_em) "
                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                         (LOJA_ID, quando.date(), pid, e["forma"], e["valor"], d.motivo, sessao["usuario_id"], autorizador, quando))
+                         (LOJA_ID, dia, pid, e["forma"], e["valor"], d.motivo, sessao["usuario_id"], autorizador, quando))
         conn.execute("INSERT INTO cancelamento (pedido_id, motivo, usuario_id, autorizado_por, situacao_anterior, criado_em) "
                      "VALUES (%s,%s,%s,%s,%s,%s)", (pid, d.motivo, sessao["usuario_id"], autorizador, p["situacao"], quando))
         conn.execute("UPDATE pedido SET situacao = 'cancelado' WHERE id = %s", (pid,))
         svc_producao.cancelar_pizzas(conn, LOJA_ID, pid, sessao["usuario_id"], quando)
+        estoque.estornar_baixas_do_pedido(conn, LOJA_ID, pid, sessao["usuario_id"], quando)
         conn.execute("INSERT INTO evento_pedido (pedido_id, situacao, usuario_id, criado_em) VALUES (%s,'cancelado',%s,%s)",
                      (pid, sessao["usuario_id"], quando))
         auditar(conn, sessao, "cancelar", "pedido", pid, antes={"situacao": p["situacao"]},

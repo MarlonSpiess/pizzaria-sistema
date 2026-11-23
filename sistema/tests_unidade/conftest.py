@@ -4,4 +4,6 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-os.environ.setdefault("DB_PASS", "sem-banco")  # api.config exige a variável; nenhum teste daqui conecta
+# api.config exige a variável; nenhum teste daqui conecta. Mesmo padrão de tests/conftest.py: rodando as duas pastas
+# juntas (python -m pytest), quem carregar primeiro não pode deixar uma senha falsa para os testes com banco.
+os.environ.setdefault("DB_PASS", os.getenv("TEST_DB_PASS", "teste"))

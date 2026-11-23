@@ -254,14 +254,20 @@ def _ate_acabar(client, hs, pid):
         assert client.post(f"/api/producao/pizzas/{pid}/{rota}", headers=h).status_code == 200
 
 
-def test_refacao_so_enquanto_o_pedido_esta_em_producao(client, cardapio, hs):
+def test_refacao_ate_o_pedido_sair_e_acabado_volta_para_producao(client, cardapio, hs):
+    """Decisão de Marlon (23/11/2026): refazer em pedido acabado devolve o pedido para a produção; depois que saiu, não."""
     m = _motivos(client, hs["gerente"])
     ped = _pagar(client, hs["atendente"], [_g(cardapio)])
     p = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
     _ate_acabar(client, hs, p["id"])
     assert client.post(f"/api/producao/pedidos/{ped['id']}/acabado", headers=hs["acabamento"]).status_code == 200
-    assert client.post(f"/api/producao/pizzas/{p['id']}/refazer", json={"motivo_id": m["perda"]}, headers=hs["acabamento"]).status_code == 409
-    assert client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).status_code == 404
+    assert client.post(f"/api/producao/pizzas/{p['id']}/refazer", json={"motivo_id": m["perda"]}, headers=hs["acabamento"]).status_code == 201
+    assert client.get(f"/api/pedidos/{ped['id']}", headers=hs["gerente"]).json()["situacao"] == "em producao"
+    nova = client.post("/api/producao/pizzas/proxima", headers=hs["pizzaiolo"]).json()
+    _ate_acabar(client, hs, nova["id"])
+    assert client.post(f"/api/producao/pedidos/{ped['id']}/acabado", headers=hs["acabamento"]).status_code == 200
+    assert client.post(f"/api/pedidos/{ped['id']}/situacao", json={"situacao": "despachado ou retirado"}, headers=hs["atendente"]).status_code == 200
+    assert client.post(f"/api/producao/pizzas/{nova['id']}/refazer", json={"motivo_id": m["perda"]}, headers=hs["acabamento"]).status_code == 409
 
 
 def test_gerencia_nao_marca_acabado_com_pizza_pendente(client, cardapio, hs):

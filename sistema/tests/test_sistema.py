@@ -47,7 +47,7 @@ def test_backup_e_restauracao(client, tmp_path, monkeypatch):
     monkeypatch.setattr(bk, "BACKUP_DIR", str(destino))
     monkeypatch.setattr(bk, "BACKUP_DIRS_EXTRA", [str(extra1), str(extra2)])
     _, h = entrar(client, "gerente")
-    antes = client.get("/api/sistema/backup", headers=h).json()
+    assert "atrasado" in client.get("/api/sistema/backup", headers=h).json()  # a tela de backup responde antes do primeiro
     r = client.post("/api/sistema/backup", headers=h).json()
     assert r["sucesso"] and r["copias_ok"] == 2 and r["copias_falha"] == 0
     assert (destino / r["arquivo"]).stat().st_size > 0

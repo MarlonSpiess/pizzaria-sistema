@@ -1,6 +1,6 @@
 """Imobilizado: depreciação mensal em linha reta (fiscal ou por vida útil real) e os alertas dos bens."""
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 
 from api.database import agora
 
@@ -24,12 +24,13 @@ def vida_meses(b: dict, taxa_fiscal) -> int:
 
 
 def parcelas(b: dict, taxa_fiscal, ate: date | None = None) -> list[tuple[date, Decimal]]:
-    """Todas as parcelas de depreciação do bem, mês a mês, a partir do mês de início de uso. A última absorve os centavos."""
+    """Todas as parcelas de depreciação do bem, mês a mês, a partir do mês de início de uso.
+    A parcela mensal é truncada ao centavo e a última absorve o resto: a soma é exatamente a base, nunca passa dela."""
     if not b["inicio_uso"]:
         return []
     n = vida_meses(b, taxa_fiscal)
     base = Decimal(b["valor_aquisicao"]) - Decimal(b["valor_residual"])
-    mensal = (base / n).quantize(Q2)
+    mensal = (base / n).quantize(Q2, rounding=ROUND_DOWN)  # arredondar para cima fazia n-1 parcelas passarem da base (QA cego C3)
     mes, saida, acumulado = _mes(b["inicio_uso"]), [], ZERO
     for i in range(n):
         if ate and mes > ate:

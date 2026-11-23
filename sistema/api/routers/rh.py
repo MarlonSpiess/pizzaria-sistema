@@ -129,6 +129,14 @@ def funcionarios(ativo: Optional[bool] = None, sessao=Depends(requer("rh.ver")),
     return [_func_out(conn, f, _pode_salarios(sessao)) for f in conn.execute(sql + " ORDER BY f.nome", p).fetchall()]
 
 
+PERFIS_DA_GERENCIA = ("administrador", "proprietario", "gerente", "subgerente")
+
+
+def _mexe_em_login_da_gerencia(sessao, perfil: str | None) -> bool:
+    """Regra única do vínculo e do desligamento: login da gerência só se liga ou bloqueia com usuarios.gerir."""
+    return perfil in PERFIS_DA_GERENCIA and not tem_permissao(sessao, "usuarios.gerir")
+
+
 def _conferir_vinculo(conn, sessao, usuario_id) -> None:
     """Login ligado ao funcionário: o desligamento bloqueia esse login. Ligar o login de alguém da gerência
     só com usuarios.gerir, senão quem tem rh.operar desativaria por aqui o login de um gerente."""
@@ -137,7 +145,7 @@ def _conferir_vinculo(conn, sessao, usuario_id) -> None:
     u = conn.execute("SELECT perfil FROM usuario WHERE id = %s AND loja_id = %s AND ativo", (usuario_id, LOJA_ID)).fetchone()
     if not u:
         raise HTTPException(status_code=404, detail="Usuário não encontrado ou inativo.")
-    if u["perfil"] in ("administrador", "proprietario", "gerente", "subgerente") and not tem_permissao(sessao, "usuarios.gerir"):
+    if _mexe_em_login_da_gerencia(sessao, u["perfil"]):
         raise HTTPException(status_code=403, detail="Só o administrador ou o proprietário liga o login de alguém da gerência a um funcionário.")
 
 
@@ -178,8 +186,12 @@ def desligar(fid: int, d: DesligarIn, sessao=Depends(requer("rh.operar")), conn=
         raise HTTPException(status_code=409, detail="Funcionário já desligado.")
     if d.data < f["admissao"]:
         raise HTTPException(status_code=400, detail="O desligamento não pode ser antes da admissão.")
-    if f["usuario_id"] and conn.execute("SELECT 1 FROM usuario WHERE id = %s AND perfil IN ('administrador','proprietario')", (f["usuario_id"],)).fetchone():
+    u = conn.execute("SELECT perfil FROM usuario WHERE id = %s", (f["usuario_id"],)).fetchone() if f["usuario_id"] else None
+    perfil = u["perfil"] if u else None
+    if perfil in ("administrador", "proprietario"):
         raise HTTPException(status_code=409, detail="Este funcionário é o administrador ou proprietário do sistema: o login dele não é bloqueado pelo desligamento. Desvincule o usuário antes.")
+    if _mexe_em_login_da_gerencia(sessao, perfil):  # decisão de Marlon (23/11/2026): recusar, sem estado pela metade
+        raise HTTPException(status_code=403, detail="Este funcionário tem login da gerência: só o administrador ou o proprietário faz o desligamento.")
     with transacao(conn):
         conn.execute("UPDATE funcionario SET ativo = false, desligamento = %s, desligamento_motivo = %s WHERE id = %s", (d.data, d.motivo, fid))
         conn.execute("UPDATE contrato SET vigente_ate = GREATEST(%s, vigente_desde) WHERE funcionario_id = %s AND vigente_ate IS NULL", (d.data, fid))

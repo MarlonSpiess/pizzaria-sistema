@@ -19,6 +19,51 @@ usa(produto_id, item_id, nivel) AS (
 """
 
 
+# Fichas sem produto: a base de cada tamanho (fecha toda pizza daquele tamanho) e a de cada adicional por tamanho
+# (fecha só aquele adicional ou borda naquele tamanho). Decisão de Marlon (23/11/2026, QA cego C8).
+_USO_BASE_E_ADICIONAL = """
+WITH RECURSIVE ult_dono AS (
+    SELECT DISTINCT ON (adicional_id, tamanho) id, adicional_id, tamanho FROM ficha_versao
+    WHERE loja_id = %(loja)s AND tamanho IS NOT NULL AND produto_id IS NULL AND item_id IS NULL ORDER BY adicional_id, tamanho, id DESC),
+ult_item AS (
+    SELECT DISTINCT ON (item_id) id, item_id FROM ficha_versao WHERE loja_id = %(loja)s AND item_id IS NOT NULL ORDER BY item_id, id DESC),
+usa(adicional_id, tamanho, item_id, nivel) AS (
+    SELECT ud.adicional_id, ud.tamanho, fl.item_id, 1 FROM ult_dono ud JOIN ficha_linha fl ON fl.versao_id = ud.id
+    UNION ALL
+    SELECT u.adicional_id, u.tamanho, fl.item_id, u.nivel + 1 FROM usa u JOIN ult_item ui ON ui.item_id = u.item_id
+        JOIN ficha_linha fl ON fl.versao_id = ui.id WHERE u.nivel < 5)
+SELECT DISTINCT usa.adicional_id, usa.tamanho, a.nome AS adicional, i.nome AS ingrediente FROM usa JOIN item i ON i.id = usa.item_id
+    LEFT JOIN adicional a ON a.id = usa.adicional_id
+WHERE usa.item_id = ANY(%(itens)s) AND (usa.adicional_id IS NULL OR a.ativo)
+"""
+_TAMANHO = {"grande": "Grande", "broto": "Broto"}
+
+
+def rotulo_fechamento(adicional: str | None, tamanho: str) -> str:
+    """Texto único para o que fecha além dos sabores."""
+    return f"{adicional} na pizza {_TAMANHO[tamanho]}" if adicional else f"toda pizza {_TAMANHO[tamanho]}"
+
+
+def base_e_adicionais_fechados(conn, item_ids: list[int] | None = None) -> dict:
+    """Bases e adicionais fechados pelos itens dados (ou pelos ingredientes em falta agora).
+    Devolve {"tamanhos": {tamanho: [ingredientes]}, "adicionais": {(adicional_id, tamanho): [ingredientes]}, "nomes": {chave: rótulo}}."""
+    if item_ids is None:
+        item_ids = [e["item_id"] for e in ingredientes_em_falta(conn)]
+    saida = {"tamanhos": {}, "adicionais": {}, "nomes": {}}
+    if not item_ids:
+        return saida
+    for x in conn.execute(_USO_BASE_E_ADICIONAL, {"loja": LOJA_ID, "itens": list(item_ids)}).fetchall():
+        chave = (x["adicional_id"], x["tamanho"]) if x["adicional_id"] else x["tamanho"]
+        saida["adicionais" if x["adicional_id"] else "tamanhos"].setdefault(chave, []).append(x["ingrediente"])
+        saida["nomes"][chave] = rotulo_fechamento(x["adicional"], x["tamanho"])
+    return saida
+
+
+def outros_que_usam(conn, item_ids: list[int]) -> list[str]:
+    """Rótulos das bases e adicionais que um ingrediente fecha (para a gerência conferir antes de marcar)."""
+    return sorted(base_e_adicionais_fechados(conn, item_ids)["nomes"].values())
+
+
 def sabores_que_usam(conn, item_ids: list[int]) -> list[dict]:
     return conn.execute(_USO + "SELECT DISTINCT p.id, p.nome, p.tipo FROM usa JOIN produto p ON p.id = usa.produto_id "
                         "WHERE usa.item_id = ANY(%(itens)s) AND p.ativo AND p.loja_id = %(loja)s ORDER BY p.nome",

@@ -54,7 +54,7 @@ def test_nao_desativa_a_si_mesmo_nem_o_ultimo_administrador(client, conn_teste):
 
 def test_redefinir_senha_forca_troca_e_encerra_sessoes(client, admin):
     _, ha = admin
-    login, senha = entrar(client, "atendente")[0], None
+    login = entrar(client, "atendente")[0]
     lista = client.get("/api/usuarios", headers=ha).json()
     uid = next(u["id"] for u in lista if u["usuario"] == login)
     assert client.post(f"/api/usuarios/{uid}/redefinir-senha", json={"senha_nova": "provisoria-456"}, headers=ha).status_code == 200

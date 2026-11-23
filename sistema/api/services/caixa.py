@@ -5,6 +5,8 @@ from decimal import Decimal
 
 from fastapi import HTTPException
 
+from api.database import hoje
+
 ZERO = Decimal("0.00")
 FORMAS = ("dinheiro", "pix", "credito", "debito")
 FIM = date(9999, 12, 31)
@@ -18,6 +20,14 @@ def faixa(conn, loja_id: int, caixa: dict) -> tuple:
     """Datas cobertas pelo caixa: da abertura até o dia anterior à abertura do caixa seguinte (ou sem fim, se é o último)."""
     prox = conn.execute("SELECT min(data) AS d FROM caixa_dia WHERE loja_id = %s AND data > %s", (loja_id, caixa["data"])).fetchone()["d"]
     return caixa["data"], prox or FIM
+
+
+def data_do_lancamento(conn, loja_id: int) -> date:
+    """Data operacional de venda, estorno, movimento e acerto: a do caixa ainda não fechado (que segue aberto depois da
+    meia-noite) ou, sem caixa em uso, a do calendário. Única regra: o caixa é achado por faixa de datas, então a data
+    gravada decide em que caixa o lançamento entra (QA cego C1, 23/11/2026)."""
+    c = ultimo_caixa(conn, loja_id)
+    return c["data"] if c and c["situacao"] != "fechado" else hoje()
 
 
 def ultimo_caixa(conn, loja_id: int, trava: str | None = None) -> dict | None:

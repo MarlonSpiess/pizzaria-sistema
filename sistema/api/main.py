@@ -98,16 +98,22 @@ async def _validacao(request: Request, exc: RequestValidationError):
     return JSONResponse(status_code=422, content={"detail": "; ".join(msgs) or "Dados inválidos."})
 
 
-# Falta momentânea do banco (trava presa além do lock_timeout, consulta além do statement_timeout, deadlock,
-# conflito de serialização): não é erro interno. Só a leitura recebe Retry-After; a gravação pede conferência.
-@app.exception_handler(psycopg.errors.LockNotAvailable)
+# Consulta além do statement_timeout: repetir dá o mesmo resultado, então não é "tente novamente".
 @app.exception_handler(psycopg.errors.QueryCanceled)
+async def _consulta_demorada(request: Request, exc: Exception):
+    log.error("Consulta demorada em %s %s", request.method, request.url.path, exc_info=exc)
+    return JSONResponse(status_code=504, content={"detail": "A consulta demorou demais e foi interrompida. Reduza o período ou avise o administrador."})
+
+
+# Falta momentânea do banco (trava presa além do lock_timeout, deadlock, conflito de serialização):
+# não é erro interno. Só a leitura recebe Retry-After; a gravação pede conferência.
+@app.exception_handler(psycopg.errors.LockNotAvailable)
 @app.exception_handler(psycopg.errors.DeadlockDetected)
 @app.exception_handler(psycopg.errors.SerializationFailure)
 async def _banco_ocupado(request: Request, exc: Exception):
     diag = getattr(exc, "diag", None)
     log.error("Banco ocupado em %s %s: %s (%s) %s", request.method, request.url.path, type(exc).__name__,
-              getattr(exc, "sqlstate", None), getattr(diag, "message_primary", None) or str(exc))
+              getattr(exc, "sqlstate", None), getattr(diag, "message_primary", None) or str(exc), exc_info=exc)
     if request.method in ("GET", "HEAD"):  # leitura: repetir é seguro
         return JSONResponse(status_code=503, content={"detail": "Servidor ocupado. Tente novamente em instantes."},
                             headers={"Retry-After": "2"})
