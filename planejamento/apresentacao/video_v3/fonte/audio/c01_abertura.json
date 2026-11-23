@@ -1,0 +1,135 @@
+{
+ "texto": "Sexta-feira, oito da noite. O balcão enche, o telefone toca, o aplicativo não para de apitar. Numa pizzaria, cada minuto vale dinheiro. E cada erro também.",
+ "palavras": [
+  {
+   "palavra": "Sexta-feira",
+   "inicio": 0.098,
+   "fim": 0.879
+  },
+  {
+   "palavra": "oito",
+   "inicio": 1.18,
+   "fim": 1.456
+  },
+  {
+   "palavra": "da",
+   "inicio": 1.468,
+   "fim": 1.564
+  },
+  {
+   "palavra": "noite",
+   "inicio": 1.576,
+   "fim": 1.985
+  },
+  {
+   "palavra": "O",
+   "inicio": 2.812,
+   "fim": 2.933
+  },
+  {
+   "palavra": "balcão",
+   "inicio": 2.945,
+   "fim": 3.425
+  },
+  {
+   "palavra": "enche",
+   "inicio": 3.438,
+   "fim": 3.75
+  },
+  {
+   "palavra": "o",
+   "inicio": 3.966,
+   "fim": 4.038
+  },
+  {
+   "palavra": "telefone",
+   "inicio": 4.051,
+   "fim": 4.555
+  },
+  {
+   "palavra": "toca",
+   "inicio": 4.567,
+   "fim": 4.94
+  },
+  {
+   "palavra": "o",
+   "inicio": 5.144,
+   "fim": 5.228
+  },
+  {
+   "palavra": "aplicativo",
+   "inicio": 5.24,
+   "fim": 5.938
+  },
+  {
+   "palavra": "não",
+   "inicio": 5.949,
+   "fim": 6.178
+  },
+  {
+   "palavra": "para",
+   "inicio": 6.19,
+   "fim": 6.418
+  },
+  {
+   "palavra": "de",
+   "inicio": 6.43,
+   "fim": 6.502
+  },
+  {
+   "palavra": "apitar",
+   "inicio": 6.514,
+   "fim": 6.887
+  },
+  {
+   "palavra": "Numa",
+   "inicio": 7.716,
+   "fim": 8.005
+  },
+  {
+   "palavra": "pizzaria",
+   "inicio": 8.017,
+   "fim": 8.618
+  },
+  {
+   "palavra": "cada",
+   "inicio": 8.798,
+   "fim": 9.062
+  },
+  {
+   "palavra": "minuto",
+   "inicio": 9.075,
+   "fim": 9.471
+  },
+  {
+   "palavra": "vale",
+   "inicio": 9.483,
+   "fim": 9.748
+  },
+  {
+   "palavra": "dinheiro",
+   "inicio": 9.76,
+   "fim": 10.18
+  },
+  {
+   "palavra": "E",
+   "inicio": 11.01,
+   "fim": 11.142
+  },
+  {
+   "palavra": "cada",
+   "inicio": 11.154,
+   "fim": 11.49
+  },
+  {
+   "palavra": "erro",
+   "inicio": 11.502,
+   "fim": 11.779
+  },
+  {
+   "palavra": "também",
+   "inicio": 11.791,
+   "fim": 12.212
+  }
+ ]
+}

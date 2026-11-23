@@ -1,0 +1,160 @@
+{
+ "texto": "O sistema já funciona e já foi testado em tablet. O que falta é uma decisão: aprovar o piloto na pizzaria. Sistema Integrado da Pizzaria. Cada pizza, cada real, sob controle.",
+ "palavras": [
+  {
+   "palavra": "O",
+   "inicio": 0.098,
+   "fim": 0.206
+  },
+  {
+   "palavra": "sistema",
+   "inicio": 0.218,
+   "fim": 0.711
+  },
+  {
+   "palavra": "já",
+   "inicio": 0.723,
+   "fim": 0.843
+  },
+  {
+   "palavra": "funciona",
+   "inicio": 0.855,
+   "fim": 1.528
+  },
+  {
+   "palavra": "e",
+   "inicio": 1.54,
+   "fim": 1.6
+  },
+  {
+   "palavra": "já",
+   "inicio": 1.613,
+   "fim": 1.757
+  },
+  {
+   "palavra": "foi",
+   "inicio": 1.769,
+   "fim": 1.925
+  },
+  {
+   "palavra": "testado",
+   "inicio": 1.937,
+   "fim": 2.358
+  },
+  {
+   "palavra": "em",
+   "inicio": 2.37,
+   "fim": 2.466
+  },
+  {
+   "palavra": "tablet",
+   "inicio": 2.478,
+   "fim": 3.007
+  },
+  {
+   "palavra": "O",
+   "inicio": 3.834,
+   "fim": 3.954
+  },
+  {
+   "palavra": "que",
+   "inicio": 3.966,
+   "fim": 4.123
+  },
+  {
+   "palavra": "falta",
+   "inicio": 4.135,
+   "fim": 4.471
+  },
+  {
+   "palavra": "é",
+   "inicio": 4.483,
+   "fim": 4.507
+  },
+  {
+   "palavra": "uma",
+   "inicio": 4.519,
+   "fim": 4.664
+  },
+  {
+   "palavra": "decisão",
+   "inicio": 4.676,
+   "fim": 5.156
+  },
+  {
+   "palavra": "aprovar",
+   "inicio": 5.373,
+   "fim": 5.793
+  },
+  {
+   "palavra": "o",
+   "inicio": 5.805,
+   "fim": 5.853
+  },
+  {
+   "palavra": "piloto",
+   "inicio": 5.865,
+   "fim": 6.31
+  },
+  {
+   "palavra": "na",
+   "inicio": 6.322,
+   "fim": 6.43
+  },
+  {
+   "palavra": "pizzaria",
+   "inicio": 6.442,
+   "fim": 7.079
+  },
+  {
+   "palavra": "Sistema",
+   "inicio": 7.909,
+   "fim": 8.425
+  },
+  {
+   "palavra": "Integrado",
+   "inicio": 8.438,
+   "fim": 8.966
+  },
+  {
+   "palavra": "da",
+   "inicio": 8.978,
+   "fim": 9.087
+  },
+  {
+   "palavra": "Pizzaria",
+   "inicio": 9.099,
+   "fim": 9.808
+  },
+  {
+   "palavra": "Cada",
+   "inicio": 10.637,
+   "fim": 10.901
+  },
+  {
+   "palavra": "pizza",
+   "inicio": 10.913,
+   "fim": 11.358
+  },
+  {
+   "palavra": "cada",
+   "inicio": 11.562,
+   "fim": 11.815
+  },
+  {
+   "palavra": "real",
+   "inicio": 11.827,
+   "fim": 12.187
+  },
+  {
+   "palavra": "sob",
+   "inicio": 12.452,
+   "fim": 12.704
+  },
+  {
+   "palavra": "controle",
+   "inicio": 12.716,
+   "fim": 13.269
+  }
+ ]
+}

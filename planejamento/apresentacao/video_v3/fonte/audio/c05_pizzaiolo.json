@@ -1,0 +1,240 @@
+{
+ "texto": "No mesmo instante, o pedido chega ao tablet do pizzaiolo. Ele não procura nada. Toca em pegar a próxima pizza, e o sistema entrega a próxima da fila, com o urgente na frente, com sabores e borda. Montou? Um toque, e a pizza segue para o forno.",
+ "palavras": [
+  {
+   "palavra": "No",
+   "inicio": 0.098,
+   "fim": 0.254
+  },
+  {
+   "palavra": "mesmo",
+   "inicio": 0.266,
+   "fim": 0.627
+  },
+  {
+   "palavra": "instante",
+   "inicio": 0.639,
+   "fim": 1.12
+  },
+  {
+   "palavra": "o",
+   "inicio": 1.396,
+   "fim": 1.48
+  },
+  {
+   "palavra": "pedido",
+   "inicio": 1.492,
+   "fim": 1.805
+  },
+  {
+   "palavra": "chega",
+   "inicio": 1.817,
+   "fim": 2.069
+  },
+  {
+   "palavra": "ao",
+   "inicio": 2.081,
+   "fim": 2.177
+  },
+  {
+   "palavra": "tablet",
+   "inicio": 2.189,
+   "fim": 2.646
+  },
+  {
+   "palavra": "do",
+   "inicio": 2.658,
+   "fim": 2.766
+  },
+  {
+   "palavra": "pizzaiolo",
+   "inicio": 2.778,
+   "fim": 3.391
+  },
+  {
+   "palavra": "Ele",
+   "inicio": 4.219,
+   "fim": 4.411
+  },
+  {
+   "palavra": "não",
+   "inicio": 4.423,
+   "fim": 4.603
+  },
+  {
+   "palavra": "procura",
+   "inicio": 4.615,
+   "fim": 5.024
+  },
+  {
+   "palavra": "nada",
+   "inicio": 5.036,
+   "fim": 5.373
+  },
+  {
+   "palavra": "Toca",
+   "inicio": 6.202,
+   "fim": 6.49
+  },
+  {
+   "palavra": "em",
+   "inicio": 6.502,
+   "fim": 6.575
+  },
+  {
+   "palavra": "pegar",
+   "inicio": 6.587,
+   "fim": 6.839
+  },
+  {
+   "palavra": "a",
+   "inicio": 6.851,
+   "fim": 6.911
+  },
+  {
+   "palavra": "próxima",
+   "inicio": 6.923,
+   "fim": 7.368
+  },
+  {
+   "palavra": "pizza",
+   "inicio": 7.38,
+   "fim": 7.788
+  },
+  {
+   "palavra": "e",
+   "inicio": 8.041,
+   "fim": 8.125
+  },
+  {
+   "palavra": "o",
+   "inicio": 8.137,
+   "fim": 8.173
+  },
+  {
+   "palavra": "sistema",
+   "inicio": 8.185,
+   "fim": 8.594
+  },
+  {
+   "palavra": "entrega",
+   "inicio": 8.606,
+   "fim": 8.93
+  },
+  {
+   "palavra": "a",
+   "inicio": 8.942,
+   "fim": 8.966
+  },
+  {
+   "palavra": "próxima",
+   "inicio": 8.978,
+   "fim": 9.363
+  },
+  {
+   "palavra": "da",
+   "inicio": 9.375,
+   "fim": 9.483
+  },
+  {
+   "palavra": "fila",
+   "inicio": 9.495,
+   "fim": 9.832
+  },
+  {
+   "palavra": "com",
+   "inicio": 10.12,
+   "fim": 10.337
+  },
+  {
+   "palavra": "o",
+   "inicio": 10.349,
+   "fim": 10.373
+  },
+  {
+   "palavra": "urgente",
+   "inicio": 10.385,
+   "fim": 10.841
+  },
+  {
+   "palavra": "na",
+   "inicio": 10.853,
+   "fim": 10.962
+  },
+  {
+   "palavra": "frente",
+   "inicio": 10.974,
+   "fim": 11.43
+  },
+  {
+   "palavra": "com",
+   "inicio": 11.671,
+   "fim": 11.863
+  },
+  {
+   "palavra": "sabores",
+   "inicio": 11.875,
+   "fim": 12.356
+  },
+  {
+   "palavra": "e",
+   "inicio": 12.368,
+   "fim": 12.476
+  },
+  {
+   "palavra": "borda",
+   "inicio": 12.488,
+   "fim": 12.909
+  },
+  {
+   "palavra": "Montou",
+   "inicio": 13.738,
+   "fim": 14.267
+  },
+  {
+   "palavra": "Um",
+   "inicio": 15.096,
+   "fim": 15.312
+  },
+  {
+   "palavra": "toque",
+   "inicio": 15.325,
+   "fim": 15.697
+  },
+  {
+   "palavra": "e",
+   "inicio": 15.925,
+   "fim": 15.986
+  },
+  {
+   "palavra": "a",
+   "inicio": 15.998,
+   "fim": 16.106
+  },
+  {
+   "palavra": "pizza",
+   "inicio": 16.118,
+   "fim": 16.478
+  },
+  {
+   "palavra": "segue",
+   "inicio": 16.49,
+   "fim": 16.839
+  },
+  {
+   "palavra": "para",
+   "inicio": 16.851,
+   "fim": 17.019
+  },
+  {
+   "palavra": "o",
+   "inicio": 17.031,
+   "fim": 17.067
+  },
+  {
+   "palavra": "forno",
+   "inicio": 17.079,
+   "fim": 17.536
+  }
+ ]
+}

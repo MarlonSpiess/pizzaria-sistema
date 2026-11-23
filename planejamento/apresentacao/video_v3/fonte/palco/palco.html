@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<title>Palco do vídeo</title>
+<style>
+:root{--bg:#120d0a;--brand:#d9a441;--brand2:#f0c56a;--accent:#e0573a;--txt:#f3ebe0;--txt2:#cdbfae;--txt3:#9a8b79;--ok:#4cc27a;--crit:#ff6b5e}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--txt);font-family:Inter,'Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+#fundo{position:absolute;inset:0;background:
+  radial-gradient(1200px 700px at 15% 10%,rgba(217,164,65,.20),transparent 60%),
+  radial-gradient(900px 600px at 90% 95%,rgba(224,87,58,.18),transparent 60%),
+  linear-gradient(160deg,#1c1410,#0e0a08 70%)}
+#brilho{position:absolute;width:900px;height:900px;border-radius:50%;filter:blur(120px);background:rgba(217,164,65,.10);left:-200px;top:-300px;animation:flutua 18s ease-in-out infinite alternate}
+@keyframes flutua{to{transform:translate(1100px,500px)}}
+#grade{position:absolute;inset:0;opacity:.07;background-image:linear-gradient(rgba(255,255,255,.4) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.4) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%)}
+/* cabeçalho */
+#marca{position:absolute;left:56px;top:34px;display:flex;align-items:center;gap:14px;font-weight:700;font-size:22px;letter-spacing:.3px;opacity:.95}
+#marca img{width:40px;height:40px}
+#marca small{display:block;font-size:12px;font-weight:600;letter-spacing:3px;color:var(--txt3);text-transform:uppercase}
+#capitulo{position:absolute;right:56px;top:36px;display:flex;align-items:center;gap:12px;padding:10px 20px 10px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:20px;font-weight:600;transition:opacity .5s,transform .5s}
+#capitulo b{background:var(--brand);color:#2b1d06;border-radius:999px;padding:3px 12px;font-size:16px}
+#capitulo.oculto{opacity:0;transform:translateY(-12px)}
+/* aparelhos */
+.aparelho{position:absolute;transition:transform 1.1s cubic-bezier(.2,.8,.2,1),opacity .7s;transform-origin:0 0}
+.aparelho.oculto{pointer-events:none;opacity:0;transform:translateY(40px) scale(.97)}
+.navegador{left:240px;top:112px;width:1440px;height:850px;border-radius:16px;overflow:hidden;background:#2a221c;box-shadow:0 40px 120px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.08)}
+.navegador .barra{height:40px;background:#241c17;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.navegador .barra i{width:12px;height:12px;border-radius:50%;background:#5a4a3c}
+.navegador .barra i:nth-child(1){background:#e0573a}.navegador .barra i:nth-child(2){background:#d9a441}.navegador .barra i:nth-child(3){background:#4cc27a}
+.navegador .barra span{margin-left:18px;font-size:14px;color:var(--txt3);background:#1a1411;border-radius:8px;padding:4px 16px;width:520px}
+.tela{position:relative;overflow:hidden}
+.tela iframe{border:0;transform-origin:0 0;background:#17120f}
+.navegador .tela{width:1440px;height:810px}
+.navegador iframe{width:1600px;height:900px;transform:scale(.9)}
+.tablet{border-radius:38px;background:linear-gradient(145deg,#2d2d31,#111113);padding:26px;box-shadow:0 40px 120px rgba(0,0,0,.7),inset 0 0 0 2px rgba(255,255,255,.08)}
+.tablet .tela{border-radius:10px}
+.tablet::after{content:"";position:absolute;left:12px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:#333}
+.t-um{left:372px;top:118px}
+.t-um .tela{width:1152px;height:720px}
+.t-um iframe{width:1280px;height:800px;transform:scale(.9)}
+.t-duo{top:190px;padding:18px;border-radius:30px}
+.t-duo .tela{width:794px;height:496px}
+.t-duo iframe{width:1280px;height:800px;transform:scale(.62)}
+#t2a{left:120px}#t2b{left:976px}
+.rotulo{position:absolute;left:50%;transform:translateX(-50%);bottom:-62px;white-space:nowrap;font-size:22px;font-weight:600;color:var(--txt2);display:flex;gap:10px;align-items:center}
+.rotulo b{color:var(--brand2)}
+/* anotação */
+#nota{position:absolute;max-width:430px;padding:20px 24px;border-radius:16px;background:rgba(24,18,14,.92);border:1px solid rgba(217,164,65,.55);box-shadow:0 20px 60px rgba(0,0,0,.55);font-size:25px;line-height:1.3;font-weight:600;transition:opacity .45s,transform .45s;z-index:20}
+#nota small{display:block;font-size:14px;letter-spacing:2.5px;text-transform:uppercase;color:var(--brand);margin-bottom:8px;font-weight:700}
+#nota.oculto{pointer-events:none;opacity:0;transform:translateY(14px)}
+#realce{position:absolute;border:3px solid var(--brand2);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.35),0 0 30px rgba(240,197,106,.6);transition:all .5s cubic-bezier(.2,.8,.2,1);z-index:15;pointer-events:none}
+#realce.oculto{opacity:0}
+/* cursor e toque */
+#cursor{position:absolute;left:0;top:0;width:34px;height:34px;z-index:40;pointer-events:none;transition:opacity .3s;filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))}
+#cursor.toque{width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(255,255,255,.35);border:3px solid rgba(255,255,255,.85)}
+#cursor.toque svg{display:none}
+.onda{position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:4px solid var(--brand2);z-index:39;pointer-events:none;animation:onda .6s ease-out forwards}
+@keyframes onda{to{transform:scale(4.2);opacity:0}}
+/* camadas de texto (aberturas e encerramento) */
+.camada{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:opacity .8s;z-index:30}
+.camada.oculto{opacity:0;pointer-events:none}
+.linha{opacity:0;transform:translateY(30px);transition:opacity .8s,transform .8s cubic-bezier(.2,.8,.2,1)}
+.linha.vis{opacity:1;transform:none}
+.enorme{font-size:112px;font-weight:800;letter-spacing:-3px;line-height:1.02}
+.grande{font-size:68px;font-weight:800;letter-spacing:-1.5px;line-height:1.1}
+.medio{font-size:40px;font-weight:600;color:var(--txt2);line-height:1.35}
+.ouro{background:linear-gradient(90deg,#f0c56a,#e0573a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.relogio{font-variant-numeric:tabular-nums;font-size:150px;font-weight:800;letter-spacing:-4px}
+.chips{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;max-width:1500px;margin-top:40px}
+.chip{padding:16px 28px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-size:30px;font-weight:600}
+.chip.ruim{border-color:rgba(255,107,94,.55);color:#ffc2bb}
+.areas3{display:flex;gap:40px;margin-top:56px}
+.area3{width:400px;padding:40px 30px;border-radius:26px;background:rgba(255,255,255,.05);border:1px solid rgba(217,164,65,.35)}
+.area3 .ic{font-size:76px}
+.area3 h3{font-size:44px;margin:14px 0 10px}
+.area3 p{font-size:24px;color:var(--txt2);line-height:1.35}
+.numeros{display:grid;grid-template-columns:repeat(4,340px);gap:30px;margin-top:50px}
+.num{padding:34px 20px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)}
+.num b{display:block;font-size:96px;font-weight:800;letter-spacing:-3px;font-variant-numeric:tabular-nums}
+.num span{font-size:26px;color:var(--txt2)}
+.etapas{display:flex;flex-direction:column;gap:22px;margin-top:46px;text-align:left}
+.etapa{display:flex;align-items:center;gap:26px;font-size:36px;font-weight:600;padding:20px 34px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);width:1100px}
+.etapa i{font-style:normal;width:62px;height:62px;border-radius:50%;background:var(--brand);color:#2b1d06;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:30px;flex-shrink:0}
+.etapa em{font-style:normal;margin-left:auto;font-size:22px;color:var(--brand2);border:1px solid rgba(217,164,65,.5);padding:6px 14px;border-radius:999px;white-space:nowrap}
+.logo-grande{width:180px;height:180px;margin-bottom:30px;filter:drop-shadow(0 20px 60px rgba(217,164,65,.45))}
+.selo{margin-top:46px;font-size:30px;font-weight:700;padding:20px 44px;border-radius:999px;background:var(--brand);color:#2b1d06;box-shadow:0 20px 60px rgba(217,164,65,.35)}
+#calibra{position:absolute;left:0;top:0;width:1920px;height:4px;background:#ff00ff;z-index:99}
+#vinheta{position:absolute;inset:0;background:#000;opacity:0;transition:opacity .8s;z-index:60;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="fundo"></div><div id="brilho"></div><div id="grade"></div>
+<div id="marca"><img src="logo.svg" alt=""><div>Sistema Integrado da Pizzaria<small>apresentação à diretoria</small></div></div>
+<div id="capitulo" class="oculto"><b id="capn">01</b><span id="capt"></span></div>
+
+<div id="navegador" class="aparelho navegador oculto"><div class="barra"><i></i><i></i><i></i><span>http://servidor-da-loja:8080</span></div><div class="tela"><iframe id="f1" title="app"></iframe></div></div>
+<div id="tablet" class="aparelho tablet t-um oculto"><div class="tela"><iframe id="ft" title="tablet"></iframe></div><div class="rotulo" id="rt"></div></div>
+<div id="t2a" class="aparelho tablet t-duo oculto"><div class="tela"><iframe id="fa" title="tablet a"></iframe></div><div class="rotulo" id="ra"></div></div>
+<div id="t2b" class="aparelho tablet t-duo oculto"><div class="tela"><iframe id="fb" title="tablet b"></iframe></div><div class="rotulo" id="rb"></div></div>
+
+<div id="realce" class="oculto"></div>
+<div id="nota" class="oculto"><small id="notat"></small><div id="notax"></div></div>
+<div id="camadas"></div>
+<div id="cursor" style="opacity:0"><svg viewBox="0 0 24 24" width="34" height="34"><path d="M4 2l16 10-7 1.5L9.5 21z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+<div id="vinheta"></div>
+<div id="calibra"></div>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+const P = window.P = {};
+const APARELHOS = { navegador: ["#navegador"], tablet: ["#tablet"], duo: ["#t2a", "#t2b"], nenhum: [] };
+
+P.capitulo = (n, texto) => {
+  const c = $("#capitulo");
+  if (!texto) { c.classList.add("oculto"); return; }
+  $("#capn").textContent = n; $("#capt").textContent = texto; c.classList.remove("oculto");
+};
+P.aparelho = (qual) => {
+  for (const [k, sel] of Object.entries(APARELHOS)) sel.forEach((s) => $(s).classList.toggle("oculto", k !== qual));
+};
+P.rotulo = (id, html) => { $(id).innerHTML = html; };
+P.carregar = (frame, url) => new Promise((ok) => { const f = $(frame); f.onload = () => ok(); f.src = url; });
+// Zoom de câmera sobre um aparelho: escala e desloca a partir do canto.
+P.camera = (sel, escala, dx, dy) => { $(sel).style.transform = `translate(${dx || 0}px,${dy || 0}px) scale(${escala})`; };
+P.nota = (titulo, texto, x, y) => {
+  const n = $("#nota");
+  if (!texto) { n.classList.add("oculto"); return; }
+  $("#notat").textContent = titulo; $("#notax").textContent = texto;
+  n.style.left = x + "px"; n.style.top = y + "px"; n.classList.remove("oculto");
+};
+P.realce = (r) => {
+  const e = $("#realce");
+  if (!r) { e.classList.add("oculto"); return; }
+  const m = 8;
+  Object.assign(e.style, { left: r.x - m + "px", top: r.y - m + "px", width: r.width + 2 * m + "px", height: r.height + 2 * m + "px" });
+  e.classList.remove("oculto");
+};
+let pos = { x: 960, y: 1180 };
+P.cursor = async (x, y, ms, toque) => {
+  const c = $("#cursor");
+  c.classList.toggle("toque", !!toque);
+  c.style.opacity = 1;
+  const de = { ...pos }, t0 = performance.now();
+  await new Promise((fim) => {
+    const passo = (t) => {
+      const k = Math.min(1, (t - t0) / ms), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      pos = { x: de.x + (x - de.x) * e, y: de.y + (y - de.y) * e };
+      c.style.transform = `translate(${pos.x}px,${pos.y}px)`;
+      k < 1 ? requestAnimationFrame(passo) : fim();
+    };
+    requestAnimationFrame(passo);
+  });
+};
+P.esconderCursor = () => { $("#cursor").style.opacity = 0; };
+P.onda = () => {
+  const o = document.createElement("div"); o.className = "onda";
+  o.style.left = pos.x + 6 + "px"; o.style.top = pos.y + 4 + "px";
+  if ($("#cursor").classList.contains("toque")) { o.style.left = pos.x + "px"; o.style.top = pos.y + "px"; }
+  document.body.append(o); setTimeout(() => o.remove(), 700);
+};
+P.calibrado = () => { document.getElementById("calibra").style.display = "none"; };
+P.marca = () => { const m = document.getElementById("calibra"); m.style.display = "block"; setTimeout(() => { m.style.display = "none"; }, 120); };
+P.vinheta = (v) => { $("#vinheta").style.opacity = v; };
+// Camadas de texto: html com elementos .linha que aparecem em sequência por P.mostrarLinha(i)
+P.camada = (html) => {
+  const box = $("#camadas");
+  box.querySelectorAll(".camada").forEach((c) => { c.classList.add("oculto"); setTimeout(() => c.remove(), 900); });
+  if (!html) return;
+  const c = document.createElement("div"); c.className = "camada"; c.innerHTML = html; box.append(c);
+};
+P.linha = (i) => { const l = document.querySelectorAll(".camada:not(.oculto) .linha")[i]; if (l) l.classList.add("vis"); };
+P.contar = (id, ate, ms) => {
+  const el = document.getElementById(id), t0 = performance.now();
+  const passo = (t) => { const k = Math.min(1, (t - t0) / ms); el.textContent = Math.round(ate * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(passo); };
+  requestAnimationFrame(passo);
+};
+P.relogio = (id, de, ate, ms) => {  // minutos desde 0h, mostra hh:mm
+  const el = document.getElementById(id), t0 = performance.now();
+  const passo = (t) => { const k = Math.min(1, (t - t0) / ms), m = Math.round(de + (ate - de) * k);
+    el.textContent = String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); if (k < 1) requestAnimationFrame(passo); };
+  requestAnimationFrame(passo);
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+{
+ "texto": "Tudo começa no balcão. O atendente monta o pedido: uma grande, meio Margherita, meio Quatro Queijos, com borda de Catupiry. O sistema aplica a regra da casa sozinho: na pizza de dois sabores, metade do preço de cada um. Pagamento no Pix, pedido marcado como urgente, confirmado, e ele já recebe o número do dia.",
+ "palavras": [
+  {
+   "palavra": "Tudo",
+   "inicio": 0.098,
+   "fim": 0.362
+  },
+  {
+   "palavra": "começa",
+   "inicio": 0.374,
+   "fim": 0.807
+  },
+  {
+   "palavra": "no",
+   "inicio": 0.819,
+   "fim": 0.927
+  },
+  {
+   "palavra": "balcão",
+   "inicio": 0.939,
+   "fim": 1.396
+  },
+  {
+   "palavra": "O",
+   "inicio": 2.224,
+   "fim": 2.332
+  },
+  {
+   "palavra": "atendente",
+   "inicio": 2.344,
+   "fim": 2.873
+  },
+  {
+   "palavra": "monta",
+   "inicio": 2.885,
+   "fim": 3.161
+  },
+  {
+   "palavra": "o",
+   "inicio": 3.173,
+   "fim": 3.197
+  },
+  {
+   "palavra": "pedido",
+   "inicio": 3.209,
+   "fim": 3.63
+  },
+  {
+   "palavra": "uma",
+   "inicio": 3.882,
+   "fim": 4.087
+  },
+  {
+   "palavra": "grande",
+   "inicio": 4.099,
+   "fim": 4.507
+  },
+  {
+   "palavra": "meio",
+   "inicio": 4.748,
+   "fim": 4.928
+  },
+  {
+   "palavra": "Margherita",
+   "inicio": 4.94,
+   "fim": 5.493
+  },
+  {
+   "palavra": "meio",
+   "inicio": 5.757,
+   "fim": 5.949
+  },
+  {
+   "palavra": "Quatro",
+   "inicio": 5.962,
+   "fim": 6.346
+  },
+  {
+   "palavra": "Queijos",
+   "inicio": 6.358,
+   "fim": 6.803
+  },
+  {
+   "palavra": "com",
+   "inicio": 7.055,
+   "fim": 7.248
+  },
+  {
+   "palavra": "borda",
+   "inicio": 7.26,
+   "fim": 7.608
+  },
+  {
+   "palavra": "de",
+   "inicio": 7.62,
+   "fim": 7.716
+  },
+  {
+   "palavra": "Catupiry",
+   "inicio": 7.728,
+   "fim": 8.269
+  },
+  {
+   "palavra": "O",
+   "inicio": 9.099,
+   "fim": 9.207
+  },
+  {
+   "palavra": "sistema",
+   "inicio": 9.219,
+   "fim": 9.615
+  },
+  {
+   "palavra": "aplica",
+   "inicio": 9.627,
+   "fim": 10.012
+  },
+  {
+   "palavra": "a",
+   "inicio": 10.024,
+   "fim": 10.048
+  },
+  {
+   "palavra": "regra",
+   "inicio": 10.06,
+   "fim": 10.349
+  },
+  {
+   "palavra": "da",
+   "inicio": 10.361,
+   "fim": 10.469
+  },
+  {
+   "palavra": "casa",
+   "inicio": 10.481,
+   "fim": 10.793
+  },
+  {
+   "palavra": "sozinho",
+   "inicio": 10.805,
+   "fim": 11.322
+  },
+  {
+   "palavra": "na",
+   "inicio": 11.599,
+   "fim": 11.731
+  },
+  {
+   "palavra": "pizza",
+   "inicio": 11.743,
+   "fim": 12.043
+  },
+  {
+   "palavra": "de",
+   "inicio": 12.055,
+   "fim": 12.175
+  },
+  {
+   "palavra": "dois",
+   "inicio": 12.188,
+   "fim": 12.392
+  },
+  {
+   "palavra": "sabores",
+   "inicio": 12.404,
+   "fim": 12.969
+  },
+  {
+   "palavra": "metade",
+   "inicio": 13.197,
+   "fim": 13.642
+  },
+  {
+   "palavra": "do",
+   "inicio": 13.654,
+   "fim": 13.762
+  },
+  {
+   "palavra": "preço",
+   "inicio": 13.774,
+   "fim": 14.111
+  },
+  {
+   "palavra": "de",
+   "inicio": 14.123,
+   "fim": 14.231
+  },
+  {
+   "palavra": "cada",
+   "inicio": 14.243,
+   "fim": 14.519
+  },
+  {
+   "palavra": "um",
+   "inicio": 14.531,
+   "fim": 14.736
+  },
+  {
+   "palavra": "Pagamento",
+   "inicio": 15.565,
+   "fim": 16.154
+  },
+  {
+   "palavra": "no",
+   "inicio": 16.166,
+   "fim": 16.274
+  },
+  {
+   "palavra": "Pix",
+   "inicio": 16.286,
+   "fim": 16.671
+  },
+  {
+   "palavra": "pedido",
+   "inicio": 16.887,
+   "fim": 17.212
+  },
+  {
+   "palavra": "marcado",
+   "inicio": 17.224,
+   "fim": 17.704
+  },
+  {
+   "palavra": "como",
+   "inicio": 17.716,
+   "fim": 17.909
+  },
+  {
+   "palavra": "urgente",
+   "inicio": 17.921,
+   "fim": 18.401
+  },
+  {
+   "palavra": "confirmado",
+   "inicio": 18.594,
+   "fim": 19.339
+  },
+  {
+   "palavra": "e",
+   "inicio": 19.663,
+   "fim": 19.772
+  },
+  {
+   "palavra": "ele",
+   "inicio": 19.784,
+   "fim": 19.928
+  },
+  {
+   "palavra": "já",
+   "inicio": 19.94,
+   "fim": 20.096
+  },
+  {
+   "palavra": "recebe",
+   "inicio": 20.108,
+   "fim": 20.541
+  },
+  {
+   "palavra": "o",
+   "inicio": 20.553,
+   "fim": 20.577
+  },
+  {
+   "palavra": "número",
+   "inicio": 20.589,
+   "fim": 20.913
+  },
+  {
+   "palavra": "do",
+   "inicio": 20.925,
+   "fim": 21.046
+  },
+  {
+   "palavra": "dia",
+   "inicio": 21.058,
+   "fim": 21.394
+  }
+ ]
+}

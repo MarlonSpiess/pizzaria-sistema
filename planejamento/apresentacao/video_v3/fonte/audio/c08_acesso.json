@@ -1,0 +1,180 @@
+{
+ "texto": "E esse controle não é só visual. Cada permissão é conferida no servidor, em cada chamada. São oito perfis e cinquenta e cinco permissões. O pizzaiolo enxerga a montagem. A gerente enxerga a operação inteira.",
+ "palavras": [
+  {
+   "palavra": "E",
+   "inicio": 0.098,
+   "fim": 0.23
+  },
+  {
+   "palavra": "esse",
+   "inicio": 0.242,
+   "fim": 0.471
+  },
+  {
+   "palavra": "controle",
+   "inicio": 0.483,
+   "fim": 0.939
+  },
+  {
+   "palavra": "não",
+   "inicio": 0.951,
+   "fim": 1.156
+  },
+  {
+   "palavra": "é",
+   "inicio": 1.168,
+   "fim": 1.228
+  },
+  {
+   "palavra": "só",
+   "inicio": 1.24,
+   "fim": 1.456
+  },
+  {
+   "palavra": "visual",
+   "inicio": 1.468,
+   "fim": 1.961
+  },
+  {
+   "palavra": "Cada",
+   "inicio": 2.788,
+   "fim": 3.053
+  },
+  {
+   "palavra": "permissão",
+   "inicio": 3.065,
+   "fim": 3.582
+  },
+  {
+   "palavra": "é",
+   "inicio": 3.594,
+   "fim": 3.654
+  },
+  {
+   "palavra": "conferida",
+   "inicio": 3.666,
+   "fim": 4.147
+  },
+  {
+   "palavra": "no",
+   "inicio": 4.159,
+   "fim": 4.255
+  },
+  {
+   "palavra": "servidor",
+   "inicio": 4.267,
+   "fim": 4.784
+  },
+  {
+   "palavra": "em",
+   "inicio": 5.036,
+   "fim": 5.144
+  },
+  {
+   "palavra": "cada",
+   "inicio": 5.156,
+   "fim": 5.421
+  },
+  {
+   "palavra": "chamada",
+   "inicio": 5.433,
+   "fim": 5.925
+  },
+  {
+   "palavra": "São",
+   "inicio": 6.755,
+   "fim": 7.103
+  },
+  {
+   "palavra": "oito",
+   "inicio": 7.115,
+   "fim": 7.38
+  },
+  {
+   "palavra": "perfis",
+   "inicio": 7.392,
+   "fim": 7.764
+  },
+  {
+   "palavra": "e",
+   "inicio": 7.776,
+   "fim": 7.885
+  },
+  {
+   "palavra": "cinquenta",
+   "inicio": 7.897,
+   "fim": 8.341
+  },
+  {
+   "palavra": "e",
+   "inicio": 8.353,
+   "fim": 8.389
+  },
+  {
+   "palavra": "cinco",
+   "inicio": 8.401,
+   "fim": 8.702
+  },
+  {
+   "palavra": "permissões",
+   "inicio": 8.714,
+   "fim": 9.447
+  },
+  {
+   "palavra": "O",
+   "inicio": 10.276,
+   "fim": 10.385
+  },
+  {
+   "palavra": "pizzaiolo",
+   "inicio": 10.397,
+   "fim": 10.938
+  },
+  {
+   "palavra": "enxerga",
+   "inicio": 10.95,
+   "fim": 11.382
+  },
+  {
+   "palavra": "a",
+   "inicio": 11.394,
+   "fim": 11.406
+  },
+  {
+   "palavra": "montagem",
+   "inicio": 11.418,
+   "fim": 12.031
+  },
+  {
+   "palavra": "A",
+   "inicio": 12.861,
+   "fim": 12.969
+  },
+  {
+   "palavra": "gerente",
+   "inicio": 12.981,
+   "fim": 13.401
+  },
+  {
+   "palavra": "enxerga",
+   "inicio": 13.413,
+   "fim": 13.81
+  },
+  {
+   "palavra": "a",
+   "inicio": 13.822,
+   "fim": 13.858
+  },
+  {
+   "palavra": "operação",
+   "inicio": 13.87,
+   "fim": 14.399
+  },
+  {
+   "palavra": "inteira",
+   "inicio": 14.411,
+   "fim": 14.868
+  }
+ ]
+}

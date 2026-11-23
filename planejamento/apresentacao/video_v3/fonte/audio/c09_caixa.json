@@ -1,0 +1,315 @@
+{
+ "texto": "Pedido pronto, o despacho escolhe o entregador, e só despacha com o caixa do dia aberto. No fim da noite, a contagem é cega: o caixa informa o que tem na gaveta, no Pix e nas maquininhas, e só depois o sistema revela o esperado. Diferença acima da tolerância exige justificativa e a aprovação de um gerente que não fez a contagem.",
+ "palavras": [
+  {
+   "palavra": "Pedido",
+   "inicio": 0.098,
+   "fim": 0.495
+  },
+  {
+   "palavra": "pronto",
+   "inicio": 0.507,
+   "fim": 0.891
+  },
+  {
+   "palavra": "o",
+   "inicio": 1.216,
+   "fim": 1.288
+  },
+  {
+   "palavra": "despacho",
+   "inicio": 1.3,
+   "fim": 1.805
+  },
+  {
+   "palavra": "escolhe",
+   "inicio": 1.817,
+   "fim": 2.177
+  },
+  {
+   "palavra": "o",
+   "inicio": 2.189,
+   "fim": 2.213
+  },
+  {
+   "palavra": "entregador",
+   "inicio": 2.225,
+   "fim": 2.814
+  },
+  {
+   "palavra": "e",
+   "inicio": 3.151,
+   "fim": 3.211
+  },
+  {
+   "palavra": "só",
+   "inicio": 3.223,
+   "fim": 3.403
+  },
+  {
+   "palavra": "despacha",
+   "inicio": 3.415,
+   "fim": 3.956
+  },
+  {
+   "palavra": "com",
+   "inicio": 3.968,
+   "fim": 4.136
+  },
+  {
+   "palavra": "o",
+   "inicio": 4.149,
+   "fim": 4.185
+  },
+  {
+   "palavra": "caixa",
+   "inicio": 4.197,
+   "fim": 4.545
+  },
+  {
+   "palavra": "do",
+   "inicio": 4.557,
+   "fim": 4.677
+  },
+  {
+   "palavra": "dia",
+   "inicio": 4.689,
+   "fim": 4.858
+  },
+  {
+   "palavra": "aberto",
+   "inicio": 4.87,
+   "fim": 5.314
+  },
+  {
+   "palavra": "No",
+   "inicio": 6.142,
+   "fim": 6.31
+  },
+  {
+   "palavra": "fim",
+   "inicio": 6.322,
+   "fim": 6.502
+  },
+  {
+   "palavra": "da",
+   "inicio": 6.514,
+   "fim": 6.623
+  },
+  {
+   "palavra": "noite",
+   "inicio": 6.635,
+   "fim": 7.007
+  },
+  {
+   "palavra": "a",
+   "inicio": 7.199,
+   "fim": 7.272
+  },
+  {
+   "palavra": "contagem",
+   "inicio": 7.284,
+   "fim": 7.837
+  },
+  {
+   "palavra": "é",
+   "inicio": 7.849,
+   "fim": 7.897
+  },
+  {
+   "palavra": "cega",
+   "inicio": 7.909,
+   "fim": 8.329
+  },
+  {
+   "palavra": "o",
+   "inicio": 8.63,
+   "fim": 8.726
+  },
+  {
+   "palavra": "caixa",
+   "inicio": 8.738,
+   "fim": 9.026
+  },
+  {
+   "palavra": "informa",
+   "inicio": 9.038,
+   "fim": 9.459
+  },
+  {
+   "palavra": "o",
+   "inicio": 9.471,
+   "fim": 9.495
+  },
+  {
+   "palavra": "que",
+   "inicio": 9.507,
+   "fim": 9.639
+  },
+  {
+   "palavra": "tem",
+   "inicio": 9.651,
+   "fim": 9.772
+  },
+  {
+   "palavra": "na",
+   "inicio": 9.784,
+   "fim": 9.88
+  },
+  {
+   "palavra": "gaveta",
+   "inicio": 9.892,
+   "fim": 10.337
+  },
+  {
+   "palavra": "no",
+   "inicio": 10.589,
+   "fim": 10.733
+  },
+  {
+   "palavra": "Pix",
+   "inicio": 10.745,
+   "fim": 10.974
+  },
+  {
+   "palavra": "e",
+   "inicio": 10.986,
+   "fim": 11.07
+  },
+  {
+   "palavra": "nas",
+   "inicio": 11.082,
+   "fim": 11.238
+  },
+  {
+   "palavra": "maquininhas",
+   "inicio": 11.25,
+   "fim": 11.887
+  },
+  {
+   "palavra": "e",
+   "inicio": 12.127,
+   "fim": 12.187
+  },
+  {
+   "palavra": "só",
+   "inicio": 12.2,
+   "fim": 12.38
+  },
+  {
+   "palavra": "depois",
+   "inicio": 12.392,
+   "fim": 12.752
+  },
+  {
+   "palavra": "o",
+   "inicio": 12.764,
+   "fim": 12.861
+  },
+  {
+   "palavra": "sistema",
+   "inicio": 12.873,
+   "fim": 13.317
+  },
+  {
+   "palavra": "revela",
+   "inicio": 13.329,
+   "fim": 13.714
+  },
+  {
+   "palavra": "o",
+   "inicio": 13.726,
+   "fim": 13.774
+  },
+  {
+   "palavra": "esperado",
+   "inicio": 13.786,
+   "fim": 14.315
+  },
+  {
+   "palavra": "Diferença",
+   "inicio": 15.144,
+   "fim": 15.781
+  },
+  {
+   "palavra": "acima",
+   "inicio": 15.793,
+   "fim": 16.118
+  },
+  {
+   "palavra": "da",
+   "inicio": 16.13,
+   "fim": 16.226
+  },
+  {
+   "palavra": "tolerância",
+   "inicio": 16.238,
+   "fim": 16.755
+  },
+  {
+   "palavra": "exige",
+   "inicio": 16.767,
+   "fim": 17.091
+  },
+  {
+   "palavra": "justificativa",
+   "inicio": 17.103,
+   "fim": 18.017
+  },
+  {
+   "palavra": "e",
+   "inicio": 18.029,
+   "fim": 18.113
+  },
+  {
+   "palavra": "a",
+   "inicio": 18.125,
+   "fim": 18.161
+  },
+  {
+   "palavra": "aprovação",
+   "inicio": 18.173,
+   "fim": 18.738
+  },
+  {
+   "palavra": "de",
+   "inicio": 18.75,
+   "fim": 18.81
+  },
+  {
+   "palavra": "um",
+   "inicio": 18.822,
+   "fim": 18.882
+  },
+  {
+   "palavra": "gerente",
+   "inicio": 18.894,
+   "fim": 19.303
+  },
+  {
+   "palavra": "que",
+   "inicio": 19.315,
+   "fim": 19.411
+  },
+  {
+   "palavra": "não",
+   "inicio": 19.423,
+   "fim": 19.603
+  },
+  {
+   "palavra": "fez",
+   "inicio": 19.615,
+   "fim": 19.82
+  },
+  {
+   "palavra": "a",
+   "inicio": 19.832,
+   "fim": 19.94
+  },
+  {
+   "palavra": "contagem",
+   "inicio": 19.952,
+   "fim": 20.541
+  }
+ ]
+}

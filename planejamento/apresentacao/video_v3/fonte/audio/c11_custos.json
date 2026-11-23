@@ -1,0 +1,180 @@
+{
+ "texto": "Com a ficha técnica e o custo médio de compra, o sistema calcula o custo e a margem de cada produto, em cada tamanho. É aqui que se descobre quais sabores dão lucro de verdade.",
+ "palavras": [
+  {
+   "palavra": "Com",
+   "inicio": 0.098,
+   "fim": 0.314
+  },
+  {
+   "palavra": "a",
+   "inicio": 0.326,
+   "fim": 0.387
+  },
+  {
+   "palavra": "ficha",
+   "inicio": 0.399,
+   "fim": 0.735
+  },
+  {
+   "palavra": "técnica",
+   "inicio": 0.747,
+   "fim": 1.168
+  },
+  {
+   "palavra": "e",
+   "inicio": 1.18,
+   "fim": 1.228
+  },
+  {
+   "palavra": "o",
+   "inicio": 1.24,
+   "fim": 1.3
+  },
+  {
+   "palavra": "custo",
+   "inicio": 1.312,
+   "fim": 1.661
+  },
+  {
+   "palavra": "médio",
+   "inicio": 1.673,
+   "fim": 1.961
+  },
+  {
+   "palavra": "de",
+   "inicio": 1.973,
+   "fim": 2.069
+  },
+  {
+   "palavra": "compra",
+   "inicio": 2.081,
+   "fim": 2.478
+  },
+  {
+   "palavra": "o",
+   "inicio": 2.79,
+   "fim": 2.875
+  },
+  {
+   "palavra": "sistema",
+   "inicio": 2.887,
+   "fim": 3.283
+  },
+  {
+   "palavra": "calcula",
+   "inicio": 3.295,
+   "fim": 3.716
+  },
+  {
+   "palavra": "o",
+   "inicio": 3.728,
+   "fim": 3.788
+  },
+  {
+   "palavra": "custo",
+   "inicio": 3.8,
+   "fim": 4.173
+  },
+  {
+   "palavra": "e",
+   "inicio": 4.185,
+   "fim": 4.233
+  },
+  {
+   "palavra": "a",
+   "inicio": 4.245,
+   "fim": 4.317
+  },
+  {
+   "palavra": "margem",
+   "inicio": 4.329,
+   "fim": 4.677
+  },
+  {
+   "palavra": "de",
+   "inicio": 4.689,
+   "fim": 4.81
+  },
+  {
+   "palavra": "cada",
+   "inicio": 4.822,
+   "fim": 5.038
+  },
+  {
+   "palavra": "produto",
+   "inicio": 5.05,
+   "fim": 5.543
+  },
+  {
+   "palavra": "em",
+   "inicio": 5.747,
+   "fim": 5.891
+  },
+  {
+   "palavra": "cada",
+   "inicio": 5.903,
+   "fim": 6.168
+  },
+  {
+   "palavra": "tamanho",
+   "inicio": 6.18,
+   "fim": 6.661
+  },
+  {
+   "palavra": "É",
+   "inicio": 7.488,
+   "fim": 7.62
+  },
+  {
+   "palavra": "aqui",
+   "inicio": 7.632,
+   "fim": 7.885
+  },
+  {
+   "palavra": "que",
+   "inicio": 7.897,
+   "fim": 7.993
+  },
+  {
+   "palavra": "se",
+   "inicio": 8.005,
+   "fim": 8.101
+  },
+  {
+   "palavra": "descobre",
+   "inicio": 8.113,
+   "fim": 8.642
+  },
+  {
+   "palavra": "quais",
+   "inicio": 8.654,
+   "fim": 8.882
+  },
+  {
+   "palavra": "sabores",
+   "inicio": 8.894,
+   "fim": 9.351
+  },
+  {
+   "palavra": "dão",
+   "inicio": 9.363,
+   "fim": 9.591
+  },
+  {
+   "palavra": "lucro",
+   "inicio": 9.603,
+   "fim": 9.916
+  },
+  {
+   "palavra": "de",
+   "inicio": 9.928,
+   "fim": 9.988
+  },
+  {
+   "palavra": "verdade",
+   "inicio": 10.0,
+   "fim": 10.553
+  }
+ ]
+}

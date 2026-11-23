@@ -1,0 +1,155 @@
+{
+ "texto": "A massa trabalha um passo à frente. A tela mostra quantas pizzas estão esperando e o saldo de massa aberta, por tamanho. Precisa de mais? Lança o lote, e pronto.",
+ "palavras": [
+  {
+   "palavra": "A",
+   "inicio": 0.098,
+   "fim": 0.194
+  },
+  {
+   "palavra": "massa",
+   "inicio": 0.206,
+   "fim": 0.555
+  },
+  {
+   "palavra": "trabalha",
+   "inicio": 0.567,
+   "fim": 0.951
+  },
+  {
+   "palavra": "um",
+   "inicio": 0.963,
+   "fim": 1.048
+  },
+  {
+   "palavra": "passo",
+   "inicio": 1.06,
+   "fim": 1.36
+  },
+  {
+   "palavra": "à",
+   "inicio": 1.372,
+   "fim": 1.408
+  },
+  {
+   "palavra": "frente",
+   "inicio": 1.42,
+   "fim": 1.877
+  },
+  {
+   "palavra": "A",
+   "inicio": 2.704,
+   "fim": 2.837
+  },
+  {
+   "palavra": "tela",
+   "inicio": 2.849,
+   "fim": 3.113
+  },
+  {
+   "palavra": "mostra",
+   "inicio": 3.125,
+   "fim": 3.534
+  },
+  {
+   "palavra": "quantas",
+   "inicio": 3.546,
+   "fim": 3.882
+  },
+  {
+   "palavra": "pizzas",
+   "inicio": 3.894,
+   "fim": 4.207
+  },
+  {
+   "palavra": "estão",
+   "inicio": 4.219,
+   "fim": 4.531
+  },
+  {
+   "palavra": "esperando",
+   "inicio": 4.543,
+   "fim": 5.06
+  },
+  {
+   "palavra": "e",
+   "inicio": 5.072,
+   "fim": 5.108
+  },
+  {
+   "palavra": "o",
+   "inicio": 5.12,
+   "fim": 5.18
+  },
+  {
+   "palavra": "saldo",
+   "inicio": 5.192,
+   "fim": 5.541
+  },
+  {
+   "palavra": "de",
+   "inicio": 5.553,
+   "fim": 5.649
+  },
+  {
+   "palavra": "massa",
+   "inicio": 5.661,
+   "fim": 5.949
+  },
+  {
+   "palavra": "aberta",
+   "inicio": 5.962,
+   "fim": 6.382
+  },
+  {
+   "palavra": "por",
+   "inicio": 6.551,
+   "fim": 6.695
+  },
+  {
+   "palavra": "tamanho",
+   "inicio": 6.707,
+   "fim": 7.2
+  },
+  {
+   "palavra": "Precisa",
+   "inicio": 8.029,
+   "fim": 8.498
+  },
+  {
+   "palavra": "de",
+   "inicio": 8.51,
+   "fim": 8.606
+  },
+  {
+   "palavra": "mais",
+   "inicio": 8.618,
+   "fim": 9.075
+  },
+  {
+   "palavra": "Lança",
+   "inicio": 9.904,
+   "fim": 10.337
+  },
+  {
+   "palavra": "o",
+   "inicio": 10.349,
+   "fim": 10.373
+  },
+  {
+   "palavra": "lote",
+   "inicio": 10.385,
+   "fim": 10.841
+  },
+  {
+   "palavra": "e",
+   "inicio": 11.07,
+   "fim": 11.178
+  },
+  {
+   "palavra": "pronto",
+   "inicio": 11.19,
+   "fim": 11.635
+  }
+ ]
+}

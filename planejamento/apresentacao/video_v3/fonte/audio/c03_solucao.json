@@ -1,0 +1,200 @@
+{
+ "texto": "Por isso nasceu o Sistema Integrado da Pizzaria. Um servidor dentro da loja. Um login por pessoa. Três áreas: Produção, Vendas e Administrativo. E cada pessoa vê exatamente o que precisa para o seu trabalho. Nem mais, nem menos.",
+ "palavras": [
+  {
+   "palavra": "Por",
+   "inicio": 0.098,
+   "fim": 0.29
+  },
+  {
+   "palavra": "isso",
+   "inicio": 0.302,
+   "fim": 0.591
+  },
+  {
+   "palavra": "nasceu",
+   "inicio": 0.603,
+   "fim": 0.951
+  },
+  {
+   "palavra": "o",
+   "inicio": 0.963,
+   "fim": 1.012
+  },
+  {
+   "palavra": "Sistema",
+   "inicio": 1.024,
+   "fim": 1.396
+  },
+  {
+   "palavra": "Integrado",
+   "inicio": 1.408,
+   "fim": 1.937
+  },
+  {
+   "palavra": "da",
+   "inicio": 1.949,
+   "fim": 2.069
+  },
+  {
+   "palavra": "Pizzaria",
+   "inicio": 2.081,
+   "fim": 2.766
+  },
+  {
+   "palavra": "Um",
+   "inicio": 3.594,
+   "fim": 3.75
+  },
+  {
+   "palavra": "servidor",
+   "inicio": 3.762,
+   "fim": 4.315
+  },
+  {
+   "palavra": "dentro",
+   "inicio": 4.327,
+   "fim": 4.663
+  },
+  {
+   "palavra": "da",
+   "inicio": 4.676,
+   "fim": 4.772
+  },
+  {
+   "palavra": "loja",
+   "inicio": 4.784,
+   "fim": 5.192
+  },
+  {
+   "palavra": "Um",
+   "inicio": 6.022,
+   "fim": 6.178
+  },
+  {
+   "palavra": "login",
+   "inicio": 6.19,
+   "fim": 6.526
+  },
+  {
+   "palavra": "por",
+   "inicio": 6.538,
+   "fim": 6.707
+  },
+  {
+   "palavra": "pessoa",
+   "inicio": 6.719,
+   "fim": 7.248
+  },
+  {
+   "palavra": "Três",
+   "inicio": 8.077,
+   "fim": 8.353
+  },
+  {
+   "palavra": "áreas",
+   "inicio": 8.365,
+   "fim": 8.858
+  },
+  {
+   "palavra": "Produção",
+   "inicio": 9.075,
+   "fim": 9.639
+  },
+  {
+   "palavra": "Vendas",
+   "inicio": 10.0,
+   "fim": 10.361
+  },
+  {
+   "palavra": "e",
+   "inicio": 10.373,
+   "fim": 10.493
+  },
+  {
+   "palavra": "Administrativo",
+   "inicio": 10.505,
+   "fim": 11.442
+  },
+  {
+   "palavra": "E",
+   "inicio": 12.272,
+   "fim": 12.392
+  },
+  {
+   "palavra": "cada",
+   "inicio": 12.404,
+   "fim": 12.68
+  },
+  {
+   "palavra": "pessoa",
+   "inicio": 12.692,
+   "fim": 13.089
+  },
+  {
+   "palavra": "vê",
+   "inicio": 13.101,
+   "fim": 13.221
+  },
+  {
+   "palavra": "exatamente",
+   "inicio": 13.233,
+   "fim": 13.858
+  },
+  {
+   "palavra": "o",
+   "inicio": 13.87,
+   "fim": 13.894
+  },
+  {
+   "palavra": "que",
+   "inicio": 13.906,
+   "fim": 14.002
+  },
+  {
+   "palavra": "precisa",
+   "inicio": 14.014,
+   "fim": 14.483
+  },
+  {
+   "palavra": "para",
+   "inicio": 14.495,
+   "fim": 14.663
+  },
+  {
+   "palavra": "o",
+   "inicio": 14.675,
+   "fim": 14.7
+  },
+  {
+   "palavra": "seu",
+   "inicio": 14.712,
+   "fim": 14.892
+  },
+  {
+   "palavra": "trabalho",
+   "inicio": 14.904,
+   "fim": 15.397
+  },
+  {
+   "palavra": "Nem",
+   "inicio": 16.226,
+   "fim": 16.502
+  },
+  {
+   "palavra": "mais",
+   "inicio": 16.514,
+   "fim": 16.971
+  },
+  {
+   "palavra": "nem",
+   "inicio": 17.188,
+   "fim": 17.476
+  },
+  {
+   "palavra": "menos",
+   "inicio": 17.488,
+   "fim": 17.969
+  }
+ ]
+}

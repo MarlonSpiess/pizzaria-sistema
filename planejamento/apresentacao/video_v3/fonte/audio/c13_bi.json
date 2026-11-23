@@ -1,0 +1,210 @@
+{
+ "texto": "E tudo isso vira informação. O painel do dia mostra vendas, ticket médio, tempo médio, perdas, diferença de caixa e o custo da mercadoria vendida no mês. Passou da meta? O alerta aparece sozinho. E ainda tem DRE, lucratividade e produção.",
+ "palavras": [
+  {
+   "palavra": "E",
+   "inicio": 0.098,
+   "fim": 0.218
+  },
+  {
+   "palavra": "tudo",
+   "inicio": 0.23,
+   "fim": 0.591
+  },
+  {
+   "palavra": "isso",
+   "inicio": 0.603,
+   "fim": 0.915
+  },
+  {
+   "palavra": "vira",
+   "inicio": 0.927,
+   "fim": 1.144
+  },
+  {
+   "palavra": "informação",
+   "inicio": 1.156,
+   "fim": 1.901
+  },
+  {
+   "palavra": "O",
+   "inicio": 2.728,
+   "fim": 2.849
+  },
+  {
+   "palavra": "painel",
+   "inicio": 2.861,
+   "fim": 3.269
+  },
+  {
+   "palavra": "do",
+   "inicio": 3.281,
+   "fim": 3.401
+  },
+  {
+   "palavra": "dia",
+   "inicio": 3.413,
+   "fim": 3.594
+  },
+  {
+   "palavra": "mostra",
+   "inicio": 3.606,
+   "fim": 4.038
+  },
+  {
+   "palavra": "vendas",
+   "inicio": 4.051,
+   "fim": 4.519
+  },
+  {
+   "palavra": "ticket",
+   "inicio": 4.784,
+   "fim": 5.192
+  },
+  {
+   "palavra": "médio",
+   "inicio": 5.204,
+   "fim": 5.601
+  },
+  {
+   "palavra": "tempo",
+   "inicio": 5.853,
+   "fim": 6.166
+  },
+  {
+   "palavra": "médio",
+   "inicio": 6.178,
+   "fim": 6.538
+  },
+  {
+   "palavra": "perdas",
+   "inicio": 6.791,
+   "fim": 7.248
+  },
+  {
+   "palavra": "diferença",
+   "inicio": 7.5,
+   "fim": 8.077
+  },
+  {
+   "palavra": "de",
+   "inicio": 8.089,
+   "fim": 8.209
+  },
+  {
+   "palavra": "caixa",
+   "inicio": 8.221,
+   "fim": 8.594
+  },
+  {
+   "palavra": "e",
+   "inicio": 8.606,
+   "fim": 8.642
+  },
+  {
+   "palavra": "o",
+   "inicio": 8.654,
+   "fim": 8.714
+  },
+  {
+   "palavra": "custo",
+   "inicio": 8.726,
+   "fim": 9.087
+  },
+  {
+   "palavra": "da",
+   "inicio": 9.099,
+   "fim": 9.183
+  },
+  {
+   "palavra": "mercadoria",
+   "inicio": 9.195,
+   "fim": 9.748
+  },
+  {
+   "palavra": "vendida",
+   "inicio": 9.76,
+   "fim": 10.18
+  },
+  {
+   "palavra": "no",
+   "inicio": 10.192,
+   "fim": 10.288
+  },
+  {
+   "palavra": "mês",
+   "inicio": 10.3,
+   "fim": 10.685
+  },
+  {
+   "palavra": "Passou",
+   "inicio": 11.514,
+   "fim": 11.899
+  },
+  {
+   "palavra": "da",
+   "inicio": 11.911,
+   "fim": 12.019
+  },
+  {
+   "palavra": "meta",
+   "inicio": 12.031,
+   "fim": 12.416
+  },
+  {
+   "palavra": "O",
+   "inicio": 13.245,
+   "fim": 13.353
+  },
+  {
+   "palavra": "alerta",
+   "inicio": 13.365,
+   "fim": 13.786
+  },
+  {
+   "palavra": "aparece",
+   "inicio": 13.798,
+   "fim": 14.183
+  },
+  {
+   "palavra": "sozinho",
+   "inicio": 14.195,
+   "fim": 14.76
+  },
+  {
+   "palavra": "E",
+   "inicio": 15.589,
+   "fim": 15.709
+  },
+  {
+   "palavra": "ainda",
+   "inicio": 15.721,
+   "fim": 16.022
+  },
+  {
+   "palavra": "tem",
+   "inicio": 16.034,
+   "fim": 16.202
+  },
+  {
+   "palavra": "DRE",
+   "inicio": 16.214,
+   "fim": 16.839
+  },
+  {
+   "palavra": "lucratividade",
+   "inicio": 17.127,
+   "fim": 17.957
+  },
+  {
+   "palavra": "e",
+   "inicio": 17.969,
+   "fim": 17.993
+  },
+  {
+   "palavra": "produção",
+   "inicio": 18.005,
+   "fim": 18.582
+  }
+ ]
+}

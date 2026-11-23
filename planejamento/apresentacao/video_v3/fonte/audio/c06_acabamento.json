@@ -1,0 +1,260 @@
+{
+ "texto": "No acabamento, a tela mostra a ocupação do forno e avisa se passar da capacidade. A pizza sai do forno, é acabada, e o sistema gera a etiqueta com o número do pedido. Repare: a tela do acabamento não mostra o valor do pedido. Quem não precisa ver dinheiro, não vê.",
+ "palavras": [
+  {
+   "palavra": "No",
+   "inicio": 0.098,
+   "fim": 0.23
+  },
+  {
+   "palavra": "acabamento",
+   "inicio": 0.242,
+   "fim": 0.927
+  },
+  {
+   "palavra": "a",
+   "inicio": 1.108,
+   "fim": 1.204
+  },
+  {
+   "palavra": "tela",
+   "inicio": 1.216,
+   "fim": 1.456
+  },
+  {
+   "palavra": "mostra",
+   "inicio": 1.468,
+   "fim": 1.889
+  },
+  {
+   "palavra": "a",
+   "inicio": 1.901,
+   "fim": 1.925
+  },
+  {
+   "palavra": "ocupação",
+   "inicio": 1.937,
+   "fim": 2.442
+  },
+  {
+   "palavra": "do",
+   "inicio": 2.454,
+   "fim": 2.538
+  },
+  {
+   "palavra": "forno",
+   "inicio": 2.55,
+   "fim": 2.959
+  },
+  {
+   "palavra": "e",
+   "inicio": 2.971,
+   "fim": 3.043
+  },
+  {
+   "palavra": "avisa",
+   "inicio": 3.055,
+   "fim": 3.463
+  },
+  {
+   "palavra": "se",
+   "inicio": 3.475,
+   "fim": 3.596
+  },
+  {
+   "palavra": "passar",
+   "inicio": 3.608,
+   "fim": 4.004
+  },
+  {
+   "palavra": "da",
+   "inicio": 4.016,
+   "fim": 4.137
+  },
+  {
+   "palavra": "capacidade",
+   "inicio": 4.149,
+   "fim": 4.918
+  },
+  {
+   "palavra": "A",
+   "inicio": 5.745,
+   "fim": 5.889
+  },
+  {
+   "palavra": "pizza",
+   "inicio": 5.901,
+   "fim": 6.238
+  },
+  {
+   "palavra": "sai",
+   "inicio": 6.25,
+   "fim": 6.454
+  },
+  {
+   "palavra": "do",
+   "inicio": 6.466,
+   "fim": 6.574
+  },
+  {
+   "palavra": "forno",
+   "inicio": 6.587,
+   "fim": 7.007
+  },
+  {
+   "palavra": "é",
+   "inicio": 7.139,
+   "fim": 7.248
+  },
+  {
+   "palavra": "acabada",
+   "inicio": 7.26,
+   "fim": 7.812
+  },
+  {
+   "palavra": "e",
+   "inicio": 8.065,
+   "fim": 8.161
+  },
+  {
+   "palavra": "o",
+   "inicio": 8.173,
+   "fim": 8.209
+  },
+  {
+   "palavra": "sistema",
+   "inicio": 8.221,
+   "fim": 8.726
+  },
+  {
+   "palavra": "gera",
+   "inicio": 8.738,
+   "fim": 9.002
+  },
+  {
+   "palavra": "a",
+   "inicio": 9.014,
+   "fim": 9.074
+  },
+  {
+   "palavra": "etiqueta",
+   "inicio": 9.087,
+   "fim": 9.603
+  },
+  {
+   "palavra": "com",
+   "inicio": 9.615,
+   "fim": 9.796
+  },
+  {
+   "palavra": "o",
+   "inicio": 9.808,
+   "fim": 9.832
+  },
+  {
+   "palavra": "número",
+   "inicio": 9.844,
+   "fim": 10.168
+  },
+  {
+   "palavra": "do",
+   "inicio": 10.18,
+   "fim": 10.264
+  },
+  {
+   "palavra": "pedido",
+   "inicio": 10.276,
+   "fim": 10.721
+  },
+  {
+   "palavra": "Repare",
+   "inicio": 11.55,
+   "fim": 12.103
+  },
+  {
+   "palavra": "a",
+   "inicio": 12.38,
+   "fim": 12.476
+  },
+  {
+   "palavra": "tela",
+   "inicio": 12.488,
+   "fim": 12.764
+  },
+  {
+   "palavra": "do",
+   "inicio": 12.776,
+   "fim": 12.873
+  },
+  {
+   "palavra": "acabamento",
+   "inicio": 12.885,
+   "fim": 13.534
+  },
+  {
+   "palavra": "não",
+   "inicio": 13.546,
+   "fim": 13.714
+  },
+  {
+   "palavra": "mostra",
+   "inicio": 13.726,
+   "fim": 14.135
+  },
+  {
+   "palavra": "o",
+   "inicio": 14.147,
+   "fim": 14.159
+  },
+  {
+   "palavra": "valor",
+   "inicio": 14.171,
+   "fim": 14.555
+  },
+  {
+   "palavra": "do",
+   "inicio": 14.567,
+   "fim": 14.651
+  },
+  {
+   "palavra": "pedido",
+   "inicio": 14.663,
+   "fim": 15.108
+  },
+  {
+   "palavra": "Quem",
+   "inicio": 15.938,
+   "fim": 16.13
+  },
+  {
+   "palavra": "não",
+   "inicio": 16.142,
+   "fim": 16.286
+  },
+  {
+   "palavra": "precisa",
+   "inicio": 16.298,
+   "fim": 16.683
+  },
+  {
+   "palavra": "ver",
+   "inicio": 16.695,
+   "fim": 16.887
+  },
+  {
+   "palavra": "dinheiro",
+   "inicio": 16.899,
+   "fim": 17.32
+  },
+  {
+   "palavra": "não",
+   "inicio": 17.524,
+   "fim": 17.752
+  },
+  {
+   "palavra": "vê",
+   "inicio": 17.764,
+   "fim": 18.005
+  }
+ ]
+}

@@ -1,0 +1,210 @@
+{
+ "texto": "Os próximos passos: a integração com o Anota Ai por API, já desenhada no sistema e aguardando o acesso oficial, com aceite automático dos pedidos. Depois, o iFood. Um computador na loja para o piloto. E a nuvem, quando fizer sentido.",
+ "palavras": [
+  {
+   "palavra": "Os",
+   "inicio": 0.098,
+   "fim": 0.29
+  },
+  {
+   "palavra": "próximos",
+   "inicio": 0.302,
+   "fim": 0.807
+  },
+  {
+   "palavra": "passos",
+   "inicio": 0.819,
+   "fim": 1.276
+  },
+  {
+   "palavra": "a",
+   "inicio": 1.576,
+   "fim": 1.649
+  },
+  {
+   "palavra": "integração",
+   "inicio": 1.661,
+   "fim": 2.31
+  },
+  {
+   "palavra": "com",
+   "inicio": 2.322,
+   "fim": 2.442
+  },
+  {
+   "palavra": "o",
+   "inicio": 2.454,
+   "fim": 2.502
+  },
+  {
+   "palavra": "Anota",
+   "inicio": 2.514,
+   "fim": 2.85
+  },
+  {
+   "palavra": "Ai",
+   "inicio": 2.862,
+   "fim": 2.947
+  },
+  {
+   "palavra": "por",
+   "inicio": 2.959,
+   "fim": 3.103
+  },
+  {
+   "palavra": "API",
+   "inicio": 3.115,
+   "fim": 3.608
+  },
+  {
+   "palavra": "já",
+   "inicio": 3.932,
+   "fim": 4.088
+  },
+  {
+   "palavra": "desenhada",
+   "inicio": 4.101,
+   "fim": 4.665
+  },
+  {
+   "palavra": "no",
+   "inicio": 4.677,
+   "fim": 4.774
+  },
+  {
+   "palavra": "sistema",
+   "inicio": 4.786,
+   "fim": 5.266
+  },
+  {
+   "palavra": "e",
+   "inicio": 5.278,
+   "fim": 5.338
+  },
+  {
+   "palavra": "aguardando",
+   "inicio": 5.351,
+   "fim": 5.843
+  },
+  {
+   "palavra": "o",
+   "inicio": 5.855,
+   "fim": 5.891
+  },
+  {
+   "palavra": "acesso",
+   "inicio": 5.903,
+   "fim": 6.288
+  },
+  {
+   "palavra": "oficial",
+   "inicio": 6.3,
+   "fim": 6.817
+  },
+  {
+   "palavra": "com",
+   "inicio": 7.117,
+   "fim": 7.286
+  },
+  {
+   "palavra": "aceite",
+   "inicio": 7.298,
+   "fim": 7.61
+  },
+  {
+   "palavra": "automático",
+   "inicio": 7.622,
+   "fim": 8.187
+  },
+  {
+   "palavra": "dos",
+   "inicio": 8.199,
+   "fim": 8.379
+  },
+  {
+   "palavra": "pedidos",
+   "inicio": 8.391,
+   "fim": 8.944
+  },
+  {
+   "palavra": "Depois",
+   "inicio": 9.772,
+   "fim": 10.385
+  },
+  {
+   "palavra": "o",
+   "inicio": 10.649,
+   "fim": 10.745
+  },
+  {
+   "palavra": "iFood",
+   "inicio": 10.757,
+   "fim": 11.31
+  },
+  {
+   "palavra": "Um",
+   "inicio": 12.139,
+   "fim": 12.272
+  },
+  {
+   "palavra": "computador",
+   "inicio": 12.284,
+   "fim": 12.897
+  },
+  {
+   "palavra": "na",
+   "inicio": 12.909,
+   "fim": 13.005
+  },
+  {
+   "palavra": "loja",
+   "inicio": 13.017,
+   "fim": 13.389
+  },
+  {
+   "palavra": "para",
+   "inicio": 13.401,
+   "fim": 13.534
+  },
+  {
+   "palavra": "o",
+   "inicio": 13.546,
+   "fim": 13.57
+  },
+  {
+   "palavra": "piloto",
+   "inicio": 13.582,
+   "fim": 14.05
+  },
+  {
+   "palavra": "E",
+   "inicio": 14.88,
+   "fim": 14.988
+  },
+  {
+   "palavra": "a",
+   "inicio": 15.0,
+   "fim": 15.072
+  },
+  {
+   "palavra": "nuvem",
+   "inicio": 15.084,
+   "fim": 15.457
+  },
+  {
+   "palavra": "quando",
+   "inicio": 15.625,
+   "fim": 15.865
+  },
+  {
+   "palavra": "fizer",
+   "inicio": 15.877,
+   "fim": 16.238
+  },
+  {
+   "palavra": "sentido",
+   "inicio": 16.25,
+   "fim": 16.815
+  }
+ ]
+}

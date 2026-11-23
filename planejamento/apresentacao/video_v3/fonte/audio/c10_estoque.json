@@ -1,0 +1,270 @@
+{
+ "texto": "Cada pizza produzida baixa o estoque pela ficha técnica, ingrediente por ingrediente. A calabresa ficou abaixo do mínimo? O alerta aparece. Com um toque, a gerente fecha a venda de todos os sabores que levam calabresa, e no balcão eles ficam bloqueados na hora. Ninguém vende o que a cozinha não consegue entregar.",
+ "palavras": [
+  {
+   "palavra": "Cada",
+   "inicio": 0.098,
+   "fim": 0.375
+  },
+  {
+   "palavra": "pizza",
+   "inicio": 0.387,
+   "fim": 0.771
+  },
+  {
+   "palavra": "produzida",
+   "inicio": 0.783,
+   "fim": 1.264
+  },
+  {
+   "palavra": "baixa",
+   "inicio": 1.276,
+   "fim": 1.588
+  },
+  {
+   "palavra": "o",
+   "inicio": 1.601,
+   "fim": 1.637
+  },
+  {
+   "palavra": "estoque",
+   "inicio": 1.649,
+   "fim": 2.057
+  },
+  {
+   "palavra": "pela",
+   "inicio": 2.069,
+   "fim": 2.298
+  },
+  {
+   "palavra": "ficha",
+   "inicio": 2.31,
+   "fim": 2.61
+  },
+  {
+   "palavra": "técnica",
+   "inicio": 2.622,
+   "fim": 3.079
+  },
+  {
+   "palavra": "ingrediente",
+   "inicio": 3.283,
+   "fim": 3.896
+  },
+  {
+   "palavra": "por",
+   "inicio": 3.908,
+   "fim": 4.028
+  },
+  {
+   "palavra": "ingrediente",
+   "inicio": 4.04,
+   "fim": 4.701
+  },
+  {
+   "palavra": "A",
+   "inicio": 5.529,
+   "fim": 5.625
+  },
+  {
+   "palavra": "calabresa",
+   "inicio": 5.637,
+   "fim": 6.25
+  },
+  {
+   "palavra": "ficou",
+   "inicio": 6.262,
+   "fim": 6.562
+  },
+  {
+   "palavra": "abaixo",
+   "inicio": 6.574,
+   "fim": 6.983
+  },
+  {
+   "palavra": "do",
+   "inicio": 6.995,
+   "fim": 7.079
+  },
+  {
+   "palavra": "mínimo",
+   "inicio": 7.091,
+   "fim": 7.5
+  },
+  {
+   "palavra": "O",
+   "inicio": 8.329,
+   "fim": 8.45
+  },
+  {
+   "palavra": "alerta",
+   "inicio": 8.462,
+   "fim": 8.882
+  },
+  {
+   "palavra": "aparece",
+   "inicio": 8.894,
+   "fim": 9.459
+  },
+  {
+   "palavra": "Com",
+   "inicio": 10.288,
+   "fim": 10.457
+  },
+  {
+   "palavra": "um",
+   "inicio": 10.469,
+   "fim": 10.565
+  },
+  {
+   "palavra": "toque",
+   "inicio": 10.577,
+   "fim": 10.925
+  },
+  {
+   "palavra": "a",
+   "inicio": 11.13,
+   "fim": 11.19
+  },
+  {
+   "palavra": "gerente",
+   "inicio": 11.202,
+   "fim": 11.574
+  },
+  {
+   "palavra": "fecha",
+   "inicio": 11.587,
+   "fim": 11.887
+  },
+  {
+   "palavra": "a",
+   "inicio": 11.899,
+   "fim": 11.923
+  },
+  {
+   "palavra": "venda",
+   "inicio": 11.935,
+   "fim": 12.236
+  },
+  {
+   "palavra": "de",
+   "inicio": 12.248,
+   "fim": 12.392
+  },
+  {
+   "palavra": "todos",
+   "inicio": 12.404,
+   "fim": 12.668
+  },
+  {
+   "palavra": "os",
+   "inicio": 12.68,
+   "fim": 12.812
+  },
+  {
+   "palavra": "sabores",
+   "inicio": 12.825,
+   "fim": 13.293
+  },
+  {
+   "palavra": "que",
+   "inicio": 13.305,
+   "fim": 13.413
+  },
+  {
+   "palavra": "levam",
+   "inicio": 13.425,
+   "fim": 13.714
+  },
+  {
+   "palavra": "calabresa",
+   "inicio": 13.726,
+   "fim": 14.315
+  },
+  {
+   "palavra": "e",
+   "inicio": 14.675,
+   "fim": 14.748
+  },
+  {
+   "palavra": "no",
+   "inicio": 14.76,
+   "fim": 14.844
+  },
+  {
+   "palavra": "balcão",
+   "inicio": 14.856,
+   "fim": 15.288
+  },
+  {
+   "palavra": "eles",
+   "inicio": 15.3,
+   "fim": 15.469
+  },
+  {
+   "palavra": "ficam",
+   "inicio": 15.481,
+   "fim": 15.745
+  },
+  {
+   "palavra": "bloqueados",
+   "inicio": 15.757,
+   "fim": 16.37
+  },
+  {
+   "palavra": "na",
+   "inicio": 16.382,
+   "fim": 16.49
+  },
+  {
+   "palavra": "hora",
+   "inicio": 16.502,
+   "fim": 16.779
+  },
+  {
+   "palavra": "Ninguém",
+   "inicio": 17.608,
+   "fim": 18.089
+  },
+  {
+   "palavra": "vende",
+   "inicio": 18.101,
+   "fim": 18.425
+  },
+  {
+   "palavra": "o",
+   "inicio": 18.438,
+   "fim": 18.462
+  },
+  {
+   "palavra": "que",
+   "inicio": 18.474,
+   "fim": 18.546
+  },
+  {
+   "palavra": "a",
+   "inicio": 18.558,
+   "fim": 18.606
+  },
+  {
+   "palavra": "cozinha",
+   "inicio": 18.618,
+   "fim": 19.002
+  },
+  {
+   "palavra": "não",
+   "inicio": 19.014,
+   "fim": 19.171
+  },
+  {
+   "palavra": "consegue",
+   "inicio": 19.183,
+   "fim": 19.663
+  },
+  {
+   "palavra": "entregar",
+   "inicio": 19.675,
+   "fim": 20.144
+  }
+ ]
+}

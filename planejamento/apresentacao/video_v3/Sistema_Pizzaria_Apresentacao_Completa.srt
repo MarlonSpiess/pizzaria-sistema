@@ -1,0 +1,464 @@
+1
+00:00:00,698 --> 00:00:02,735
+Sexta-feira, oito da noite.
+
+2
+00:00:03,412 --> 00:00:05,690
+O balcão enche, o telefone toca,
+
+3
+00:00:05,744 --> 00:00:07,637
+o aplicativo não para de apitar.
+
+4
+00:00:08,316 --> 00:00:10,930
+Numa pizzaria, cada minuto vale dinheiro.
+
+5
+00:00:11,610 --> 00:00:12,962
+E cada erro também.
+
+6
+00:00:14,531 --> 00:00:17,348
+Em muitas pizzarias, a operação ainda depende
+
+7
+00:00:17,368 --> 00:00:19,272
+de memória, papel e planilha.
+
+8
+00:00:19,950 --> 00:00:22,502
+Ninguém sabe, na hora, quanto custou cada
+
+9
+00:00:22,522 --> 00:00:24,475
+pizza, quanto sobrou no estoque,
+
+10
+00:00:24,577 --> 00:00:26,206
+ou por que o caixa não bateu.
+
+11
+00:00:27,764 --> 00:00:29,727
+Por isso nasceu o Sistema Integrado da
+
+12
+00:00:29,747 --> 00:00:30,582
+Pizzaria.
+
+13
+00:00:31,260 --> 00:00:33,008
+Um servidor dentro da loja.
+
+14
+00:00:33,688 --> 00:00:35,064
+Um login por pessoa.
+
+15
+00:00:35,743 --> 00:00:36,674
+Três áreas:
+
+16
+00:00:36,741 --> 00:00:39,258
+Produção, Vendas e Administrativo.
+
+17
+00:00:39,938 --> 00:00:42,321
+E cada pessoa vê exatamente o que precisa para
+
+18
+00:00:42,341 --> 00:00:43,213
+o seu trabalho.
+
+19
+00:00:43,892 --> 00:00:45,785
+Nem mais, nem menos.
+
+20
+00:00:47,364 --> 00:00:48,812
+Tudo começa no balcão.
+
+21
+00:00:49,490 --> 00:00:51,046
+O atendente monta o pedido:
+
+22
+00:00:51,148 --> 00:00:52,909
+uma grande, meio Margherita,
+
+23
+00:00:53,023 --> 00:00:55,685
+meio Quatro Queijos, com borda de Catupiry.
+
+24
+00:00:56,365 --> 00:00:58,738
+O sistema aplica a regra da casa sozinho:
+
+25
+00:00:58,865 --> 00:01:00,385
+na pizza de dois sabores,
+
+26
+00:01:00,463 --> 00:01:02,152
+metade do preço de cada um.
+
+27
+00:01:02,831 --> 00:01:05,817
+Pagamento no Pix, pedido marcado como urgente,
+
+28
+00:01:05,860 --> 00:01:08,810
+confirmado, e ele já recebe o número do dia.
+
+29
+00:01:10,364 --> 00:01:13,024
+No mesmo instante, o pedido chega ao tablet do
+
+30
+00:01:13,044 --> 00:01:13,807
+pizzaiolo.
+
+31
+00:01:14,485 --> 00:01:15,789
+Ele não procura nada.
+
+32
+00:01:16,468 --> 00:01:18,204
+Toca em pegar a próxima pizza,
+
+33
+00:01:18,307 --> 00:01:20,248
+e o sistema entrega a próxima da fila,
+
+34
+00:01:20,386 --> 00:01:23,325
+com o urgente na frente, com sabores e borda.
+
+35
+00:01:24,004 --> 00:01:24,683
+Montou?
+
+36
+00:01:25,362 --> 00:01:27,952
+Um toque, e a pizza segue para o forno.
+
+37
+00:01:29,530 --> 00:01:31,962
+No acabamento, a tela mostra a ocupação do
+
+38
+00:01:31,982 --> 00:01:34,500
+forno e avisa se passar da capacidade.
+
+39
+00:01:35,177 --> 00:01:37,394
+A pizza sai do forno, é acabada,
+
+40
+00:01:37,497 --> 00:01:39,688
+e o sistema gera a etiqueta com o número do
+
+41
+00:01:39,708 --> 00:01:40,303
+pedido.
+
+42
+00:01:40,982 --> 00:01:41,685
+Repare:
+
+43
+00:01:41,812 --> 00:01:44,075
+a tela do acabamento não mostra o valor do
+
+44
+00:01:44,095 --> 00:01:44,690
+pedido.
+
+45
+00:01:45,370 --> 00:01:46,902
+Quem não precisa ver dinheiro,
+
+46
+00:01:46,956 --> 00:01:47,587
+não vê.
+
+47
+00:01:49,163 --> 00:01:51,092
+A massa trabalha um passo à frente.
+
+48
+00:01:51,769 --> 00:01:54,165
+A tela mostra quantas pizzas estão esperando e
+
+49
+00:01:54,185 --> 00:01:56,415
+o saldo de massa aberta, por tamanho.
+
+50
+00:01:57,094 --> 00:01:58,290
+Precisa de mais?
+
+51
+00:01:58,969 --> 00:02:00,850
+Lança o lote, e pronto.
+
+52
+00:02:02,429 --> 00:02:04,442
+E esse controle não é só visual.
+
+53
+00:02:05,119 --> 00:02:07,265
+Cada permissão é conferida no servidor,
+
+54
+00:02:07,367 --> 00:02:08,406
+em cada chamada.
+
+55
+00:02:09,086 --> 00:02:11,928
+São oito perfis e cinquenta e cinco permissões.
+
+56
+00:02:12,607 --> 00:02:14,512
+O pizzaiolo enxerga a montagem.
+
+57
+00:02:15,192 --> 00:02:17,349
+A gerente enxerga a operação inteira.
+
+58
+00:02:18,929 --> 00:02:21,795
+Pedido pronto, o despacho escolhe o entregador,
+
+59
+00:02:21,982 --> 00:02:24,295
+e só despacha com o caixa do dia aberto.
+
+60
+00:02:24,973 --> 00:02:27,310
+No fim da noite, a contagem é cega:
+
+61
+00:02:27,461 --> 00:02:29,318
+o caixa informa o que tem na gaveta,
+
+62
+00:02:29,420 --> 00:02:30,868
+no Pix e nas maquininhas,
+
+63
+00:02:30,958 --> 00:02:33,296
+e só depois o sistema revela o esperado.
+
+64
+00:02:33,975 --> 00:02:35,914
+Diferença acima da tolerância exige
+
+65
+00:02:35,934 --> 00:02:38,234
+justificativa e a aprovação de um gerente que
+
+66
+00:02:38,254 --> 00:02:39,522
+não fez a contagem.
+
+67
+00:02:41,095 --> 00:02:43,287
+Cada pizza produzida baixa o estoque pela
+
+68
+00:02:43,307 --> 00:02:45,848
+ficha técnica, ingrediente por ingrediente.
+
+69
+00:02:46,526 --> 00:02:48,647
+A calabresa ficou abaixo do mínimo?
+
+70
+00:02:49,326 --> 00:02:50,606
+O alerta aparece.
+
+71
+00:02:51,285 --> 00:02:53,657
+Com um toque, a gerente fecha a venda de todos
+
+72
+00:02:53,677 --> 00:02:55,462
+os sabores que levam calabresa,
+
+73
+00:02:55,672 --> 00:02:57,926
+e no balcão eles ficam bloqueados na hora.
+
+74
+00:02:58,605 --> 00:03:00,652
+Ninguém vende o que a cozinha não consegue
+
+75
+00:03:00,672 --> 00:03:01,291
+entregar.
+
+76
+00:03:02,861 --> 00:03:05,391
+Com a ficha técnica e o custo médio de compra,
+
+77
+00:03:05,553 --> 00:03:07,793
+o sistema calcula o custo e a margem de cada
+
+78
+00:03:07,813 --> 00:03:09,574
+produto, em cada tamanho.
+
+79
+00:03:10,251 --> 00:03:12,671
+É aqui que se descobre quais sabores dão lucro
+
+80
+00:03:12,691 --> 00:03:13,466
+de verdade.
+
+81
+00:03:15,027 --> 00:03:17,028
+A rotina também está no sistema.
+
+82
+00:03:17,705 --> 00:03:19,394
+Os checklists de início do dia,
+
+83
+00:03:19,532 --> 00:03:21,688
+acompanhamento e fechamento guiam a equipe
+
+84
+00:03:21,708 --> 00:03:24,164
+item por item, com limite de temperatura da
+
+85
+00:03:24,184 --> 00:03:25,644
+câmara fria e do freezer.
+
+86
+00:03:26,323 --> 00:03:28,613
+Item fora do padrão pede ação corretiva,
+
+87
+00:03:28,727 --> 00:03:30,536
+e a gerência acompanha a aderência.
+
+88
+00:03:32,093 --> 00:03:34,046
+E tudo isso vira informação.
+
+89
+00:03:34,723 --> 00:03:36,664
+O painel do dia mostra vendas,
+
+90
+00:03:36,779 --> 00:03:38,683
+ticket médio, tempo médio,
+
+91
+00:03:38,786 --> 00:03:41,170
+perdas, diferença de caixa e o custo da
+
+92
+00:03:41,190 --> 00:03:42,830
+mercadoria vendida no mês.
+
+93
+00:03:43,509 --> 00:03:44,561
+Passou da meta?
+
+94
+00:03:45,240 --> 00:03:46,905
+O alerta aparece sozinho.
+
+95
+00:03:47,584 --> 00:03:50,727
+E ainda tem DRE, lucratividade e produção.
+
+96
+00:03:52,293 --> 00:03:54,857
+Os números do projeto, contados direto do
+
+97
+00:03:54,877 --> 00:03:55,472
+código:
+
+98
+00:03:55,658 --> 00:03:57,756
+vinte e quatro versões do banco de dados,
+
+99
+00:03:57,894 --> 00:04:00,566
+cento e dez tabelas, duzentas e setenta rotas
+
+100
+00:04:00,586 --> 00:04:02,742
+de API e trezentos e setenta e quatro testes
+
+101
+00:04:02,762 --> 00:04:04,967
+automatizados, todos passando.
+
+102
+00:04:05,645 --> 00:04:07,728
+E cada entrega de código passa por dois
+
+103
+00:04:07,748 --> 00:04:09,328
+revisores independentes.
+
+104
+00:04:10,893 --> 00:04:12,221
+Os próximos passos:
+
+105
+00:04:12,371 --> 00:04:14,553
+a integração com o Anota Ai por API,
+
+106
+00:04:14,727 --> 00:04:17,075
+já desenhada no sistema e aguardando o acesso
+
+107
+00:04:17,095 --> 00:04:19,889
+oficial, com aceite automático dos pedidos.
+
+108
+00:04:20,567 --> 00:04:22,255
+Depois, o iFood.
+
+109
+00:04:22,934 --> 00:04:24,995
+Um computador na loja para o piloto.
+
+110
+00:04:25,675 --> 00:04:27,760
+E a nuvem, quando fizer sentido.
+
+111
+00:04:29,326 --> 00:04:31,686
+O sistema já funciona e já foi testado em
+
+112
+00:04:31,706 --> 00:04:32,385
+tablet.
+
+113
+00:04:33,062 --> 00:04:34,534
+O que falta é uma decisão:
+
+114
+00:04:34,601 --> 00:04:36,457
+aprovar o piloto na pizzaria.
+
+115
+00:04:37,137 --> 00:04:39,186
+Sistema Integrado da Pizzaria.
+
+116
+00:04:39,865 --> 00:04:42,647
+Cada pizza, cada real, sob controle.
+
