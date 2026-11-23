@@ -1,0 +1,248 @@
+1
+00:00:00,698 --> 00:00:02,735
+Sexta-feira, oito da noite.
+
+2
+00:00:03,412 --> 00:00:05,690
+O balcão enche, o telefone toca,
+
+3
+00:00:05,744 --> 00:00:07,637
+o aplicativo não para de apitar.
+
+4
+00:00:08,316 --> 00:00:10,930
+Numa pizzaria, cada minuto vale dinheiro.
+
+5
+00:00:11,610 --> 00:00:12,962
+E cada erro também.
+
+6
+00:00:14,531 --> 00:00:16,494
+Por isso nasceu o Sistema Integrado da
+
+7
+00:00:16,514 --> 00:00:17,349
+Pizzaria.
+
+8
+00:00:18,027 --> 00:00:19,775
+Um servidor dentro da loja.
+
+9
+00:00:20,455 --> 00:00:21,831
+Um login por pessoa.
+
+10
+00:00:22,510 --> 00:00:23,441
+Três áreas:
+
+11
+00:00:23,508 --> 00:00:26,025
+Produção, Vendas e Administrativo.
+
+12
+00:00:26,705 --> 00:00:29,088
+E cada pessoa vê exatamente o que precisa para
+
+13
+00:00:29,108 --> 00:00:29,980
+o seu trabalho.
+
+14
+00:00:30,659 --> 00:00:32,552
+Nem mais, nem menos.
+
+15
+00:00:34,131 --> 00:00:35,579
+Tudo começa no balcão.
+
+16
+00:00:36,257 --> 00:00:37,813
+O atendente monta o pedido:
+
+17
+00:00:37,915 --> 00:00:39,676
+uma grande, meio Margherita,
+
+18
+00:00:39,790 --> 00:00:42,452
+meio Quatro Queijos, com borda de Catupiry.
+
+19
+00:00:43,132 --> 00:00:45,505
+O sistema aplica a regra da casa sozinho:
+
+20
+00:00:45,632 --> 00:00:47,152
+na pizza de dois sabores,
+
+21
+00:00:47,230 --> 00:00:48,919
+metade do preço de cada um.
+
+22
+00:00:49,598 --> 00:00:52,584
+Pagamento no Pix, pedido marcado como urgente,
+
+23
+00:00:52,627 --> 00:00:55,577
+confirmado, e ele já recebe o número do dia.
+
+24
+00:00:57,131 --> 00:00:59,791
+No mesmo instante, o pedido chega ao tablet do
+
+25
+00:00:59,811 --> 00:01:00,574
+pizzaiolo.
+
+26
+00:01:01,252 --> 00:01:02,556
+Ele não procura nada.
+
+27
+00:01:03,235 --> 00:01:04,971
+Toca em pegar a próxima pizza,
+
+28
+00:01:05,074 --> 00:01:07,015
+e o sistema entrega a próxima da fila,
+
+29
+00:01:07,153 --> 00:01:10,092
+com o urgente na frente, com sabores e borda.
+
+30
+00:01:10,771 --> 00:01:11,450
+Montou?
+
+31
+00:01:12,129 --> 00:01:14,719
+Um toque, e a pizza segue para o forno.
+
+32
+00:01:16,297 --> 00:01:18,489
+Cada pizza produzida baixa o estoque pela
+
+33
+00:01:18,509 --> 00:01:21,050
+ficha técnica, ingrediente por ingrediente.
+
+34
+00:01:21,728 --> 00:01:23,849
+A calabresa ficou abaixo do mínimo?
+
+35
+00:01:24,528 --> 00:01:25,808
+O alerta aparece.
+
+36
+00:01:26,487 --> 00:01:28,859
+Com um toque, a gerente fecha a venda de todos
+
+37
+00:01:28,879 --> 00:01:30,664
+os sabores que levam calabresa,
+
+38
+00:01:30,874 --> 00:01:33,128
+e no balcão eles ficam bloqueados na hora.
+
+39
+00:01:33,807 --> 00:01:35,854
+Ninguém vende o que a cozinha não consegue
+
+40
+00:01:35,874 --> 00:01:36,493
+entregar.
+
+41
+00:01:38,063 --> 00:01:40,016
+E tudo isso vira informação.
+
+42
+00:01:40,693 --> 00:01:42,634
+O painel do dia mostra vendas,
+
+43
+00:01:42,749 --> 00:01:44,653
+ticket médio, tempo médio,
+
+44
+00:01:44,756 --> 00:01:47,140
+perdas, diferença de caixa e o custo da
+
+45
+00:01:47,160 --> 00:01:48,800
+mercadoria vendida no mês.
+
+46
+00:01:49,479 --> 00:01:50,531
+Passou da meta?
+
+47
+00:01:51,210 --> 00:01:52,875
+O alerta aparece sozinho.
+
+48
+00:01:53,554 --> 00:01:56,697
+E ainda tem DRE, lucratividade e produção.
+
+49
+00:01:58,263 --> 00:02:00,827
+Os números do projeto, contados direto do
+
+50
+00:02:00,847 --> 00:02:01,442
+código:
+
+51
+00:02:01,628 --> 00:02:03,726
+vinte e quatro versões do banco de dados,
+
+52
+00:02:03,864 --> 00:02:06,536
+cento e dez tabelas, duzentas e setenta rotas
+
+53
+00:02:06,556 --> 00:02:08,712
+de API e trezentos e setenta e quatro testes
+
+54
+00:02:08,732 --> 00:02:10,937
+automatizados, todos passando.
+
+55
+00:02:11,615 --> 00:02:13,698
+E cada entrega de código passa por dois
+
+56
+00:02:13,718 --> 00:02:15,298
+revisores independentes.
+
+57
+00:02:16,863 --> 00:02:19,223
+O sistema já funciona e já foi testado em
+
+58
+00:02:19,243 --> 00:02:19,922
+tablet.
+
+59
+00:02:20,599 --> 00:02:22,071
+O que falta é uma decisão:
+
+60
+00:02:22,138 --> 00:02:23,994
+aprovar o piloto na pizzaria.
+
+61
+00:02:24,674 --> 00:02:26,723
+Sistema Integrado da Pizzaria.
+
+62
+00:02:27,402 --> 00:02:30,184
+Cada pizza, cada real, sob controle.
+
