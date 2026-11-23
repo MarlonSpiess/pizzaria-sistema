@@ -1,0 +1,225 @@
+{
+ "texto": "A rotina também está no sistema. Os checklists de início do dia, acompanhamento e fechamento guiam a equipe item por item, com limite de temperatura da câmara fria e do freezer. Item fora do padrão pede ação corretiva, e a gerência acompanha a aderência.",
+ "palavras": [
+  {
+   "palavra": "A",
+   "inicio": 0.098,
+   "fim": 0.194
+  },
+  {
+   "palavra": "rotina",
+   "inicio": 0.206,
+   "fim": 0.651
+  },
+  {
+   "palavra": "também",
+   "inicio": 0.663,
+   "fim": 1.036
+  },
+  {
+   "palavra": "está",
+   "inicio": 1.048,
+   "fim": 1.276
+  },
+  {
+   "palavra": "no",
+   "inicio": 1.288,
+   "fim": 1.372
+  },
+  {
+   "palavra": "sistema",
+   "inicio": 1.384,
+   "fim": 1.949
+  },
+  {
+   "palavra": "Os",
+   "inicio": 2.776,
+   "fim": 2.933
+  },
+  {
+   "palavra": "checklists",
+   "inicio": 2.945,
+   "fim": 3.449
+  },
+  {
+   "palavra": "de",
+   "inicio": 3.462,
+   "fim": 3.522
+  },
+  {
+   "palavra": "início",
+   "inicio": 3.534,
+   "fim": 3.882
+  },
+  {
+   "palavra": "do",
+   "inicio": 3.894,
+   "fim": 4.014
+  },
+  {
+   "palavra": "dia",
+   "inicio": 4.026,
+   "fim": 4.315
+  },
+  {
+   "palavra": "acompanhamento",
+   "inicio": 4.603,
+   "fim": 5.409
+  },
+  {
+   "palavra": "e",
+   "inicio": 5.421,
+   "fim": 5.445
+  },
+  {
+   "palavra": "fechamento",
+   "inicio": 5.457,
+   "fim": 5.998
+  },
+  {
+   "palavra": "guiam",
+   "inicio": 6.01,
+   "fim": 6.31
+  },
+  {
+   "palavra": "a",
+   "inicio": 6.322,
+   "fim": 6.358
+  },
+  {
+   "palavra": "equipe",
+   "inicio": 6.37,
+   "fim": 6.767
+  },
+  {
+   "palavra": "item",
+   "inicio": 6.779,
+   "fim": 7.019
+  },
+  {
+   "palavra": "por",
+   "inicio": 7.031,
+   "fim": 7.2
+  },
+  {
+   "palavra": "item",
+   "inicio": 7.212,
+   "fim": 7.5
+  },
+  {
+   "palavra": "com",
+   "inicio": 7.812,
+   "fim": 7.993
+  },
+  {
+   "palavra": "limite",
+   "inicio": 8.005,
+   "fim": 8.389
+  },
+  {
+   "palavra": "de",
+   "inicio": 8.401,
+   "fim": 8.498
+  },
+  {
+   "palavra": "temperatura",
+   "inicio": 8.51,
+   "fim": 9.123
+  },
+  {
+   "palavra": "da",
+   "inicio": 9.135,
+   "fim": 9.243
+  },
+  {
+   "palavra": "câmara",
+   "inicio": 9.255,
+   "fim": 9.639
+  },
+  {
+   "palavra": "fria",
+   "inicio": 9.651,
+   "fim": 9.952
+  },
+  {
+   "palavra": "e",
+   "inicio": 9.964,
+   "fim": 10.0
+  },
+  {
+   "palavra": "do",
+   "inicio": 10.012,
+   "fim": 10.12
+  },
+  {
+   "palavra": "freezer",
+   "inicio": 10.132,
+   "fim": 10.565
+  },
+  {
+   "palavra": "Item",
+   "inicio": 11.394,
+   "fim": 11.695
+  },
+  {
+   "palavra": "fora",
+   "inicio": 11.707,
+   "fim": 11.983
+  },
+  {
+   "palavra": "do",
+   "inicio": 11.995,
+   "fim": 12.079
+  },
+  {
+   "palavra": "padrão",
+   "inicio": 12.091,
+   "fim": 12.416
+  },
+  {
+   "palavra": "pede",
+   "inicio": 12.428,
+   "fim": 12.608
+  },
+  {
+   "palavra": "ação",
+   "inicio": 12.62,
+   "fim": 12.873
+  },
+  {
+   "palavra": "corretiva",
+   "inicio": 12.885,
+   "fim": 13.534
+  },
+  {
+   "palavra": "e",
+   "inicio": 13.798,
+   "fim": 13.87
+  },
+  {
+   "palavra": "a",
+   "inicio": 13.882,
+   "fim": 13.942
+  },
+  {
+   "palavra": "gerência",
+   "inicio": 13.954,
+   "fim": 14.411
+  },
+  {
+   "palavra": "acompanha",
+   "inicio": 14.423,
+   "fim": 14.904
+  },
+  {
+   "palavra": "a",
+   "inicio": 14.916,
+   "fim": 14.928
+  },
+  {
+   "palavra": "aderência",
+   "inicio": 14.94,
+   "fim": 15.457
+  }
+ ]
+}

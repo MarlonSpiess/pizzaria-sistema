@@ -1,0 +1,235 @@
+{
+ "texto": "Os números do projeto, contados direto do código: vinte e quatro versões do banco de dados, cento e dez tabelas, duzentas e setenta rotas de API e trezentos e setenta e quatro testes automatizados, todos passando. E cada entrega de código passa por dois revisores independentes.",
+ "palavras": [
+  {
+   "palavra": "Os",
+   "inicio": 0.098,
+   "fim": 0.29
+  },
+  {
+   "palavra": "números",
+   "inicio": 0.302,
+   "fim": 0.675
+  },
+  {
+   "palavra": "do",
+   "inicio": 0.687,
+   "fim": 0.783
+  },
+  {
+   "palavra": "projeto",
+   "inicio": 0.795,
+   "fim": 1.336
+  },
+  {
+   "palavra": "contados",
+   "inicio": 1.613,
+   "fim": 2.213
+  },
+  {
+   "palavra": "direto",
+   "inicio": 2.225,
+   "fim": 2.562
+  },
+  {
+   "palavra": "do",
+   "inicio": 2.574,
+   "fim": 2.67
+  },
+  {
+   "palavra": "código",
+   "inicio": 2.682,
+   "fim": 3.127
+  },
+  {
+   "palavra": "vinte",
+   "inicio": 3.463,
+   "fim": 3.704
+  },
+  {
+   "palavra": "e",
+   "inicio": 3.716,
+   "fim": 3.728
+  },
+  {
+   "palavra": "quatro",
+   "inicio": 3.74,
+   "fim": 4.028
+  },
+  {
+   "palavra": "versões",
+   "inicio": 4.04,
+   "fim": 4.437
+  },
+  {
+   "palavra": "do",
+   "inicio": 4.449,
+   "fim": 4.545
+  },
+  {
+   "palavra": "banco",
+   "inicio": 4.557,
+   "fim": 4.858
+  },
+  {
+   "palavra": "de",
+   "inicio": 4.87,
+   "fim": 4.978
+  },
+  {
+   "palavra": "dados",
+   "inicio": 4.99,
+   "fim": 5.411
+  },
+  {
+   "palavra": "cento",
+   "inicio": 5.699,
+   "fim": 6.024
+  },
+  {
+   "palavra": "e",
+   "inicio": 6.036,
+   "fim": 6.072
+  },
+  {
+   "palavra": "dez",
+   "inicio": 6.084,
+   "fim": 6.264
+  },
+  {
+   "palavra": "tabelas",
+   "inicio": 6.276,
+   "fim": 6.805
+  },
+  {
+   "palavra": "duzentas",
+   "inicio": 7.009,
+   "fim": 7.538
+  },
+  {
+   "palavra": "e",
+   "inicio": 7.55,
+   "fim": 7.646
+  },
+  {
+   "palavra": "setenta",
+   "inicio": 7.658,
+   "fim": 8.019
+  },
+  {
+   "palavra": "rotas",
+   "inicio": 8.031,
+   "fim": 8.379
+  },
+  {
+   "palavra": "de",
+   "inicio": 8.391,
+   "fim": 8.463
+  },
+  {
+   "palavra": "API",
+   "inicio": 8.476,
+   "fim": 8.872
+  },
+  {
+   "palavra": "e",
+   "inicio": 8.884,
+   "fim": 8.944
+  },
+  {
+   "palavra": "trezentos",
+   "inicio": 8.956,
+   "fim": 9.449
+  },
+  {
+   "palavra": "e",
+   "inicio": 9.461,
+   "fim": 9.557
+  },
+  {
+   "palavra": "setenta",
+   "inicio": 9.569,
+   "fim": 9.858
+  },
+  {
+   "palavra": "e",
+   "inicio": 9.87,
+   "fim": 9.894
+  },
+  {
+   "palavra": "quatro",
+   "inicio": 9.906,
+   "fim": 10.242
+  },
+  {
+   "palavra": "testes",
+   "inicio": 10.254,
+   "fim": 10.555
+  },
+  {
+   "palavra": "automatizados",
+   "inicio": 10.567,
+   "fim": 11.492
+  },
+  {
+   "palavra": "todos",
+   "inicio": 11.721,
+   "fim": 12.081
+  },
+  {
+   "palavra": "passando",
+   "inicio": 12.093,
+   "fim": 12.622
+  },
+  {
+   "palavra": "E",
+   "inicio": 13.45,
+   "fim": 13.582
+  },
+  {
+   "palavra": "cada",
+   "inicio": 13.594,
+   "fim": 13.81
+  },
+  {
+   "palavra": "entrega",
+   "inicio": 13.822,
+   "fim": 14.207
+  },
+  {
+   "palavra": "de",
+   "inicio": 14.219,
+   "fim": 14.315
+  },
+  {
+   "palavra": "código",
+   "inicio": 14.327,
+   "fim": 14.699
+  },
+  {
+   "palavra": "passa",
+   "inicio": 14.712,
+   "fim": 15.024
+  },
+  {
+   "palavra": "por",
+   "inicio": 15.036,
+   "fim": 15.216
+  },
+  {
+   "palavra": "dois",
+   "inicio": 15.228,
+   "fim": 15.541
+  },
+  {
+   "palavra": "revisores",
+   "inicio": 15.553,
+   "fim": 16.058
+  },
+  {
+   "palavra": "independentes",
+   "inicio": 16.07,
+   "fim": 16.983
+  }
+ ]
+}

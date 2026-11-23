@@ -1,0 +1,160 @@
+{
+ "texto": "Em muitas pizzarias, a operação ainda depende de memória, papel e planilha. Ninguém sabe, na hora, quanto custou cada pizza, quanto sobrou no estoque, ou por que o caixa não bateu.",
+ "palavras": [
+  {
+   "palavra": "Em",
+   "inicio": 0.098,
+   "fim": 0.254
+  },
+  {
+   "palavra": "muitas",
+   "inicio": 0.266,
+   "fim": 0.699
+  },
+  {
+   "palavra": "pizzarias",
+   "inicio": 0.711,
+   "fim": 1.348
+  },
+  {
+   "palavra": "a",
+   "inicio": 1.552,
+   "fim": 1.637
+  },
+  {
+   "palavra": "operação",
+   "inicio": 1.649,
+   "fim": 2.225
+  },
+  {
+   "palavra": "ainda",
+   "inicio": 2.237,
+   "fim": 2.466
+  },
+  {
+   "palavra": "depende",
+   "inicio": 2.478,
+   "fim": 2.923
+  },
+  {
+   "palavra": "de",
+   "inicio": 2.935,
+   "fim": 2.995
+  },
+  {
+   "palavra": "memória",
+   "inicio": 3.007,
+   "fim": 3.439
+  },
+  {
+   "palavra": "papel",
+   "inicio": 3.692,
+   "fim": 4.1
+  },
+  {
+   "palavra": "e",
+   "inicio": 4.112,
+   "fim": 4.173
+  },
+  {
+   "palavra": "planilha",
+   "inicio": 4.185,
+   "fim": 4.689
+  },
+  {
+   "palavra": "Ninguém",
+   "inicio": 5.517,
+   "fim": 5.937
+  },
+  {
+   "palavra": "sabe",
+   "inicio": 5.949,
+   "fim": 6.322
+  },
+  {
+   "palavra": "na",
+   "inicio": 6.551,
+   "fim": 6.707
+  },
+  {
+   "palavra": "hora",
+   "inicio": 6.719,
+   "fim": 6.959
+  },
+  {
+   "palavra": "quanto",
+   "inicio": 7.176,
+   "fim": 7.44
+  },
+  {
+   "palavra": "custou",
+   "inicio": 7.452,
+   "fim": 7.8
+  },
+  {
+   "palavra": "cada",
+   "inicio": 7.812,
+   "fim": 8.077
+  },
+  {
+   "palavra": "pizza",
+   "inicio": 8.089,
+   "fim": 8.498
+  },
+  {
+   "palavra": "quanto",
+   "inicio": 8.75,
+   "fim": 9.014
+  },
+  {
+   "palavra": "sobrou",
+   "inicio": 9.026,
+   "fim": 9.315
+  },
+  {
+   "palavra": "no",
+   "inicio": 9.327,
+   "fim": 9.411
+  },
+  {
+   "palavra": "estoque",
+   "inicio": 9.423,
+   "fim": 9.892
+  },
+  {
+   "palavra": "ou",
+   "inicio": 10.144,
+   "fim": 10.276
+  },
+  {
+   "palavra": "por",
+   "inicio": 10.288,
+   "fim": 10.457
+  },
+  {
+   "palavra": "que",
+   "inicio": 10.469,
+   "fim": 10.589
+  },
+  {
+   "palavra": "o",
+   "inicio": 10.601,
+   "fim": 10.673
+  },
+  {
+   "palavra": "caixa",
+   "inicio": 10.685,
+   "fim": 11.046
+  },
+  {
+   "palavra": "não",
+   "inicio": 11.058,
+   "fim": 11.214
+  },
+  {
+   "palavra": "bateu",
+   "inicio": 11.226,
+   "fim": 11.623
+  }
+ ]
+}
