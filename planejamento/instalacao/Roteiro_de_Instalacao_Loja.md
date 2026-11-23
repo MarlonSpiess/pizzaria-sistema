@@ -61,7 +61,9 @@ A senha do administrador é pedida sem eco e deve ser trocada no primeiro acesso
 start_api.bat
 ```
 
-A janela precisa ficar aberta. Para abrir sozinho ao ligar o PC, criar uma tarefa no Agendador de Tarefas do Windows, "ao iniciar", executando `start_api.bat` na pasta `sistema`.
+O `start_api.bat` usa sozinho o Python de `sistema\venv`, sem precisar ativar o venv antes (desde 23/11/2026). Se o venv não existir, ele avisa e usa o `python` do PATH, que normalmente falha por falta de módulo (por exemplo, `psycopg_pool`).
+
+A janela precisa ficar aberta. Para abrir sozinho ao ligar o PC, criar uma tarefa no Agendador de Tarefas do Windows, "ao iniciar", executando `start_api.bat` na pasta `sistema`. Na tarefa, marcar "Atrasar a tarefa por 1 minuto", para o PostgreSQL subir antes; se o `start_api.bat` falhar, a janela fica parada no erro até apertar uma tecla.
 
 Teste no próprio PC: abrir `http://localhost:8080` no navegador e entrar com `admin`. Se a página de entrada abrir, o sistema está no ar.
 

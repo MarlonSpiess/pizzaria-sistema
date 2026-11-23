@@ -248,7 +248,7 @@ O roteiro passo a passo, para quem instala no PC da loja, está em [Roteiro_de_I
 2. `python -m venv venv`, `venv\Scripts\activate`, `pip install -r requirements.txt` (FastAPI 0.158.2, Uvicorn 0.53.0, Pydantic 2.13.5, psycopg 3.3.6, psycopg-pool 3.3.3, bcrypt 5.0.0).
 3. Copiar `set_env.bat.example` para `set_env.bat` e preencher.
 4. `python scripts\aplicar_migrations_pg.py`, depois `psql -U postgres -d pizzaria -v app_role=pizzaria_app -f scripts\papel_app.sql`, depois `python scripts\criar_admin.py --usuario admin --nome "..." --loja-nome "..."` (senha pedida sem eco).
-5. `start_api.bat` (aplica migrações e sobe em `0.0.0.0:8080` com `--no-proxy-headers`).
+5. `start_api.bat` (entra na própria pasta, usa o Python de `sistema\venv` sem precisar ativar, aplica migrações e sobe em `0.0.0.0:8080` com `--no-proxy-headers`; sem venv, avisa e usa o `python` do PATH).
 6. Firewall do Windows: liberar a porta 8080 **só para rede privada**. Nunca abrir para a internet.
 
 ### 6.3 Variáveis de ambiente
