@@ -25,11 +25,12 @@ def login(dados: LoginIn, request: Request, conn=Depends(get_db)):
         registrar_falha_login(conn, ip, dados.usuario)
         raise HTTPException(status_code=401, detail=_CRED_INVALIDAS)
     limpar_falhas_login(conn, ip, dados.usuario)
+    funcoes = checklists.funcoes_ligadas(conn, LOJA_ID)  # antes do commit: se falhar, não fica sessão sem resposta
     token = criar_sessao(conn, u["id"])
     auditar(conn, {"usuario_id": u["id"], "usuario": u["usuario"]}, "login", "sessao", u["id"])
     conn.commit()
     return {"token": token, "usuario": u["usuario"], "nome": u["nome"], "perfil": u["perfil"],
-            "deve_trocar_senha": u["deve_trocar_senha"], "checklists_funcoes": checklists.funcoes_ligadas(conn, LOJA_ID)}
+            "deve_trocar_senha": u["deve_trocar_senha"], "checklists_funcoes": funcoes}
 
 
 @router.post("/logout")

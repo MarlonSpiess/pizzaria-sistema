@@ -25,6 +25,8 @@ async function api(metodo, caminho, corpo) {
   let dados = null;
   try { dados = await r.json(); } catch (e) { /* sem corpo */ }
   if (r.status === 401 && estado.token && caminho !== "/auth/login") { sair(false); throw new Error("Sessão expirada. Entre de novo."); }
+  // parâmetro do piloto desligado depois do login: relê o perfil para a aba sumir
+  if (r.status === 403 && dados && /desligados durante o piloto/.test(dados.detail || "") && estado.token) { try { estado.eu = await api("GET", "/auth/me"); setTimeout(desenhar, 0); } catch (e) { /* segue o erro original */ } }
   if (!r.ok) throw new Error((dados && dados.detail) || "Erro " + r.status);
   return dados;
 }

@@ -1,6 +1,6 @@
 # Documentação do Sistema Integrado da Pizzaria
 
-Versão 2.1, 23/11/2026. Fiel ao código da branch main depois dos PRs #2 a #5 e da integração do trabalho local de 16/11 (Checklists). Comece por aqui.
+Versão 2.2, 23/11/2026 (checklists só da gerência durante o piloto). Fiel ao código da branch main depois dos PRs #2 a #5 e da integração do trabalho local de 16/11 (Checklists). Comece por aqui.
 
 ## Para quem instala e mantém
 
