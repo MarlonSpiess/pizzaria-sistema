@@ -31,3 +31,7 @@ Escolha o **tamanho** e a **quantidade** e toque no botão:
 - Faça uma contagem no começo do turno. Com ela, o saldo fica certo.
 - Lance cada lote assim que abrir. Se lançar atrasado, o "Falta fazer" fica errado para todos.
 - Toda perda tem motivo. Sem motivo, a gerência não sabe onde está o problema.
+
+## 4. Checklists
+
+A aba **Checklists** traz os itens da sua função no início, no acompanhamento e no fim do dia. Veja o passo a passo na seção 6 do [manual comum](00_Comum_a_Todos.md).

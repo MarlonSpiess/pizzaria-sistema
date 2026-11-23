@@ -49,3 +49,7 @@ O valor do pedido, o total, o pagamento e os dados de contato do cliente. Isso �
 ## 5. O que acontece no Anota Ai
 
 Para pedidos que vieram do Anota Ai, o sistema avisa o cliente sozinho: na **retirada**, "pronto" quando o pedido fica acabado; na **entrega**, "pronto" quando o entregador sai. Isso só funciona quando a integração estiver conectada (pendente do token do Anota Ai).
+
+## 6. Checklists
+
+A aba **Checklists** traz os itens da sua função no início, no acompanhamento e no fim do dia. Veja o passo a passo na seção 6 do [manual comum](00_Comum_a_Todos.md).

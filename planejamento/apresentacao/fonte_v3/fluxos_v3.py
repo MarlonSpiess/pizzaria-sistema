@@ -30,8 +30,8 @@ def ciclo_pedido():
     f.no('acab', 5, 0, 'Acabada e etiqueta', 'passo')
     f.no('ped', 5, 1, 'Pedido acabado', 'passo')
     f.no('tipo', 4, 1, 'Entrega?', 'dec', w=200, h=130)
-    f.no('desp', 3, 1, 'Despacho: entregador (caixa aberto, nenhuma pizza pendente)', 'passo', fs=17)
-    f.no('saiu', 2, 1, 'Saiu para entrega · aviso "pronto"', 'passo')
+    f.no('desp', 3, 1, 'Despacho: entregador (caixa aberto)', 'passo')
+    f.no('saiu', 2, 1, 'Saiu para entrega (sem pizza pendente) · aviso "pronto"', 'passo')
     f.no('acerto', 1, 1, 'Acerto do entregador · "finalizado"', 'passo')
     f.no('ret', 4, 2, 'Pronto no balcão · aviso "pronto"', 'passo')
     f.no('cli', 2, 2, 'Cliente retira · "finalizado"', 'passo')
@@ -43,7 +43,7 @@ def ciclo_pedido():
     f.seta('tipo', 'ret', 'não')
     f.seta('acerto', 'fim', None)
     f.seta('cli', 'fim', None)
-    f.no('volta', 5, 2, 'Pizza perdida ou refeita: pedido volta para em produção e a nova entra na frente da fila', 'alerta', fs=15)
+    f.no('volta', 5, 2, 'Pizza perdida ou refeita: pedido volta para em produção até a pizza nova (refeita na frente da fila) ficar pronta', 'alerta', fs=15)
     f.seta('ped', 'volta', 'perda', tracejado=True)
     return f.svg()
 
@@ -128,10 +128,10 @@ def estoque():
     f.no('neg', 2, 0, 'Saldo pode ficar negativo', 'passo')
     f.no('al', 3, 0, 'Alerta: baixo, zerado ou negativo', 'passo')
     f.no('dz', 4, 0, 'Zerado ou negativo?', 'dec', w=230, h=150)
-    f.no('fs', 4, 1, 'Fechar o que usa o ingrediente (sabor; base: o tamanho; borda: a borda)', 'passo', fs=17)
+    f.no('fs', 4, 1, 'Fechar o que usa o ingrediente (sabor; base: o tamanho; borda ou adicional: só ele)', 'passo', fs=17)
     f.no('api', 3, 1, 'Pausar no Anota Ai', 'pend')
     f.no('rep', 2, 1, 'Repor ou ajustar o estoque', 'passo')
-    f.no('ab', 1, 1, 'Reabrir os sabores', 'fim')
+    f.no('ab', 1, 1, 'Reabrir as vendas', 'fim')
     for a, b in [('ac', 'bx'), ('bx', 'neg'), ('neg', 'al'), ('al', 'dz'), ('fs', 'api'), ('api', 'rep'), ('rep', 'ab')]:
         f.seta(a, b)
     f.seta('dz', 'fs', 'sim')
@@ -165,6 +165,6 @@ ALL = [
     ('Importação de pedidos do Anota Ai', 'Estrutura pronta; aceitar e criar o pedido dependem da documentação da API. Hoje o pedido do Anota Ai é aceito no aplicativo dele e digitado no balcão.', importacao),
     ('Produção: uma tela por função', 'A unidade de trabalho é a pizza. Cada função só vê a sua etapa.', producao),
     ('Caixa do dia', 'Um caixa por dia, uma gaveta, contagem cega.', caixa),
-    ('Estoque, alertas e vendas fechadas', 'O estoque pode ficar negativo e a falta fecha a venda (04/11/2026); ingrediente da base fecha o tamanho e o da borda fecha a borda (23/11/2026).', estoque),
+    ('Estoque, alertas e vendas fechadas', 'O estoque pode ficar negativo e a falta fecha a venda (04/11/2026); ingrediente da base fecha o tamanho; o de borda ou adicional fecha só ele naquele tamanho (23/11/2026).', estoque),
     ('Checklists do dia', 'Proposta de 16/11/2026 já no código, aguardando aprovação e piloto. Respostas só de inserção: corrigir grava outra.', checklists),
 ]

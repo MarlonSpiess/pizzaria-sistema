@@ -141,9 +141,9 @@ def deck_sistema():
                           ('Acabamento', ['Refazer pizza perdida, com motivo: a nova entra na frente da fila', 'Pedido já acabado volta para em produção até a pizza nova sair', 'Também marca avulsa o erro achado no forno']),
                           ('Pizza avulsa', ['Vendida como pedido de balcão, pelo preço do cardápio', 'Desconto pelas regras de sempre', 'Não vendida vira perda; a baixa de estoque sai só no destino'])]), None, R))
     S.append(slide('cream', 'Checklists', 'Início, acompanhamento e fim do dia',
-                   cards([('Por função', ['Três modelos padrão, com versão', 'Cada função vê e responde só os itens dela', 'Temperaturas com limite; leituras automáticas do sistema (caixa, loja aberta, backup)']),
+                   cards([('Por função', ['Três modelos padrão, com versão', 'Cada função vê e responde só os itens dela', 'Temperaturas com limite; leituras automáticas do sistema (caixa aberto, backup do dia)']),
                           ('Com registro', ['Conforme, não conforme (com ação corretiva) ou não se aplica (com motivo)', 'Resposta só de inserção: corrigir grava outra', 'Não conforme vira pendência; a gerência conclui e resolve']),
-                          ('No pedido', ['Atendente: li o pedido de volta ao cliente', 'Acabamento: conferência final', 'Gerência: causa do atraso; BI com tempo até atribuir e até sair'])]),
+                          ('No pedido', ['Atendente: li o pedido de volta ao cliente', 'BI: tempo até atribuir o entregador e até sair', 'Conferência final e causa do atraso: só pela API, tela pendente'])]),
                    'Proposta de 16/11/2026 já no código; aguarda a aprovação de Marlon, o piloto em papel e os limites de temperatura.', R))
     S.append(slide('cream', 'Canais', 'Anota Ai: o sistema chama a API',
                    tabela(['Parte', 'Como funciona', 'Situação'], [
@@ -153,7 +153,7 @@ def deck_sistema():
                        ['Aceitar sozinho', 'Flag do canal: canal ativo, loja aberta, caixa de hoje aberto, itens no mapa, nenhum sabor, base ou borda com venda fechada. O aceite ainda não existe no código', OK + ' ' + PEND],
                        ['Avisos', '"Pronto" e "finalizado", com reenvio se a internet cair', OK + ' ' + PEND],
                        ['Finalizar entrega', 'No acerto do entregador', OK + ' ' + PEND],
-                       ['Vendas fechadas', 'Ingrediente em falta fecha os sabores (da base: o tamanho; da borda: a borda); a pausa no Anota Ai espera a API', OK + ' ' + PEND]], ['20%', '58%', '22%']),
+                       ['Vendas fechadas', 'Ingrediente em falta fecha os sabores (da base: o tamanho; de borda ou adicional: só ele, naquele tamanho); a pausa no Anota Ai espera a API', OK + ' ' + PEND]], ['20%', '58%', '22%']),
                    None, R))
     S.append(slide('cream', 'Administrativo', 'O escritório no mesmo sistema',
                    cards([('Estoque e Compras', ['Baixa pela ficha técnica, sem travar a produção', 'Saldo pode ficar negativo para a falta aparecer', 'Lista de compras com cotação e aprovação']),
@@ -165,12 +165,13 @@ def deck_sistema():
                    tabela(['Pendência', 'Depende de'], [
                        ['Token e documentação da API do Anota Ai', 'Chamado de Marlon ao Anota Ai'],
                        ['Teste da impressora térmica Bluetooth', 'Teste no tablet do acabamento'],
-                       ['Dados de cardápio ainda faltando (abreviações, fichas de bordas, adicionais e bebidas, tempos)', 'Marlon'],
+                       ['Dados de cardápio faltando (abreviações, fichas de bordas, adicionais e bebidas, tempos)', 'Marlon'],
                        ['iFood', 'Acesso ao portal'],
                        ['Nuvem e HTTPS', 'Decisão de Marlon; hoje não é necessário'],
                        ['Backup fora da máquina', 'Adiado por decisão de Marlon'],
                        ['Checklists: aprovação, piloto em papel e limites de temperatura', 'Marlon'],
-                       ['Decisões de regra C9 a C15 da revisão (agendado, contagem cega, reenvio, taxa, frete, folha)', 'Marlon']], ['60%', '40%']), None, R))
+                       ['Decisões de regra da revisão de código (C9 a C15; A4, A7 e A11)', 'Marlon'],
+                       ['Novo layout da Produção e padronização visual das telas', 'Decisão de Marlon']], ['60%', '40%']), None, R))
     S.append(slide('dark', 'Recomendação', 'Pedir o token do Anota Ai e testar a impressora agora',
                    '<p class="lead" style="margin-top:40px;max-width:1500px">São os dois pontos que ainda podem mudar o desenho: o formato do pedido do canal e o caminho de impressão. O resto do sistema já roda na loja sem eles.</p>',
                    None, R))
@@ -194,7 +195,7 @@ def deck_comercial():
                           ('🏢 Escritório', 'Cardápio, fichas técnicas, estoque, compras, contas, custos, equipamentos, equipe e BI.')]), None, R))
     S.append(slide('cream', 'Na cozinha', 'A unidade de trabalho é a pizza',
                    cards([('Menos erro', ['Cada pizza com sabores, borda, adicionais e observação', 'Etiqueta com cliente e número do pedido', 'Cada função vê só a sua etapa']),
-                          ('Menos perda', ['Toda perda e todo retrocesso com motivo', 'Massa: saldo e quanto falta abrir, por tamanho', 'Refação entra na frente da fila', 'Pizza errada vira avulsa e é vendida no balcão']),
+                          ('Menos perda', ['Toda perda e todo retrocesso com motivo', 'Massa: saldo e quanto falta abrir, por tamanho', 'Refação entra na frente da fila', 'Pizza errada vira avulsa e pode ser vendida no balcão']),
                           ('Mais previsão', ['Hora de entrega calculada pela fila', 'Capacidade do forno com aviso', 'Visão do andamento para a gerência'])]), None, R))
     S.append(slide('cream', 'No balcão', 'Venda certa e caixa que fecha',
                    cards([('Pedido', ['Cliente pelo telefone, cadastro na primeira compra', 'Meio a meio na Grande pela regra da casa', 'Pagamento dividido, sem fiado']),
@@ -212,7 +213,7 @@ def deck_comercial():
     S.append(slide('cream', 'Rotina', 'Checklists que viram número',
                    cards([('Abrir certo', 'Checklist de início do dia por função: segurança, higiene, câmaras e estoque. A loja avisa se for aberta sem ele.'),
                           ('Corrigir na hora', 'Item não conforme exige a ação corretiva e vira pendência para a gerência resolver. Nada se apaga.'),
-                          ('Pedido conferido', 'Pedido lido de volta ao cliente, conferência final antes de sair e causa de cada atraso, para medir onde o pedido demora.')]),
+                          ('Pedido conferido', 'Pedido lido de volta ao cliente e tempo até o entregador sair, para medir onde o pedido demora.')]),
                    'Módulo pronto no sistema, em fase de aprovação e piloto.', R))
     S.append(slide('cream', 'Resultado', 'Os números do negócio sem planilha',
                    cards([('CMV', 'Teórico pela ficha e real pelo inventário, fechado no mês.'), ('DRE gerencial', 'Por competência, com série e exportação.'),

@@ -1,6 +1,6 @@
 # Plano Macro: Sistema Integrado da Pizzaria
 
-Versão 2.0, 04/11/2026 (a v1.0, de 20/10/2026, foi aprovada por Marlon em 21/10/2026). A seção 0 registra o estado atual; as seções 1 a 9 são o plano aprovado, mantido como registro. Consolida o plano macro e os detalhamentos dos nove módulos e do núcleo, todos aprovados por Marlon entre 18 e 20/10/2026. **APROVADO por Marlon em 21/10/2026.** Os documentos de cada módulo (pasta `modulos/`) são a fonte de verdade de cada assunto; este documento dá a visão do conjunto.
+Versão 2.0, 04/11/2026, com a seção 0 revista em 23/11/2026 (a v1.0, de 20/10/2026, foi aprovada por Marlon em 21/10/2026). A seção 0 registra o estado atual; as seções 1 a 9 são o plano aprovado, mantido como registro. Consolida o plano macro e os detalhamentos dos nove módulos e do núcleo, todos aprovados por Marlon entre 18 e 20/10/2026. **APROVADO por Marlon em 21/10/2026.** Os documentos de cada módulo (pasta `modulos/`) são a fonte de verdade de cada assunto; este documento dá a visão do conjunto.
 
 **Critério de sucesso deste documento:** Marlon lê a visão do conjunto (módulos, integrações, ordem de construção, parâmetros e pendências) e diz "aprovado" ou aponta o que corrigir. Aprovado, o planejamento termina e começa o desenho técnico.
 
@@ -23,7 +23,7 @@ Versão 2.0, 04/11/2026 (a v1.0, de 20/10/2026, foi aprovada por Marlon em 21/10
 | 🧾 Vendas | 6 Vendas, 8 Fechamento de Caixa, canais (Anota Ai; iFood no futuro), clientes e entregadores | atendente, gerência |
 | 🏢 Administrativo ("Admin" na tela) | 0 Núcleo, 3 Estoques e Compras, 4 Contas, 5 Custos, 2 Imobilizado, 1 RH, 9 BI, cardápio e fichas técnicas | gerência, proprietário, administrador |
 
-**O que está construído.** Todas as fatias da seção 6 (Núcleo, Vendas, Produção, Caixa, Estoques, Compras, Contas, Custos, Imobilizado, RH e BI), a reorganização em 3 áreas, o despacho no acabamento, a estrutura de canais, loja aberta, finalizar no acerto, vendas fechadas por ingrediente, alertas de estoque, pizza avulsa, Checklists (início, acompanhamento e fim do dia) e pontos de controle do pedido. Em 23/11/2026: 24 migrações, 110 tabelas, 270 rotas e 374 testes automatizados verdes, revisados por dois revisores (um cego). Detalhes no [Manual Técnico](documentacao/tecnico/Manual_Tecnico.md).
+**O que está construído.** Todas as fatias da seção 6 (Núcleo, Vendas, Produção, Caixa, Estoques, Compras, Contas, Custos, Imobilizado, RH e BI), a reorganização em 3 áreas, o despacho no acabamento, a estrutura de canais, loja aberta, finalizar no acerto, vendas fechadas por ingrediente, alertas de estoque, pizza avulsa, Checklists (início, acompanhamento e fim do dia, aguardando aprovação e piloto) e pontos de controle do pedido. Em 23/11/2026: 24 migrações, 110 tabelas, 270 rotas e 374 testes automatizados verdes, revisados por dois revisores (um cego). Detalhes no [Manual Técnico](documentacao/tecnico/Manual_Tecnico.md).
 
 **Decisões de Marlon depois da aprovação do plano (03 e 04/11/2026):**
 

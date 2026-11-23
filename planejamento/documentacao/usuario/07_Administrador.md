@@ -32,7 +32,7 @@ Exclusivo de administrador e proprietário:
 
 - **Ativar ou desativar** o canal. O sistema só consulta o Anota Ai com o canal ativo **e** com o endereço e o token configurados no servidor (variáveis de ambiente, nunca na tela).
 - **Mapa de produtos:** informe o **ID externo** de cada produto, o mesmo do campo "ID Externo" do gerenciador de cardápio do Anota Ai.
-- **Aceitar sozinho:** vem desligado. Ligado, o sistema aceita o pedido sem a gerência quando o canal está ativo, a **loja está aberta** (chave da gerência), o **caixa de hoje** está aberto, **todos os itens** estão no mapa e nenhum sabor está com a venda fechada. Desligado, ou se algum critério falhar, o pedido fica para a gerência; o botão de aceitar à mão ainda não existe e depende da API (até lá, aceite pelo aplicativo do Anota Ai). A mesma chave aparece em Administrativo > Parâmetros, no cartão **Aceite automático de pedidos dos canais** (Ligar ou Desligar por canal, com auditoria). **Atenção:** hoje a chave só fica guardada. O aceite, automático ou um a um, ainda não existe: falta criar o pedido a partir da entrada do canal, o que depende do formato do pedido da API do Anota Ai.
+- **Aceitar sozinho:** vem desligado. Ligado, o sistema aceita o pedido sem a gerência quando o canal está ativo, a **loja está aberta** (chave da gerência), o **caixa de hoje** está aberto, **todos os itens** estão no mapa e nada está com a venda fechada (sabor, base, borda ou adicional). Desligado, ou se algum critério falhar, o pedido fica para a gerência; o botão de aceitar à mão ainda não existe e depende da API (até lá, aceite pelo aplicativo do Anota Ai). A mesma chave aparece em Administrativo > Parâmetros, no cartão **Aceite automático de pedidos dos canais** (Ligar ou Desligar por canal, com auditoria). **Atenção:** hoje a chave só fica guardada. O aceite, automático ou um a um, ainda não existe: falta criar o pedido a partir da entrada do canal, o que depende do formato do pedido da API do Anota Ai.
 
 Hoje a integração **não está conectada**: falta o token e a documentação da API do Anota Ai, que se pede por chamado. Até lá, nada é aceito automaticamente.
 
@@ -41,8 +41,7 @@ Hoje a integração **não está conectada**: falta o token e a documentação d
 - Títulos a pagar lançados à mão acima do valor do parâmetro (Contas).
 - Ordens de serviço acima do valor do parâmetro e baixa de bem (Imobilizado).
 - Folha gerencial e salários (RH > Folha gerencial): prévia, resumo e lançamento em Contas. Títulos e baixas da folha só aparecem para vocês: para a gerência eles não existem nas listas, na baixa nem na conciliação; no fluxo de caixa do gerente a folha entra somada às outras saídas do dia.
-- Desligar no RH um funcionário que tem login de gerente, subgerente, administrador ou proprietário: só vocês (o gerente recebe recusa).
-- Depreciação dos bens: a parcela mensal é cortada no centavo e a última parcela absorve o resto, então a soma nunca passa do valor a depreciar.
+- Desligar no RH um funcionário que tem login de gerente ou subgerente: só vocês (o gerente recebe recusa). Funcionário com login de administrador ou proprietário não é desligado por ninguém: desvincule o usuário antes.
 - Diferença de caixa acima da tolerância: administrador, proprietário ou gerente, sempre quem não fez a contagem (não é exclusivo de vocês; o subgerente não aprova).
 
 ## 5. Checklists (modelos e limites)
@@ -52,7 +51,11 @@ Hoje a integração **não está conectada**: falta o token e a documentação d
 - O parâmetro **recusar ligar a loja aberta sem o checklist de início** vem em "nao" (só avisa). Use "sim" só depois de a equipe se acostumar com o checklist.
 - Editar os itens de um modelo é feito pela API nesta versão (publicando uma nova versão). Peça ao desenvolvedor.
 
-## 6. Sistema
+## 6. Imobilizado: depreciação
+
+A parcela mensal é cortada no centavo e a última parcela absorve o resto, então a soma nunca passa do valor a depreciar.
+
+## 7. Sistema
 
 - **Backup:** botão "Fazer backup agora" no Painel e comando `python scripts\backup.py` no PC da loja (na pasta `sistema`, com o ambiente `venv` ativo e o `set_env.bat` carregado). A rotina diária fora da máquina está adiada; até lá, faça ao fechar o dia e copie para um pen drive.
 - **Auditoria:** consulte quem fez cada ação. Com a instalação feita pelo roteiro (app usando o papel `pizzaria_app` e `papel_app.sql` aplicado), o sistema não consegue apagar nem alterar a auditoria; só o dono do banco, fora do sistema, teria esse acesso.

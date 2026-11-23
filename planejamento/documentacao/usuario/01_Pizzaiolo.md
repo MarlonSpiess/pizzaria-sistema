@@ -42,3 +42,7 @@ Se o acabamento descobrir o erro depois (no forno ou no acabamento), ele mesmo m
 ## 4. O que você não vê
 
 Valores do pedido, dados do cliente, outras etapas da cozinha e o andamento geral. Isso é proposital.
+
+## 5. Checklists
+
+A aba **Checklists** traz os itens da sua função no início, no acompanhamento e no fim do dia. Veja o passo a passo na seção 6 do [manual comum](00_Comum_a_Todos.md).
