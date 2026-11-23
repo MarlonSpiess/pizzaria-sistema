@@ -1,6 +1,6 @@
 # Manual do Usuário: Pizzaiolo
 
-Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
+Versão 3.0, 23/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
 
 **A sua tela:** Produção > **Montagem**. É a única tela da sua função. O forno, o acabamento e o despacho são da função acabamento.
 
@@ -42,3 +42,7 @@ Se o acabamento descobrir o erro depois (no forno ou no acabamento), ele mesmo m
 ## 4. O que você não vê
 
 Valores do pedido, dados do cliente, outras etapas da cozinha e o andamento geral. Isso é proposital.
+
+## 5. Checklists
+
+Durante o piloto em papel (decisão de Marlon, 23/11/2026), o checklist da sua função é feito no papel e a aba **Checklists** não aparece para você. Quando o administrador ligar, ela traz os itens da sua função no início, no acompanhamento e no fim do dia; o passo a passo está na seção 6 do [manual comum](00_Comum_a_Todos.md).

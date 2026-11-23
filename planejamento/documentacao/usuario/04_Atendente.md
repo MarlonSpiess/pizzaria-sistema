@@ -1,6 +1,6 @@
 # Manual do Usuário: Atendente (recepção)
 
-Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). O caixa do dia tem manual próprio: [05_Caixa.md](05_Caixa.md).
+Versão 3.0, 23/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). O caixa do dia tem manual próprio: [05_Caixa.md](05_Caixa.md).
 
 **A sua área:** 🧾 Vendas. Telas: **Pedidos** (Novo pedido e Pedidos do dia), **Caixa e entregas**, **Clientes**, **Entregadores** (consulta). Você também consulta o **Cardápio** (Administrativo > Cardápio). Você não acessa Produção: a hora de entrega calculada aparece em Pedidos do dia.
 

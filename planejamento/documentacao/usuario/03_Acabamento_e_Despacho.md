@@ -1,6 +1,6 @@
 # Manual do Usuário: Acabamento e Despacho
 
-Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
+Versão 3.0, 23/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
 
 **As suas telas:** Produção > **Forno**, **Acabamento** e **Despacho**. O forno e o despacho fazem parte da sua função (decisão de 03/11/2026).
 
@@ -49,3 +49,7 @@ O valor do pedido, o total, o pagamento e os dados de contato do cliente. Isso �
 ## 5. O que acontece no Anota Ai
 
 Para pedidos que vieram do Anota Ai, o sistema avisa o cliente sozinho: na **retirada**, "pronto" quando o pedido fica acabado; na **entrega**, "pronto" quando o entregador sai. Isso só funciona quando a integração estiver conectada (pendente do token do Anota Ai).
+
+## 6. Checklists
+
+Durante o piloto em papel (decisão de Marlon, 23/11/2026), o checklist da sua função é feito no papel e a aba **Checklists** não aparece para você. Quando o administrador ligar, ela traz os itens da sua função no início, no acompanhamento e no fim do dia; o passo a passo está na seção 6 do [manual comum](00_Comum_a_Todos.md).

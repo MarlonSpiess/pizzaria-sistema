@@ -1,6 +1,6 @@
 # Manual do Usuário: Massa
 
-Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
+Versão 3.0, 23/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
 
 **A sua tela:** Produção > **Massa**. É a única tela da sua função.
 
@@ -31,3 +31,7 @@ Escolha o **tamanho** e a **quantidade** e toque no botão:
 - Faça uma contagem no começo do turno. Com ela, o saldo fica certo.
 - Lance cada lote assim que abrir. Se lançar atrasado, o "Falta fazer" fica errado para todos.
 - Toda perda tem motivo. Sem motivo, a gerência não sabe onde está o problema.
+
+## 4. Checklists
+
+Durante o piloto em papel (decisão de Marlon, 23/11/2026), o checklist da sua função é feito no papel e a aba **Checklists** não aparece para você. Quando o administrador ligar, ela traz os itens da sua função no início, no acompanhamento e no fim do dia; o passo a passo está na seção 6 do [manual comum](00_Comum_a_Todos.md).
