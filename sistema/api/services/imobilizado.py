@@ -24,20 +24,21 @@ def vida_meses(b: dict, taxa_fiscal) -> int:
 
 
 def parcelas(b: dict, taxa_fiscal, ate: date | None = None) -> list[tuple[date, Decimal]]:
-    """Todas as parcelas de depreciação do bem, mês a mês, a partir do mês de início de uso. A última absorve os centavos."""
+    """Todas as parcelas de depreciação do bem, mês a mês, a partir do mês de início de uso.
+    Cada parcela é a diferença entre o acumulado arredondado de um mês e o do anterior: a soma é exatamente a base."""
     if not b["inicio_uso"]:
         return []
     n = vida_meses(b, taxa_fiscal)
     base = Decimal(b["valor_aquisicao"]) - Decimal(b["valor_residual"])
-    mensal = (base / n).quantize(Q2)
     mes, saida, acumulado = _mes(b["inicio_uso"]), [], ZERO
     for i in range(n):
         if ate and mes > ate:
             break
-        v = mensal if i < n - 1 else base - acumulado
+        ate_aqui = (base * (i + 1) / n).quantize(Q2)
+        v = ate_aqui - acumulado
         if v > 0:
             saida.append((mes, v))
-        acumulado += v
+        acumulado = ate_aqui
         mes = _prox(mes)
     return saida
 

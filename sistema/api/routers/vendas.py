@@ -7,13 +7,13 @@ import psycopg.errors
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, hoje, traduzir_erro, transacao
+from api.database import agora, auditar, get_db, traduzir_erro, transacao
 from api.schemas import CfIn, PedidoCalcular, PedidoCancelar, PedidoCreate, PedidoSituacao, PedidoUrgente
 from api.security import requer, tem_permissao
 from api.services import parametros as svc_parametros
 from api.services import producao as svc_producao
 from api.services import canais, estoque
-from api.services.caixa import exigir_nao_encerrado
+from api.services.caixa import data_do_lancamento, exigir_nao_encerrado
 from api.services.dinheiro import fmt
 from api.services.ingredientes import produtos_fechados
 from api.services.vendas import SITUACOES, autorizar, excede_limite, limite_desconto, repartir_pagamentos, totais
@@ -189,7 +189,7 @@ def criar(d: PedidoCreate, request: Request, response: Response, sessao=Depends(
     formas = svc_parametros.vigentes(conn, LOJA_ID)["formas_pagamento_aceitas"]["valor"]
     pagamentos = repartir_pagamentos(t["total"], d.pagamentos, formas)
     autorizador = _autorizador(conn, request, d, t, sessao)
-    quando, dia = agora(), hoje()
+    quando, dia = agora(), data_do_lancamento(conn, LOJA_ID)
     try:
         exigir_nao_encerrado(conn, LOJA_ID, dia, svc_parametros.vigentes(conn, LOJA_ID)["venda_exige_caixa_aberto"]["valor"] == "sim")
         id_dia = conn.execute(
@@ -253,7 +253,7 @@ def listar(data: Optional[date] = None, situacao: Optional[str] = Query(default=
         raise HTTPException(status_code=400, detail="Situação inválida.")
     sql = (f"SELECT p.{_COLS.replace(', ', ', p.')}, c.nome AS cliente_nome FROM pedido p LEFT JOIN cliente c ON c.id = p.cliente_id "
            "WHERE p.loja_id = %s AND p.data = %s")
-    params = [LOJA_ID, data or hoje()]
+    params = [LOJA_ID, data or data_do_lancamento(conn, LOJA_ID)]
     if situacao:
         sql, params = sql + " AND p.situacao = %s", params + [situacao]
     return [_out(r) for r in conn.execute(sql + " ORDER BY p.id_dia", params).fetchall()]
@@ -355,12 +355,13 @@ def cancelar(pid: int, d: PedidoCancelar, request: Request, sessao=Depends(reque
             raise HTTPException(status_code=409, detail=f"Pedido {p['situacao']} não pode ser cancelado.")
     quando = agora()
     with transacao(conn):
-        exigir_nao_encerrado(conn, LOJA_ID, quando.date(), False)
+        dia = data_do_lancamento(conn, LOJA_ID)
+        exigir_nao_encerrado(conn, LOJA_ID, dia, False)
         for e in conn.execute("SELECT forma, sum(valor - troco) AS valor FROM pagamento WHERE pedido_id = %s GROUP BY forma HAVING sum(valor - troco) > 0",
                               (pid,)).fetchall():  # devolução ao cliente: uma linha por forma, na data do cancelamento
             conn.execute("INSERT INTO estorno (loja_id, data, pedido_id, forma, valor, motivo, usuario_id, autorizado_por, criado_em) "
                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                         (LOJA_ID, quando.date(), pid, e["forma"], e["valor"], d.motivo, sessao["usuario_id"], autorizador, quando))
+                         (LOJA_ID, dia, pid, e["forma"], e["valor"], d.motivo, sessao["usuario_id"], autorizador, quando))
         conn.execute("INSERT INTO cancelamento (pedido_id, motivo, usuario_id, autorizado_por, situacao_anterior, criado_em) "
                      "VALUES (%s,%s,%s,%s,%s,%s)", (pid, d.motivo, sessao["usuario_id"], autorizador, p["situacao"], quando))
         conn.execute("UPDATE pedido SET situacao = 'cancelado' WHERE id = %s", (pid,))

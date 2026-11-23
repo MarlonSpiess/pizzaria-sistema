@@ -265,7 +265,7 @@ def movimentar(d: MovimentoIn, request: Request, sessao=Depends(requer("caixa.op
             svc.exigir_aberto(conn, LOJA_ID)
     with transacao(conn):
         r = conn.execute("INSERT INTO movimento_caixa (loja_id, data, tipo, valor, motivo_id, motivo_nome, vira_despesa, observacao, comprovante, usuario_id, autorizado_por, criado_em) "
-                         "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id", (LOJA_ID, quando.date(), d.tipo, valor, d.motivo_id, m["nome"], m["vira_despesa"],
+                         "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id", (LOJA_ID, c["data"], d.tipo, valor, d.motivo_id, m["nome"], m["vira_despesa"],
                                                                                       d.observacao, d.comprovante, sessao["usuario_id"], autorizador, quando)).fetchone()
         auditar(conn, sessao, d.tipo, "movimento_caixa", r["id"], depois={"valor": fmt(valor), "motivo_id": d.motivo_id, "autorizado_por": autorizador})
     return {"id": r["id"], "tipo": d.tipo, "valor": fmt(valor)}
@@ -407,7 +407,7 @@ def _atribuir(conn, sessao, pedido_id: int, d: EntregaIn, origem: str):
 
 @router.post("/acertos", status_code=201)
 def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(get_db)):
-    """Acerto do fim do turno: o entregador devolve o dinheiro que recebeu e recebe o valor das entregas mais a diária (uma vez por dia)."""
+    """Acerto do fim do turno: o entregador devolve o dinheiro que recebeu e recebe o valor das entregas mais a diária (uma vez por caixa)."""
     quando = agora()
     c = svc.exigir_aberto(conn, LOJA_ID)
     fx = svc.faixa(conn, LOJA_ID, c)
@@ -422,9 +422,10 @@ def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
     ids = [e["pedido_id"] for e in ents]
     recebido = conn.execute("SELECT COALESCE(sum(valor - troco), 0) AS s FROM pagamento WHERE forma = 'dinheiro' AND pedido_id = ANY(%s)", (ids,)).fetchone()["s"]
     valor_entregas = sum((e["valor_entrega"] for e in ents), svc.ZERO)
-    ja = conn.execute("SELECT 1 FROM acerto_entregador WHERE loja_id = %s AND data = %s AND entregador_id = %s", (LOJA_ID, quando.date(), d.entregador_id)).fetchone()
+    ja = conn.execute("SELECT 1 FROM acerto_entregador WHERE loja_id = %s AND data >= %s AND data < %s AND entregador_id = %s",
+                      (LOJA_ID, fx[0], fx[1], d.entregador_id)).fetchone()
     if ja:
-        diaria = svc.ZERO  # a diária vale uma vez por entregador por dia
+        diaria = svc.ZERO  # a diária vale uma vez por entregador por caixa (o turno pode passar da meia-noite)
     else:
         padrao = _dinheiro_param(vigentes(conn, LOJA_ID), "diaria_entregador_padrao")
         diaria = parse_reais(d.diaria) if d.diaria is not None else padrao
@@ -434,7 +435,7 @@ def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
     with transacao(conn):
         a = conn.execute("INSERT INTO acerto_entregador (loja_id, data, entregador_id, pedidos, dinheiro_recebido, valor_entregas, diaria, total_devido, saldo_gaveta, "
                          "usuario_id, criado_em) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                         (LOJA_ID, quando.date(), d.entregador_id, len(ids), recebido, valor_entregas, diaria, devido, recebido - devido,
+                         (LOJA_ID, c["data"], d.entregador_id, len(ids), recebido, valor_entregas, diaria, devido, recebido - devido,
                           sessao["usuario_id"], quando)).fetchone()
         conn.execute("UPDATE entrega SET acerto_id = %s WHERE pedido_id = ANY(%s)", (a["id"], ids))
         canais.finalizar_entregas_acertadas(conn, ids)  # pedido de canal externo: avisa "finalizado" (decisão de Marlon)
