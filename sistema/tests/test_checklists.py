@@ -56,6 +56,48 @@ def hs3(client, hs):  # noqa: F811
     return {**hs, "subgerente": entrar(client, "subgerente")[1], "admin": entrar(client, "administrador")[1]}
 
 
+@pytest.fixture(autouse=True)
+def _funcoes_ligadas(client):
+    """Os testes do módulo exercitam as funções: liga o parâmetro e devolve ao padrão (piloto: só a gerência)."""
+    ha = entrar(client, "administrador")[1]
+    assert client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": "sim"}, headers=ha).status_code == 200
+    yield
+    assert client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": None}, headers=ha).status_code == 200
+
+
+def test_piloto_so_a_gerencia_ve_os_checklists(client, hs3):
+    """Decisão de Marlon (23/11/2026): até o piloto em papel, só a gerência vê as abas; o servidor recusa as funções."""
+    assert client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": "nao"}, headers=hs3["admin"]).status_code == 200
+    for p in ("atendente", "massa", "pizzaiolo", "acabamento"):
+        assert client.get("/api/checklists/hoje", headers=hs3[p]).status_code == 403, p
+        assert client.get("/api/auth/me", headers=hs3[p]).json()["checklists_funcoes"] is False
+    assert client.get("/api/checklists/hoje", headers=hs3["gerente"]).status_code == 200
+    assert client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": "sim"}, headers=hs3["gerente"]).status_code == 403  # só administrador e proprietário
+
+
+def test_piloto_trava_execucao_aberta_antes_de_desligar(client, hs3, conn_teste):
+    """Execução aberta com o parâmetro ligado: desligado, a função não inicia, não lê e não responde; a gerência segue."""
+    codigo, _ = _modelo(conn_teste, [_item(codigo="m", texto="Massa", perfil_responsavel="massa")])
+    eid = _iniciar(client, hs3["massa"], codigo)
+    it, _ = _itens(client, hs3["massa"], eid)
+    assert client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": "nao"}, headers=hs3["admin"]).status_code == 200
+    assert client.post("/api/checklists/execucoes", json={"modelo": codigo}, headers=hs3["massa"]).status_code == 403
+    assert client.get(f"/api/checklists/execucoes/{eid}", headers=hs3["massa"]).status_code == 403
+    assert _resp(client, hs3["massa"], eid, it["m"]["id"], resultado="conforme").status_code == 403
+    assert _resp(client, hs3["gerente"], eid, it["m"]["id"], resultado="conforme").status_code == 200
+
+
+def test_login_informa_se_os_checklists_das_funcoes_estao_ligados(client, hs3):
+    """A tela monta as abas com a resposta do login."""
+    from tests.conftest import criar_usuario_direto
+    login, senha = criar_usuario_direto("massa")
+    for valor, esperado in (("nao", False), ("sim", True)):
+        assert client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": valor}, headers=hs3["admin"]).status_code == 200
+        r = client.post("/api/auth/login", json={"usuario": login, "senha": senha})
+        assert r.status_code == 200 and r.json()["checklists_funcoes"] is esperado
+
+
+
 def test_permissoes_por_funcao(client, hs3):
     for p in ("atendente", "massa", "pizzaiolo", "acabamento", "gerente", "subgerente", "admin"):
         assert client.get("/api/checklists/hoje", headers=hs3[p]).status_code == 200, p

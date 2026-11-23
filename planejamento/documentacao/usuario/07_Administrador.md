@@ -47,6 +47,7 @@ Hoje a integração **não está conectada**: falta o token e a documentação d
 
 - Em **Administrativo > Checklists > Modelos**, toque em **Instalar modelos padrão** para criar os três checklists (início, acompanhamento e fim do dia). Pode repetir sem efeito.
 - Em **Parâmetros**, defina a temperatura máxima da câmara fria e do freezer (em °C, por exemplo -18 para o freezer, depois de confirmar com a vigilância local). Enquanto estiverem vazias, a temperatura só é registrada.
+- O parâmetro **Checklists para as funções** (`checklist_funcoes_ligado`) vem em "nao": só a gerência vê e usa os checklists, como Marlon decidiu em 23/11/2026 para o piloto em papel. Ligue "sim" só depois do piloto; quem já estiver logado vê a mudança no próximo login.
 - O parâmetro **recusar ligar a loja aberta sem o checklist de início** vem em "nao" (só avisa). Use "sim" só depois de a equipe se acostumar com o checklist.
 - Editar os itens de um modelo é feito pela API nesta versão (publicando uma nova versão). Peça ao desenvolvedor.
 

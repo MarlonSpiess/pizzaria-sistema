@@ -17,12 +17,14 @@ router = APIRouter(prefix="/checklists", tags=["checklists"])
 @router.get("/hoje")
 def do_dia(sessao=Depends(requer("checklist.executar")), conn=Depends(get_db)):
     """Checklists do dia que têm item para a função de quem pergunta, com as execuções e o andamento de cada uma."""
+    svc.exigir_funcao_liberada(conn, sessao, LOJA_ID)
     # data operacional: a do caixa ainda aberto, que segue depois da meia-noite (mesma regra de vendas e caixa)
     return svc.hoje_do_perfil(conn, sessao, LOJA_ID, data_do_lancamento(conn, LOJA_ID))
 
 
 @router.post("/execucoes", status_code=201)
 def iniciar(d: ExecucaoIn, response: Response, sessao=Depends(requer("checklist.executar")), conn=Depends(get_db)):
+    svc.exigir_funcao_liberada(conn, sessao, LOJA_ID)
     r = svc.iniciar(conn, sessao, LOJA_ID, d.modelo, d.turno, data_do_lancamento(conn, LOJA_ID))
     if not r["criada"]:
         response.status_code = 200  # devolveu a execução que já existia
@@ -31,11 +33,13 @@ def iniciar(d: ExecucaoIn, response: Response, sessao=Depends(requer("checklist.
 
 @router.get("/execucoes/{exec_id}")
 def detalhe(exec_id: int, sessao=Depends(requer("checklist.executar")), conn=Depends(get_db)):
+    svc.exigir_funcao_liberada(conn, sessao, LOJA_ID)
     return svc.detalhe(conn, sessao, LOJA_ID, exec_id)
 
 
 @router.put("/execucoes/{exec_id}/itens/{item_id}")
 def responder(exec_id: int, item_id: int, d: RespostaChecklistIn, sessao=Depends(requer("checklist.executar")), conn=Depends(get_db)):
+    svc.exigir_funcao_liberada(conn, sessao, LOJA_ID)
     return svc.responder(conn, sessao, LOJA_ID, exec_id, item_id, d)
 
 
