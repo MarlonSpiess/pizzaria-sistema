@@ -139,3 +139,81 @@ def test_c8_ingrediente_da_base_fecha_o_tamanho_e_o_da_borda_fecha_a_borda(clien
     finally:
         for i in (molho, recheio):
             client.put(f"/api/vendas-fechadas/ingredientes/{i['id']}/falta", json={"em_falta": False}, headers=hg)
+
+
+def test_c2_pizza_perdida_em_pedido_acabado_volta_para_producao_e_e_refeita(client, cardapio, conn_teste):
+    """Decisão de Marlon (23/11/2026): perda em pedido acabado devolve o pedido para 'em producao'; a refação é aceita e
+    o balcão só entrega depois que ela fica pronta. O pedido nunca sai com pizza a menos."""
+    _, hadm = entrar(client, "administrador")
+    if not client.get("/api/producao/motivos", headers=hadm).json()["perda"]:
+        client.post("/api/producao/motivos/iniciar-padrao", headers=hadm)
+    motivo = client.get("/api/producao/motivos", headers=hadm).json()["perda"][0]["id"]
+    _, ha = entrar(client, "atendente")
+    _, hac = entrar(client, "acabamento")
+    p = _pedido(client, ha, [_pizza_item(cardapio)], [{"forma": "pix", "valor": "35,00"}])
+    assert p.status_code == 201, p.text
+    pid = p.json()["id"]
+    pizza = conn_teste.execute("SELECT id FROM pizza_producao WHERE pedido_id = %s", (pid,)).fetchone()[0]
+    conn_teste.execute("UPDATE pizza_producao SET situacao = 'acabada' WHERE id = %s", (pizza,))
+    assert client.post(f"/api/producao/pedidos/{pid}/acabado", headers=hac).status_code == 200
+    assert client.post(f"/api/producao/pizzas/{pizza}/perder", json={"motivo_id": motivo}, headers=hac).status_code == 200
+    situacao = lambda: conn_teste.execute("SELECT situacao FROM pedido WHERE id = %s", (pid,)).fetchone()[0]  # noqa: E731
+    assert situacao() == "em producao"
+    assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "despachado ou retirado"}, headers=ha).status_code == 409
+    r = client.post(f"/api/producao/pizzas/{pizza}/refazer", json={"motivo_id": motivo}, headers=hac)
+    assert r.status_code == 201, r.text
+    conn_teste.execute("UPDATE pizza_producao SET situacao = 'acabada' WHERE id = %s", (r.json()["id"],))
+    assert client.post(f"/api/producao/pedidos/{pid}/acabado", headers=hac).status_code == 200
+    assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "despachado ou retirado"}, headers=ha).status_code == 200
+
+
+def test_c2_banco_so_aceita_voltar_de_acabado_para_producao(client, cardapio, conn_teste):
+    """O gatilho aceita acabado para em produção e continua impedindo qualquer outro retorno."""
+    _, hg = entrar(client, "gerente")
+    p = _pedido(client, hg, [{"tipo": "bebida", "produto_id": cardapio["beb"]["id"]}], [{"forma": "pix", "valor": "6,00"}])
+    pid = p.json()["id"]
+    for s_ in ("em producao", "acabado"):
+        assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": s_}, headers=hg).status_code == 200
+    with pytest.raises(psycopg.errors.RaiseException):
+        with conn_teste.transaction():
+            conn_teste.execute("UPDATE pedido SET situacao = 'recebido' WHERE id = %s", (pid,))
+    conn_teste.execute("UPDATE pedido SET situacao = 'em producao' WHERE id = %s", (pid,))
+    for s_ in ("acabado", "despachado ou retirado"):
+        assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": s_}, headers=hg).status_code == 200
+    with pytest.raises(psycopg.errors.RaiseException):
+        with conn_teste.transaction():
+            conn_teste.execute("UPDATE pedido SET situacao = 'acabado' WHERE id = %s", (pid,))
+
+
+def test_c6_cancelar_pedido_acabado_devolve_bebida_e_pizza_vira_perda(client, cardapio, conn_teste):
+    """Decisão de Marlon (23/11/2026): a lata volta ao estoque; o consumo da pizza já feita sai da venda e entra como perda."""
+    from tests.test_fichas import _ficha, _item
+    _, hg = entrar(client, "gerente")
+    _, ha = entrar(client, "atendente")
+    lata, queijo = _item(client, hg, "revenda", "un"), _item(client, hg, "insumo", "g")
+    for i, q in ((lata, "10"), (queijo, "1000")):
+        r = client.post("/api/estoque/movimentos", json={"tipo": "entrada_inicial", "item_id": i["id"], "quantidade": q, "custo_unit": "3,00",
+                                                         "motivo": "Estoque inicial"}, headers=hg)
+        assert r.status_code == 201, r.text
+    assert _ficha(client, hg, f"produto/{cardapio['beb']['id']}", [{"item_id": lata["id"], "quantidade": "1", "perda_pct": "0"}]).status_code == 200
+    assert _ficha(client, hg, f"produto/{cardapio['trad']['id']}", [{"item_id": queijo["id"], "quantidade": "100", "perda_pct": "0"}]).status_code == 200
+    p = _pedido(client, ha, [{"tipo": "bebida", "produto_id": cardapio["beb"]["id"]}, _pizza_item(cardapio)], [{"forma": "pix", "valor": "41,00"}])
+    assert p.status_code == 201, p.text
+    pid = p.json()["id"]
+    pizza = conn_teste.execute("SELECT id FROM pizza_producao WHERE pedido_id = %s", (pid,)).fetchone()[0]
+    from api.database import agora, get_connection
+    from api.services import estoque
+    with get_connection() as c:  # a Produção acabou a pizza: baixa da ficha como venda (o caminho real está em test_producao)
+        estoque.baixar_pizza(c, 1, pizza, "acabada", None, agora())
+        c.commit()
+    conn_teste.execute("UPDATE pizza_producao SET situacao = 'acabada' WHERE id = %s", (pizza,))
+    for s in ("em producao", "acabado"):
+        assert client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": s}, headers=hg).status_code == 200
+    assert D(client.get(f"/api/estoque/itens/{lata['id']}", headers=hg).json()["saldo"]) == 9
+    assert client.post(f"/api/pedidos/{pid}/cancelar", json={"motivo": "Cliente desistiu no balcão"}, headers=hg).status_code == 200
+    assert D(client.get(f"/api/estoque/itens/{lata['id']}", headers=hg).json()["saldo"]) == 10  # a lata voltou
+    assert D(client.get(f"/api/estoque/itens/{queijo['id']}", headers=hg).json()["saldo"]) == 800  # Grande = 2 x 100 g, consumidos
+    tipos = dict(conn_teste.execute("SELECT tipo, sum(quantidade) FROM movimento_estoque WHERE item_id = %s AND tipo IN ('saida_venda','perda') GROUP BY tipo",
+                                    (queijo["id"],)).fetchall())
+    assert tipos == {"saida_venda": 0, "perda": -200}, tipos  # saiu da venda, entrou na perda
+    assert client.post(f"/api/pedidos/{pid}/cancelar", json={"motivo": "de novo"}, headers=hg).status_code == 409

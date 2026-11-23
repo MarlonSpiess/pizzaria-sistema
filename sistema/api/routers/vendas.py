@@ -296,7 +296,7 @@ def mudar_situacao(conn, sessao, p: dict, nova: str) -> dict:
     atual = p["situacao"]
     if atual not in SITUACOES or nova not in SITUACOES or SITUACOES.index(nova) != SITUACOES.index(atual) + 1:
         raise HTTPException(status_code=409, detail=f"Não é possível ir de '{atual}' para '{nova}'.")
-    if nova == "acabado" and svc_producao.pizzas_pendentes(conn, p["id"]):
+    if nova in ("acabado", "despachado ou retirado") and svc_producao.pizzas_pendentes(conn, p["id"]):
         raise HTTPException(status_code=409, detail="Ainda há pizza para acabar neste pedido.")
     if nova == "despachado ou retirado" and p["tipo"] == "entrega" and p["canal"] != "balcao" and not conn.execute(
             "SELECT 1 FROM entrega WHERE pedido_id = %s", (p["id"],)).fetchone():
@@ -311,6 +311,19 @@ def mudar_situacao(conn, sessao, p: dict, nova: str) -> dict:
     canais.enfileirar_aviso(conn, p["id"], p["canal"], p["tipo"], nova)
     if nova == "acabado":  # bebidas e acompanhamentos saem do estoque pela ficha do produto
         estoque.baixar_itens_do_pedido(conn, LOJA_ID, p["id"], sessao["usuario_id"], quando)
+    return _pedido(conn, p["id"])
+
+
+def voltar_para_producao(conn, sessao, p: dict, motivo: str) -> dict:
+    """Único retorno de situação: pedido acabado com pizza perdida volta para 'em producao' até a refação ficar pronta
+    (decisão de Marlon, 23/11/2026). Quem chama já travou o pedido e comita. O canal não é avisado: lá o pedido segue em preparo."""
+    if p["situacao"] != "acabado":
+        return p
+    quando = agora()
+    conn.execute("UPDATE pedido SET situacao = 'em producao' WHERE id = %s", (p["id"],))
+    conn.execute("INSERT INTO evento_pedido (pedido_id, situacao, usuario_id, criado_em) VALUES (%s,'em producao',%s,%s)",
+                 (p["id"], sessao["usuario_id"], quando))
+    auditar(conn, sessao, "voltar_producao", "pedido", p["id"], antes={"situacao": "acabado"}, depois={"situacao": "em producao", "motivo": motivo})
     return _pedido(conn, p["id"])
 
 
@@ -373,6 +386,7 @@ def cancelar(pid: int, d: PedidoCancelar, request: Request, sessao=Depends(reque
                      "VALUES (%s,%s,%s,%s,%s,%s)", (pid, d.motivo, sessao["usuario_id"], autorizador, p["situacao"], quando))
         conn.execute("UPDATE pedido SET situacao = 'cancelado' WHERE id = %s", (pid,))
         svc_producao.cancelar_pizzas(conn, LOJA_ID, pid, sessao["usuario_id"], quando)
+        estoque.estornar_baixas_do_pedido(conn, LOJA_ID, pid, sessao["usuario_id"], quando)
         conn.execute("INSERT INTO evento_pedido (pedido_id, situacao, usuario_id, criado_em) VALUES (%s,'cancelado',%s,%s)",
                      (pid, sessao["usuario_id"], quando))
         auditar(conn, sessao, "cancelar", "pedido", pid, antes={"situacao": p["situacao"]},

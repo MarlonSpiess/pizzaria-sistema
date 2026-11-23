@@ -2,7 +2,7 @@
 
 Base: código do PR #4 (nenhum PR mesclado em 23/11/2026). Dois revisores com o método ub-mode: o cego (`qa_cego_ub_mode2.md`) viu só o código e as regras de `planejamento/`; o não cego (`qa_nao_cego_ub_mode2.md`) leu os QA anteriores e conferiu cada correção.
 
-Suíte completa depois das correções: 337 passed e 1 falha (`test_bem_sem_inicio_de_uso_nao_deprecia_e_ultima_parcela_fecha`, que fixava a regra "a última parcela absorve os centavos"). A correção do C3 foi refeita para manter essa regra; o arquivo voltou a passar (8 passed) e os 67 testes de unidade passam.
+Suíte completa depois das correções e das 5 decisões: 342 passed e 1 falha (`test_varredor::test_entrega_de_canal_so_sai_com_entregador`, que forçava pedido acabado com pizza pendente, estado que agora o despacho recusa). O teste passou a acabar as pizzas antes; o arquivo voltou a passar (7 passed).
 
 ## Corrigidos
 
@@ -20,13 +20,13 @@ Suíte completa depois das correções: 337 passed e 1 falha (`test_bem_sem_inic
 | C3 (baixa) | Parcela mensal truncada ao centavo e a última absorve o resto: a soma nunca passa do valor depreciável | `tests_unidade/test_depreciacao.py` |
 | C7 e resto do A1 (média) | Decisão de Marlon em 23/11/2026: a folha fica somada às outras saídas do dia, sem linha nem descrição própria; o saldo projetado do gerente continua verdadeiro. O fluxo já agrupava por dia, então não mudou código; o teste fixa a regra. Num dia em que só a folha vence, o total ainda a revela (risco aceito) | `test_qa_cego_ub2.py::test_c7_*` |
 | C8 (média) | Decisão de Marlon em 23/11/2026: ingrediente da ficha base em falta fecha toda pizza daquele tamanho; ingrediente de adicional ou borda fecha só aquele adicional naquele tamanho. Balcão recusa (409), a tela de vendas fechadas mostra o que fechou e o aceite automático do canal recusa enquanto houver base ou borda fechada (o mapa do canal liga só o produto, sem tamanho). A pausa no canal continua por produto | `test_qa_cego_ub2.py::test_c8_*` |
+| C2 (= A9, média) | Decisão de Marlon em 23/11/2026: perda ou refação em pedido acabado devolve o pedido para "em produção" (migração 022 libera só esse retorno no gatilho); o balcão não entrega com pizza pendente. O teste antigo `test_refacao_so_enquanto_o_pedido_esta_em_producao` fixava a regra anterior e foi reescrito | `test_qa_cego_ub2.py::test_c2_*`, `test_producao.py::test_refacao_ate_o_pedido_sair_*` |
+| C6 (média) | Decisão de Marlon em 23/11/2026: no cancelamento, cada saída de venda do pedido é estornada no mesmo lote, local e custo (`estoque.estornar_baixas_do_pedido`, idempotente). Bebida e acompanhamento voltam ao estoque; o consumo das pizzas feitas sai da venda e entra como perda. O CMV teórico deixa de contar a venda que não houve | `test_qa_cego_ub2.py::test_c6_*` |
 | Suíte | `tests_unidade/conftest.py` deixava a senha falsa `sem-banco` quando as duas pastas rodavam juntas (`python -m pytest`), e todos os testes com banco davam erro de senha. Agora usa o mesmo padrão de `tests/conftest.py` | suíte completa |
 
 ## Decisões de regra de negócio (para Marlon, uma a uma)
 
-1. **C2 (= A9):** pizza perdida em pedido já acabado. Recomendação: permitir refazer e voltar o pedido para "em produção".
-2. **C6:** cancelar pedido acabado não devolve a bebida ao estoque. Recomendação: devolver bebida e acompanhamento lacrados e lançar como perda o consumo das pizzas feitas.
-3. **C9 a C15** (por leitura): pedido agendado (C9), contagem cega contornável (C10, = A10), chave contra reenvio em sangria, título e massa (C11), gerência zera taxa de entrega fora do limite (C12), frete fora do custo médio (C14, = 2AB M13), folha sem proporcionalidade no mês (C15).
+1. **C9 a C15** (por leitura): pedido agendado (C9), contagem cega contornável (C10, = A10), chave contra reenvio em sangria, título e massa (C11), gerência zera taxa de entrega fora do limite (C12), frete fora do custo médio (C14, = 2AB M13), folha sem proporcionalidade no mês (C15).
 
 ## Fica para a próxima rodada (técnico)
 
@@ -37,4 +37,4 @@ Suíte completa depois das correções: 337 passed e 1 falha (`test_bem_sem_inic
 
 ## Recomendação
 
-Mesclar os PRs na ordem #2, #3, #4 e depois este, e responder as decisões 1 e 2 nessa ordem.
+Mesclar os PRs na ordem #2, #3, #4 e depois este, e decidir os itens C9 a C15 quando houver tempo; nenhum deles trava a operação hoje.

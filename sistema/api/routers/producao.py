@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
 from api.database import agora, auditar, get_db, transacao
-from api.routers.vendas import _pedido, mudar_situacao
+from api.routers.vendas import _pedido, mudar_situacao, voltar_para_producao
 from api.schemas import ContagemMassaIn, LoteMassaIn, MontagemErradaIn, MotivoIn, MotivoRef, MotivoUpdate, PerdaMassaIn
 from api.security import permissoes_de, requer, requer_alguma, tem_permissao
 from api.services import estoque, producao as svc
@@ -259,6 +259,7 @@ def perder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.perda")), con
     quando = agora()
     svc.mover(conn, pid, "perdida", sessao["usuario_id"], quando)
     svc.registrar_perda_pizza(conn, LOJA_ID, p, m["id"], sessao["usuario_id"], quando)
+    voltar_para_producao(conn, sessao, ped, f"Pizza perdida: {m['nome']}")  # acabado não fica com pizza faltando
     auditar(conn, sessao, "perder", "pizza_producao", pid, depois={"motivo": m["nome"]})
     conn.commit()
     return {"id": pid, "situacao": "perdida"}
@@ -271,9 +272,10 @@ def refazer(pid: int, d: MotivoRef, sessao=Depends(requer("producao.refazer")), 
     _exigir(p, "em montagem", "no forno", "saiu do forno", "acabada", "perdida")
     if conn.execute("SELECT 1 FROM pizza_producao WHERE original_id = %s", (pid,)).fetchone():
         raise HTTPException(status_code=409, detail="Esta pizza já foi refeita.")
-    if ped["situacao"] not in ("recebido", "em producao"):
-        raise HTTPException(status_code=409, detail=f"Pedido {ped['situacao']}: refação só enquanto o pedido está em produção. Para reclamação depois, faça um novo pedido.")
+    if ped["situacao"] not in ("recebido", "em producao", "acabado"):
+        raise HTTPException(status_code=409, detail=f"Pedido {ped['situacao']}: refação só enquanto o pedido não saiu. Para reclamação depois, faça um novo pedido.")
     m = _motivo(conn, "motivo_perda", d.motivo_id)
+    voltar_para_producao(conn, sessao, ped, f"Refação: {m['nome']}")
     quando = agora()
     if p["situacao"] != "perdida":
         svc.mover(conn, pid, "perdida", sessao["usuario_id"], quando)

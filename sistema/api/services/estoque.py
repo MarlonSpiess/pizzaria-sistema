@@ -243,6 +243,27 @@ def baixar_pizza(conn, loja_id: int, pizza_id: int, fase: str, usuario_id, quand
                      (loja_id, pizza_id, f"{type(e).__name__}: {str(e)[:150]}", quando))
 
 
+def estornar_baixas_do_pedido(conn, loja_id: int, pedido_id: int, usuario_id, quando) -> None:
+    """Pedido cancelado depois de baixado (decisão de Marlon, 23/11/2026, QA cego C6): cada saída de venda é estornada no
+    mesmo lote, local e custo. Bebida e acompanhamento voltam ao estoque; o consumo das pizzas vira perda. Repetir não duplica.
+    Quem chama comita."""
+    if not conn.execute("INSERT INTO baixa_origem (origem_tipo, origem_id, fase, criado_em) VALUES ('pedido', %s, 'cancelamento', %s) "
+                        "ON CONFLICT DO NOTHING RETURNING 1", (pedido_id, quando)).fetchone():
+        return
+    pizzas = [r["id"] for r in conn.execute("SELECT id FROM pizza_producao WHERE pedido_id = %s UNION SELECT avulsa_pizza_id FROM item_pedido "
+                                            "WHERE pedido_id = %s AND avulsa_pizza_id IS NOT NULL", (pedido_id, pedido_id)).fetchall()]
+    movs = conn.execute("SELECT * FROM movimento_estoque WHERE tipo = 'saida_venda' AND quantidade < 0 AND ((origem_tipo = 'pedido' AND origem_id = %s) "
+                        "OR (origem_tipo = 'pizza' AND origem_id = ANY(%s))) ORDER BY item_id, id", (pedido_id, pizzas)).fetchall()
+    for m in movs:
+        trava_item(conn, m["item_id"])
+        origem = (m["origem_tipo"], m["origem_id"])
+        _mov(conn, loja_id, m["item_id"], m["local_id"], m["lote_id"], "saida_venda", -m["quantidade"], m["custo_unit"],
+             "Estorno: pedido cancelado", origem, usuario_id, quando)
+        if m["origem_tipo"] == "pizza":  # a pizza foi feita: o consumo continua, agora como perda
+            _mov(conn, loja_id, m["item_id"], m["local_id"], m["lote_id"], "perda", m["quantidade"], m["custo_unit"],
+                 "Pedido cancelado", origem, usuario_id, quando)
+
+
 def baixar_itens_do_pedido(conn, loja_id: int, pedido_id: int, usuario_id, quando) -> None:
     """Bebidas e acompanhamentos saem do estoque quando o pedido fica acabado, pela ficha do produto."""
     try:

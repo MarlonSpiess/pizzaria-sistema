@@ -218,6 +218,7 @@ def test_entrega_de_canal_so_sai_com_entregador(client, conn_teste, cardapio, hs
     pid = _pagar(client, ha, [_g(cardapio, 1)], tipo="entrega", cliente_id=cli["id"])["id"]
     conn_teste.execute("SET session_replication_role = replica")
     conn_teste.execute("UPDATE pedido SET canal = 'anotaai', id_canal = %s, situacao = 'acabado' WHERE id = %s", (f"SAI{pid}", pid))
+    conn_teste.execute("UPDATE pizza_producao SET situacao = 'acabada' WHERE pedido_id = %s", (pid,))  # acabado de verdade: sem pizza pendente
     conn_teste.execute("SET session_replication_role = DEFAULT")
     r = client.post(f"/api/pedidos/{pid}/situacao", json={"situacao": "despachado ou retirado"}, headers=ha)
     assert r.status_code == 409 and "entregador" in r.json()["detail"]
@@ -231,6 +232,7 @@ def test_entrega_de_canal_so_sai_com_entregador(client, conn_teste, cardapio, hs
     pb = _pagar(client, ha, [_g(cardapio, 1)], tipo="entrega", cliente_id=cli2["id"])["id"]
     conn_teste.execute("SET session_replication_role = replica")
     conn_teste.execute("UPDATE pedido SET situacao = 'acabado' WHERE id = %s", (pb,))
+    conn_teste.execute("UPDATE pizza_producao SET situacao = 'acabada' WHERE pedido_id = %s", (pb,))
     conn_teste.execute("SET session_replication_role = DEFAULT")
     assert client.post(f"/api/pedidos/{pb}/situacao", json={"situacao": "despachado ou retirado"}, headers=ha).status_code == 200
     conn_teste.execute("SET session_replication_role = replica")
