@@ -26,8 +26,12 @@ def medir(caminho_json: str):
     arquivos = json.load(open(caminho_json, encoding="utf-8"))["files"]
     for arq, d in arquivos.items():
         executadas, faltando = set(d["executed_lines"]), set(d["missing_lines"])
+        vistas = set()  # o radon devolve o método solto e de novo dentro da classe: conta uma vez
         for bloco in cc_visit(open(arq, encoding="utf-8").read()):
             for f in funcoes(bloco):
+                if (f.lineno, f.name) in vistas:
+                    continue
+                vistas.add((f.lineno, f.name))
                 linhas = set(range(f.lineno, f.endline + 1))
                 ex, fa = len(linhas & executadas), len(linhas & faltando)
                 cob = ex / (ex + fa) if ex + fa else 1.0

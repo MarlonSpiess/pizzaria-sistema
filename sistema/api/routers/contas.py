@@ -171,7 +171,7 @@ def titulos(sentido: Optional[str] = None, situacao: Optional[str] = None, de: O
         sql, p = sql + " AND t.vencimento >= %s", p + [de]
     if ate:
         sql, p = sql + " AND t.vencimento <= %s", p + [ate]
-    if not tem_permissao(sessao, "rh.salarios"):
+    if not _ve_folha(sessao):
         sql += " AND t.origem_tipo <> 'folha'"
     hoje = agora().date()
     if atrasados:
@@ -197,6 +197,8 @@ def criar_titulo(d: TituloIn, sessao=Depends(requer("contas.operar")), conn=Depe
         lim = vigentes(conn, LOJA_ID)["conta_valor_aprovacao"]["valor"]
         if lim is not None:  # o limite vale para o total do lançamento e para o acumulado do dia de quem lança (fracionar não foge)
             hoje_ = agora().date()
+            # Um lançamento a pagar por vez para quem lança: dois terminais simultâneos não furam o acumulado do dia.
+            conn.execute("SELECT pg_advisory_xact_lock(7202, %s)", (sessao["usuario_id"],))
             ja = conn.execute("SELECT COALESCE(sum(valor), 0) AS s FROM titulo WHERE loja_id = %s AND criado_por = %s AND sentido = 'pagar' AND origem_tipo IN ('manual','parcela') "
                               "AND situacao <> 'cancelado' AND criado_em::date = %s", (LOJA_ID, sessao["usuario_id"], hoje_)).fetchone()["s"]
             aprovado = ja + valor <= Decimal(lim)
@@ -227,16 +229,21 @@ def conta_data(conn, conta_id):
     return conn.execute("SELECT saldo_inicial_data FROM conta_bancaria WHERE id = %s", (conta_id,)).fetchone()["saldo_inicial_data"]
 
 
-def _travar(conn, tid):
+def _ve_folha(sessao) -> bool:
+    """Única regra de visibilidade da folha em Contas: título e baixa da folha só para quem vê salários."""
+    return tem_permissao(sessao, "rh.salarios")
+
+
+def _travar(conn, tid, sessao):
     t = conn.execute("SELECT * FROM titulo WHERE id = %s AND loja_id = %s FOR UPDATE", (tid, LOJA_ID)).fetchone()
-    if not t:
+    if not t or (t["origem_tipo"] == "folha" and not _ve_folha(sessao)):  # 404 igual ao inexistente: não revela que a folha existe
         raise HTTPException(status_code=404, detail="Título não encontrado.")
     return t
 
 
 @router.post("/titulos/{tid}/aprovar")
 def aprovar(tid: int, sessao=Depends(requer("contas.aprovar")), conn=Depends(get_db)):
-    t = _travar(conn, tid)
+    t = _travar(conn, tid, sessao)
     if t["aprovado"]:
         raise HTTPException(status_code=409, detail="O título já está aprovado.")
     if t["situacao"] == "cancelado":
@@ -253,7 +260,7 @@ def aprovar(tid: int, sessao=Depends(requer("contas.aprovar")), conn=Depends(get
 
 @router.post("/titulos/{tid}/cancelar")
 def cancelar(tid: int, d: CancelarTituloIn, sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
-    t = _travar(conn, tid)
+    t = _travar(conn, tid, sessao)
     if t["origem_tipo"] not in ("manual", "parcela", "recorrencia"):
         raise HTTPException(status_code=409, detail="Título criado por outra área do sistema: corrija na origem.")
     if t["situacao"] != "aberto":
@@ -266,7 +273,7 @@ def cancelar(tid: int, d: CancelarTituloIn, sessao=Depends(requer("contas.operar
 
 @router.post("/titulos/{tid}/baixas", status_code=201)
 def dar_baixa(tid: int, d: BaixaIn, sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
-    t = _travar(conn, tid)
+    t = _travar(conn, tid, sessao)
     if t["situacao"] in ("baixado", "cancelado"):
         raise HTTPException(status_code=409, detail=f"O título está {t['situacao']}.")
     if not t["aprovado"]:
@@ -320,7 +327,7 @@ def pendencias_conciliacao(conta_id: int, sessao=Depends(requer("contas.ver")), 
     ext = conn.execute("SELECT id, data, descricao, valor FROM extrato_linha e WHERE conta_id = %s AND NOT EXISTS (SELECT 1 FROM conciliacao c WHERE c.extrato_id = e.id) ORDER BY data, id", (conta_id,)).fetchall()
     bx = conn.execute("SELECT b.id, b.data, t.descricao, t.sentido, b.forma, b.valor_movimento FROM baixa_titulo b JOIN titulo t ON t.id = b.titulo_id "
                       "WHERE b.conta_id = %s AND NOT EXISTS (SELECT 1 FROM conciliacao c WHERE c.baixa_id = b.id)"
-                      + ("" if tem_permissao(sessao, "rh.salarios") else " AND t.origem_tipo IS DISTINCT FROM 'folha'")  # folha só para quem vê salários
+                      + ("" if _ve_folha(sessao) else " AND t.origem_tipo IS DISTINCT FROM 'folha'")  # folha só para quem vê salários
                       + " ORDER BY b.data, b.id", (conta_id,)).fetchall()
     return {"extrato": [e | {"valor": fmt(e["valor"])} for e in ext],
             "baixas": [b | {"valor_movimento": fmt(b["valor_movimento"]), "valor_com_sinal": fmt(b["valor_movimento"] if b["sentido"] == "receber" else -b["valor_movimento"])} for b in bx]}
@@ -329,7 +336,9 @@ def pendencias_conciliacao(conta_id: int, sessao=Depends(requer("contas.ver")), 
 @router.post("/conciliacao", status_code=201)
 def conciliar(d: ConciliarIn, sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
     e = conn.execute("SELECT e.* FROM extrato_linha e JOIN conta_bancaria c ON c.id = e.conta_id WHERE e.id = %s AND c.loja_id = %s", (d.extrato_id, LOJA_ID)).fetchone()
-    b = conn.execute("SELECT b.*, t.sentido FROM baixa_titulo b JOIN titulo t ON t.id = b.titulo_id WHERE b.id = %s AND t.loja_id = %s", (d.baixa_id, LOJA_ID)).fetchone()
+    b = conn.execute("SELECT b.*, t.sentido, t.origem_tipo FROM baixa_titulo b JOIN titulo t ON t.id = b.titulo_id WHERE b.id = %s AND t.loja_id = %s", (d.baixa_id, LOJA_ID)).fetchone()
+    if b and b["origem_tipo"] == "folha" and not _ve_folha(sessao):
+        b = None
     if not e or not b:
         raise HTTPException(status_code=404, detail="Linha do extrato ou baixa não encontrada.")
     if e["conta_id"] != b["conta_id"]:

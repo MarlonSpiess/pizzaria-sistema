@@ -53,7 +53,7 @@ def test_editar_funcionario(client):
     f = next(x for x in client.get("/api/rh/funcionarios", headers=h).json() if x["id"] == fid)
     assert (f["nome"], f["funcao"], f["usuario_id"]) == ("Nome Novo", "Massa", uid)
     assert client.post(f"/api/rh/funcionarios/{fid}/desligar", json={"data": str(date.today()), "motivo": "pedido"}, headers=h).status_code == 200
-    assert client.patch(f"/api/rh/funcionarios/{fid}", json={"nome": "Outro"}, headers=h).status_code in (404, 409)  # desligado não se edita
+    assert client.patch(f"/api/rh/funcionarios/{fid}", json={"nome": "Outro"}, headers=h).status_code == 409  # desligado não se edita
 
 
 def test_gerente_nao_liga_login_da_gerencia_a_funcionario(client):

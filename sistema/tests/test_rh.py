@@ -68,7 +68,7 @@ def test_permissoes_e_salario_so_para_administrador_e_proprietario(client, base)
 
 def test_contrato_historico_e_escala_cadastravel(client, base):
     fid = _func(client, base)
-    c1 = _contrato(client, base, fid, vigente_desde=str(date.today() - timedelta(days=200)))
+    _contrato(client, base, fid, vigente_desde=str(date.today() - timedelta(days=200)))
     assert client.post(f"/api/rh/funcionarios/{fid}/contratos", json={"tipo": "clt", "forma_pagamento": "mensal", "valor": "2500", "vigente_desde": str(date.today() - timedelta(days=200))}, headers=base["administrador"]).status_code == 400
     c2 = client.post(f"/api/rh/funcionarios/{fid}/contratos", json={"tipo": "clt", "escala_id": base["escalas"]["5x2"], "forma_pagamento": "mensal", "valor": "2500,00", "vigente_desde": str(date.today() - timedelta(days=10))}, headers=base["administrador"])
     assert c2.status_code == 201
@@ -159,7 +159,6 @@ def test_folha_previa_resumo_e_titulo_em_contas(client, base):
     _contrato(client, base, dia, tipo="diarista", forma_pagamento="diaria", valor="100,00", escala_id=None)
     _contrato(client, base, hora, tipo="freelancer", forma_pagamento="hora", valor="20,00", escala_id=None)
     assert client.post(f"/api/rh/funcionarios/{clt}/beneficios", json={"nome": "Vale-transporte", "valor_mensal": "150,00"}, headers=base["administrador"]).status_code == 201
-    base_dia = ini if ini < date.today() else ini
     for n in range(2):
         d = ini + timedelta(days=n)
         if d <= date.today():

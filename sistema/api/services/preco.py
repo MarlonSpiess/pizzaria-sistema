@@ -44,10 +44,9 @@ def preco_pizza(tamanho: str, sabores: list[dict], adicionais: list[dict]) -> di
     """Regra pura: sabores e adicionais já validados, cada um com nome e valor (Decimal) no tamanho."""
     itens, total = [], Decimal("0.00")
     if len(sabores) == 2:
-        for s in sabores:
-            metade = metade_para_cima(s["valor"])
-            itens.append({"descricao": f"Metade {s['nome']} (Grande {fmt(s['valor']).replace('.', ',')} ÷ 2)", "valor": fmt(metade)})
-            total += metade
+        for s in sabores:  # metade_para_cima só descreve cada metade; o total sai da regra única
+            itens.append({"descricao": f"Metade {s['nome']} (Grande {fmt(s['valor']).replace('.', ',')} ÷ 2)", "valor": fmt(metade_para_cima(s["valor"]))})
+        total += preco_meio_a_meio(sabores[0]["valor"], sabores[1]["valor"])
     else:
         itens.append({"descricao": f"{sabores[0]['nome']} ({tamanho})", "valor": fmt(sabores[0]["valor"])})
         total += sabores[0]["valor"]
