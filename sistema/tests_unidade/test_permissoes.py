@@ -5,7 +5,8 @@ from pathlib import Path
 from api.security import PERMISSOES, tem_permissao
 
 API = Path(__file__).resolve().parent.parent / "api"
-SO_DONO = {"usuarios.gerir", "parametros.editar", "canais.configurar", "contas.aprovar", "imobilizado.aprovar", "rh.salarios"}
+SO_DONO = {"usuarios.gerir", "parametros.editar", "canais.configurar", "contas.aprovar", "imobilizado.aprovar", "rh.salarios",
+           "checklist.gerir"}  # modelos de checklist: administrador e proprietário (M4-8)
 
 
 def test_administrador_e_proprietario_tem_tudo():
@@ -25,12 +26,12 @@ def test_gerencia_nao_tem_o_que_e_so_do_dono():
 
 
 def test_funcoes_de_producao_e_atendente():
-    assert PERMISSOES["massa"] == {"rh.proprio", "producao.massa", "producao.perda_massa"}
-    assert PERMISSOES["pizzaiolo"] == {"rh.proprio", "producao.montagem", "producao.perda"}
+    assert PERMISSOES["massa"] == {"rh.proprio", "producao.massa", "producao.perda_massa", "checklist.executar"}
+    assert PERMISSOES["pizzaiolo"] == {"rh.proprio", "producao.montagem", "producao.perda", "checklist.executar"}
     assert PERMISSOES["acabamento"] == {"rh.proprio", "entregas.despachar", "producao.forno", "producao.acabamento",
-                                        "producao.perda", "producao.refazer"}
+                                        "producao.perda", "producao.refazer", "checklist.executar"}
     assert PERMISSOES["atendente"] == {"rh.proprio", "cardapio.ver", "clientes.ver", "clientes.editar", "entregadores.ver",
-                                       "vendas.ver", "vendas.criar", "caixa.ver", "caixa.operar"}
+                                       "vendas.ver", "vendas.criar", "caixa.ver", "caixa.operar", "checklist.executar"}
 
 
 def test_matriz_imutavel():

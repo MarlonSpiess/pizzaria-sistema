@@ -31,7 +31,7 @@ async function api(metodo, caminho, corpo) {
 
 function sair(chamarApi = true) {
   if (chamarApi && estado.token) api("POST", "/auth/logout").catch(() => {});
-  estado.token = null; estado.eu = null; estado.rascunho = null; estado.modoPedidos = null;
+  estado.token = null; estado.eu = null; estado.rascunho = null; estado.modoPedidos = null; estado.chkExec = null; estado.chkSub = null;
   try { sessionStorage.removeItem("pz-token"); } catch (e) { /* ok */ }
   desenhar();
 }
@@ -101,6 +101,9 @@ const ABAS = [
   ["usuarios", "Usuários", ["administrador", "proprietario"], "", "🔑", "admin"],
   ["parametros", "Parâmetros", GERENCIA_PERFIS, "", "⚙️", "admin"],
   ["auditoria", "Auditoria", GERENCIA_PERFIS, "", "🧾", "admin"],
+  ["checklist_funcao", "Checklists", ["massa", "pizzaiolo", "acabamento"], "", "✅", "producao"],
+  ["checklist_vendas", "Checklists", ["atendente"], "", "✅", "vendas"],
+  ["checklists", "Checklists", GERENCIA_PERFIS, "", "✅", "admin"],
   ["meusdados", "Meus dados", null, "", "🗓️", "conta"],
 ];
 const ENTRADA_AREA = { atendente: "vendas", massa: "producao", pizzaiolo: "producao", acabamento: "producao" };
@@ -500,7 +503,17 @@ async function abaCanais() {
   const nav = h("div", { class: "subnav" }, canais.map((c) => h("button", { class: c.id === atual.id ? "ativo" : "", onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome + (c.pendentes ? " (" + c.pendentes + ")" : ""))));
   const lojaCartao = h("div", { class: "cartao" }, h("h2", {}, "Loja: " + (loja.loja_aberta ? "ABERTA para pedidos" : "fechada")),
     h("p", { class: "pequeno" }, "Chave manual da gerência. Ligue quando já puder receber pedidos e desligue ao fechar; ela não muda sozinha." + (loja.desde ? " Última troca: " + new Date(loja.desde).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) + "." : "")),
-    h("button", { class: loja.loja_aberta ? "sec" : "principal", onclick: async (ev) => { ev.target.disabled = true; try { await api("PATCH", "/canais/loja", { ativo: !loja.loja_aberta }); abaCanais(); } catch (e) { falha(e); ev.target.disabled = false; } } }, loja.loja_aberta ? "Fechar a loja" : "Abrir a loja"));
+    h("button", { class: loja.loja_aberta ? "sec" : "principal", onclick: async (ev) => { ev.target.disabled = true;
+      const trocar = async (corpo) => { const r = await api("PATCH", "/canais/loja", corpo); if (r && r.aviso_checklist) window.alert(r.aviso_checklist); abaCanais(); };
+      try { await trocar({ ativo: !loja.loja_aberta }); }
+      catch (e) {
+        // checklist de início pendente com bloqueio ligado: a gerência pode liberar informando o motivo (fica na auditoria)
+        if (!loja.loja_aberta && /motivo para liberar/.test(e.message)) {
+          const m = window.prompt(e.message + " Motivo para liberar a abertura:");
+          if (m && m.trim()) { try { await trocar({ ativo: true, liberar_motivo: m.trim() }); return; } catch (x) { falha(x); } }
+        } else falha(e);
+        ev.target.disabled = false;
+      } } }, loja.loja_aberta ? "Fechar a loja" : "Abrir a loja"));
   const estadoCartao = h("div", { class: "cartao" }, h("h2", {}, atual.nome), h("p", { class: "pequeno" }, "Integração ainda não conectada: falta o token do canal. Aqui ficam só a estrutura, a fila de entrada e o mapa de produtos."),
     !podeConfigurar ? null : h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/canais/" + atual.id + "/ativo", { ativo: !atual.ativo }); abaCanais(); } catch (e) { falha(e); } } }, atual.ativo ? "Desativar canal" : "Ativar canal"),
     h("p", {}, atual.ativo ? "Canal ativo." : "Canal desativado."),
@@ -832,7 +845,10 @@ async function abaVendas() {
     const aut = entradaAutorizacao();
     const total = calc ? Number(calc.total) : 0;
     const pago = r.pagamentos.reduce((a, p) => a + Number(String(p.valor).replace(",", ".")), 0);
+    const lido = h("input", { type: "checkbox" }); lido.checked = !!r.leitura; lido.onchange = () => { r.leitura = lido.checked; };
     const cartaoResumo = h("div", { class: "cartao" }, h("h2", {}, "3. Resumo"),
+      h("div", { class: "pequeno" }, "Cliente: " + (r.cliente ? r.cliente.nome + " · " + r.cliente.telefone + (r.tipo === "entrega" ? " · " + (r.cliente.endereco || "sem endereço") : "") : "balcão, sem cliente")),
+      h("label", { class: "inline" }, lido, " Li o pedido de volta ao cliente (itens, adicionais e observações)"),
       calc ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, linhasResumo)))
         : r.itens.length ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, r.itens.map((i, ix) => h("tr", {}, h("td", {}, i.dados.quantidade + "x item " + (ix + 1) + (i.dados.avulsa_id ? " (avulsa)" : "")),
           h("td", {}, h("button", { class: "sec", onclick: () => { r.itens.splice(ix, 1); redesenhar(); } }, "Remover")))))))
@@ -862,10 +878,13 @@ async function abaVendas() {
       if (confirmar.disabled) return;
       confirmar.disabled = true;
       try {
+        const leu = r.leitura;
         const criado = await api("POST", "/pedidos", { ...corpoCalculo(), cliente_id: r.cliente ? r.cliente.id : null, taxa_motivo: r.taxaMotivo.trim() || null,
           pagamentos: r.pagamentos.map((p) => ({ forma: p.forma, valor: p.valor })), urgente: r.urgente, observacoes: r.obs.trim() || null, autorizacao: aut.valor(), chave: r.chave });
+        let avisoLeitura = "";
+        if (leu) { try { await api("POST", "/checklists/pedidos/" + criado.id + "/controles", { ponto: "leitura_de_volta", ok: true }); } catch (x) { avisoLeitura = " Atenção: o pedido foi criado, mas não foi possível registrar a leitura de volta."; } }
         estado.rascunho = null; estado.modoPedidos = null; estado.subv = "dia";
-        await desenharSub(); msg.replaceChildren(aviso("ok", "Pedido " + criado.id_dia + " registrado. Total " + brl(criado.total) + (Number(criado.troco) > 0 ? ". Troco " + brl(criado.troco) + "." : ".")));
+        await desenharSub(); msg.replaceChildren(aviso(avisoLeitura ? "alerta" : "ok", "Pedido " + criado.id_dia + " registrado. Total " + brl(criado.total) + (Number(criado.troco) > 0 ? ". Troco " + brl(criado.troco) + "." : ".") + avisoLeitura));
       } catch (e) { confirmar.disabled = false; falha(e); }
     } }, "Confirmar pedido");
     const cartaoFim = h("div", { class: "cartao" }, campo("Observações", obs), h("label", { class: "inline" }, urg, " Pedido urgente"), h("div", {}, confirmar, " ",
@@ -1635,6 +1654,10 @@ async function abaBi() {
   async function subProd() {
     const p = await api("GET", "/bi/producao?mes=" + estado.mesBi);
     return h("div", {}, h("div", { class: "linha" }, seletorMes()), h("div", { class: "grade" }, cartao("Pizzas acabadas", String(p.pizzas_acabadas)), cartao("Refações", String(p.refacoes))),
+      p.tempos_entrega ? h("div", { class: "cartao" }, h("h2", {}, "Entregas: até atribuir e até sair"),
+        h("p", {}, "Entregas no mês: " + p.tempos_entrega.entregas + " · do pedido até atribuir o entregador: " + (p.tempos_entrega.atribuir_minutos_medios == null ? "sem dados" : num(p.tempos_entrega.atribuir_minutos_medios) + " min")
+          + " · do pedido até a saída (despacho): " + (p.tempos_entrega.sair_minutos_medios == null ? "sem dados" : num(p.tempos_entrega.sair_minutos_medios) + " min") + "."),
+        h("p", { class: "pequeno" }, "O tempo na rua não é medido: o sistema não registra a chegada ao cliente. A saída é a hora em que o pedido vira despachado.")) : null,
       h("div", { class: "cartao" }, h("h2", {}, "Tempo médio por etapa"), tabela(["Etapa", "Ocorrências", "Minutos"], p.tempo_por_etapa.map((e) => h("tr", {}, h("td", {}, e.etapa), h("td", {}, String(e.ocorrencias)), h("td", {}, num(e.minutos_medios)))))),
       h("div", { class: "cartao" }, h("h2", {}, "Retrocessos por motivo"), tabela(["Motivo", "Quantidade"], p.retrocessos_por_motivo.map((e) => h("tr", {}, h("td", {}, e.motivo), h("td", {}, String(e.quantidade)))))),
       h("div", { class: "cartao" }, h("h2", {}, "Perdas por motivo"), tabela(["Motivo", "Quantidade"], p.perdas_por_motivo.map((e) => h("tr", {}, h("td", {}, e.motivo), h("td", {}, String(e.quantidade)))))));
@@ -1962,6 +1985,174 @@ async function abaMeusDados() {
       d.ausencias.length ? h("p", {}, "Ausências: " + d.ausencias.map((a) => a.tipo + " " + dia(a.inicio) + " a " + dia(a.fim)).join(" · ")) : ""));
 }
 
+// ---------------------------------------------------------------- Checklists (melhoria M4): início, acompanhamento e fim do dia
+// O servidor confere função e limites; a tela só mostra o que ele devolve. Sem confirm, prompt nem alert.
+const ROT_RESULTADO = { conforme: "Conforme", nao_conforme: "Não conforme", nao_se_aplica: "Não se aplica" };
+const ROT_SIT_CHK = { aberta: "Em andamento", concluida: "Concluído", concluida_com_pendencia: "Concluído com pendência" };
+const fmtHoraChk = (iso) => iso ? new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+const classeResultado = (r) => r === "conforme" ? "ok" : r === "nao_conforme" ? "nc" : "na";
+
+function limitesTexto(it) {
+  const mn = it.limite_min, mx = it.limite_max;
+  if (mn == null && mx == null) return "Limite não definido nos parâmetros: o valor só é registrado.";
+  return "Limite: " + (mn != null ? "mínimo " + mn : "") + (mn != null && mx != null ? ", " : "") + (mx != null ? "máximo " + mx : "") + (it.unidade ? " " + it.unidade : "");
+}
+
+// Trava o botão enquanto a chamada está em andamento (evita resposta e pendência duplicadas por duplo toque).
+function comTravaChk(botao, promessa) { botao.disabled = true; Promise.resolve(promessa).finally(() => { botao.disabled = false; }); }
+
+// Campo de texto que aparece abaixo do item quando falta a ação corretiva ou o motivo.
+function pedirTextoChk(extra, rotulo, aoSalvar) {
+  const campoTxt = h("input", { placeholder: rotulo, maxlength: "300", autocomplete: "off" });
+  extra.replaceChildren(h("div", { class: "acoes-linha" }, campoTxt,
+    h("button", { class: "principal", onclick: (ev) => { if (!campoTxt.value.trim()) { campoTxt.focus(); return; } comTravaChk(ev.target, aoSalvar(campoTxt.value.trim())); } }, "Salvar"),
+    h("button", { class: "sec", onclick: () => extra.replaceChildren() }, "Cancelar")));
+  campoTxt.focus();
+}
+
+function itemChecklist(it, aberta, salvar, correcao = false) {
+  const r = it.resposta;
+  const precisaMotivo = correcao || (r && r.resultado === "nao_conforme");  // sair de "não conforme" ou corrigir depois de concluir exige dizer o que foi feito
+  const etq = r ? h("span", { class: "chk-etq " + classeResultado(r.resultado) }, ROT_RESULTADO[r.resultado] + (r.automatica ? " (automático)" : "") + " · " + fmtHoraChk(r.respondida_em) + (r.respondida_por_nome ? " · " + r.respondida_por_nome : ""))
+    : h("span", { class: "chk-etq" }, it.obrigatorio ? "Pendente" : "Opcional");
+  const extra = h("div");
+  let corpo = null;
+  if (it.tipo_resposta === "automatico") {
+    const a = it.automatico || (r ? { resultado: r.resultado, texto: r.valor_texto } : null);
+    corpo = a ? h("div", { class: "pequeno" }, (a.resultado === "conforme" ? "✔ " : "✖ ") + (a.texto || "")) : null;
+  } else if (aberta && it.tipo_resposta === "numero") {
+    const valor = h("input", { inputmode: "decimal", placeholder: it.unidade || "valor", autocomplete: "off", value: r && r.valor_numerico != null ? String(r.valor_numerico).replace(".", ",") : "" });
+    const registrar = (ev) => {
+      const v = valor.value.trim();
+      if (!v) { valor.focus(); return; }
+      const n = Number(v.replace(",", "."));
+      const fora = !Number.isNaN(n) && ((it.limite_min != null && n < Number(it.limite_min)) || (it.limite_max != null && n > Number(it.limite_max)));
+      if (fora) pedirTextoChk(extra, "Valor fora do limite: qual a ação corretiva?", (acao) => salvar(it, { valor_numerico: v, acao_corretiva: acao }));
+      else if (precisaMotivo) pedirTextoChk(extra, "O que foi feito para corrigir?", (acao) => salvar(it, { valor_numerico: v, acao_corretiva: acao }));
+      else comTravaChk(ev.target, salvar(it, { valor_numerico: v }));
+    };
+    corpo = h("div", { class: "chk-botoes" }, valor, h("button", { class: "principal", onclick: registrar }, "Registrar"),
+      h("button", { class: "sec", onclick: () => pedirTextoChk(extra, "Motivo de não se aplicar", (m) => salvar(it, { resultado: "nao_se_aplica", valor_texto: m })) }, "Não se aplica"));
+  } else if (aberta) {
+    corpo = h("div", { class: "chk-botoes" },
+      h("button", { class: "principal", onclick: (ev) => { if (precisaMotivo) pedirTextoChk(extra, "O que foi feito para corrigir?", (acao) => salvar(it, { resultado: "conforme", acao_corretiva: acao })); else comTravaChk(ev.target, salvar(it, { resultado: "conforme" })); } }, "Conforme"),
+      h("button", { class: "sec", onclick: () => pedirTextoChk(extra, "Qual a ação corretiva?", (acao) => salvar(it, { resultado: "nao_conforme", acao_corretiva: acao })) }, "Não conforme"),
+      h("button", { class: "sec", onclick: () => pedirTextoChk(extra, "Motivo de não se aplicar", (m) => salvar(it, { resultado: "nao_se_aplica", valor_texto: m })) }, "Não se aplica"));
+  }
+  const detalhe = r && (r.acao_corretiva || r.valor_texto || r.valor_numerico != null)
+    ? h("div", { class: "pequeno" }, [r.valor_numerico != null ? "Medido: " + String(r.valor_numerico).replace(".", ",") + (it.unidade ? " " + it.unidade : "") : "", r.acao_corretiva ? "Ação: " + r.acao_corretiva : "", r.resultado === "nao_se_aplica" && r.valor_texto ? "Motivo: " + r.valor_texto : ""].filter(Boolean).join(" · ")) : null;
+  return h("div", { class: "chk-item" },
+    h("div", { class: "chk-topo" }, h("div", {}, h("strong", {}, it.codigo + " " + it.texto), it.criterio ? h("div", { class: "pequeno" }, it.criterio) : null,
+      it.tipo_resposta === "numero" ? h("div", { class: "pequeno" }, limitesTexto(it)) : null), etq),
+    detalhe, corpo, extra);
+}
+
+async function checklistExecucao(alvo, execId, voltar) {
+  const msg = h("div");
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  let d;
+  try { d = await api("GET", "/checklists/execucoes/" + execId); } catch (e) { alvo.replaceChildren(aviso("erro", e.message), h("button", { class: "sec", onclick: voltar }, "Voltar")); return; }
+  const ex = d.execucao, aberta = ex.situacao === "aberta";
+  const recarregar = () => checklistExecucao(alvo, execId, voltar);
+  const salvar = async (item, corpo) => {
+    try { await api("PUT", "/checklists/execucoes/" + execId + "/itens/" + item.id, corpo); await recarregar(); } catch (e) { falha(e); }
+  };
+  const pct = ex.obrigatorios ? Math.round(100 * ex.respondidos / ex.obrigatorios) : 100;
+  const concluir = h("button", { class: "principal", onclick: async (ev) => {
+    ev.target.disabled = true;
+    try { const r = await api("POST", "/checklists/execucoes/" + execId + "/concluir"); await recarregar(); }
+    catch (e) { ev.target.disabled = false; falha(e); }
+  } }, "Concluir checklist");
+  const setores = [];
+  for (const it of d.itens) { let s = setores.find((x) => x.nome === it.setor); if (!s) { s = { nome: it.setor, itens: [] }; setores.push(s); } s.itens.push(it); }
+  const cabecalho = h("div", { class: "cartao" },
+    h("div", { class: "chk-topo" }, h("h2", {}, ex.nome + (ex.tipo === "acompanhamento" ? " · " + ex.turno : "")), h("span", { class: "chk-etq " + (aberta ? "" : ex.situacao === "concluida" ? "ok" : "na") }, ROT_SIT_CHK[ex.situacao])),
+    h("p", { class: "pequeno" }, "Data " + new Date(ex.data + "T12:00:00").toLocaleDateString("pt-BR") + " · iniciado às " + fmtHoraChk(ex.iniciada_em) + (ex.concluida_em ? " · concluído às " + fmtHoraChk(ex.concluida_em) : "")),
+    h("div", { class: "chk-progresso", role: "progressbar", "aria-valuenow": String(pct), "aria-valuemin": "0", "aria-valuemax": "100" }, h("div", { style: "width:" + pct + "%" })),
+    h("p", { class: "pequeno" }, "Itens obrigatórios feitos: " + ex.respondidos + " de " + ex.obrigatorios + " · não conformes: " + ex.nao_conformes + " · pendências abertas: " + ex.pendencias_abertas),
+    h("div", { class: "acoes-linha" }, h("button", { class: "sec", onclick: voltar }, "Voltar"),
+      aberta && ehGerencia() ? concluir : null),
+    aberta && !ehGerencia() ? h("p", { class: "pequeno" }, "Responda os itens da sua função. A gerência confere e conclui o checklist.") : null,
+    !aberta && ehGerencia() ? h("p", { class: "pequeno" }, "Execução concluída: a gerência ainda pode corrigir uma resposta, informando o que foi feito. A resposta anterior continua registrada.") : null);
+  alvo.replaceChildren(msg, cabecalho, ...setores.map((s) => h("div", { class: "cartao" }, h("h3", {}, s.nome), s.itens.map((it) => itemChecklist(it, aberta || ehGerencia(), salvar, !aberta)))));
+}
+
+function cartoesChecklistDoDia(d, msg, abrirExecucao, recarregar) {
+  if (!d.modelos.length) return [h("div", { class: "cartao" }, h("p", {}, "Nenhum checklist para a sua função. Se ainda não há checklists na loja, o administrador instala os modelos padrão em Admin > Checklists."))];
+  return d.modelos.map((m) => {
+    const abertas = m.execucoes.filter((e) => e.situacao === "aberta");
+    const iniciar = async () => {
+      try { const r = await api("POST", "/checklists/execucoes", { modelo: m.codigo }); abrirExecucao(r.id); } catch (e) { msg.replaceChildren(aviso("erro", e.message)); }
+    };
+    const rotuloIniciar = m.tipo === "acompanhamento" ? (abertas.length ? "Continuar a rodada" : "Nova rodada") : (m.execucoes.length ? "Abrir" : "Iniciar");
+    return h("div", { class: "cartao" }, h("h2", {}, m.nome),
+      m.execucoes.length ? h("div", {}, m.execucoes.map((e) => h("div", { class: "acoes-linha" }, h("span", { class: "chk-etq " + (e.situacao === "aberta" ? "" : e.situacao === "concluida" ? "ok" : "na") }, ROT_SIT_CHK[e.situacao]),
+        " " + e.turno + " · " + e.respondidos + "/" + e.obrigatorios + " feitos" + (e.nao_conformes ? " · " + e.nao_conformes + " não conforme(s)" : ""), " ",
+        h("button", { class: "sec", onclick: () => abrirExecucao(e.id) }, "Abrir")))) : h("p", { class: "pequeno" }, "Ainda não iniciado hoje."),
+      h("div", { class: "acoes-linha" }, (m.tipo === "acompanhamento" || !m.execucoes.length) ? h("button", { class: "principal", onclick: iniciar }, rotuloIniciar) : null));
+  });
+}
+
+// Tela das funções (massa, pizzaiolo, acabamento, atendente): só os itens da própria função.
+async function abaChecklistFuncao() {
+  const alvo = h("div"); moldura(alvo);
+  if (estado.chkExec && estado.chkExec.aba === estado.aba) { return checklistExecucao(alvo, estado.chkExec.id, () => { estado.chkExec = null; desenhar(); }); }
+  const msg = h("div");
+  let d;
+  try { d = await api("GET", "/checklists/hoje"); } catch (e) { alvo.replaceChildren(aviso("erro", e.message)); return; }
+  alvo.replaceChildren(msg, h("div", { class: "cartao" }, h("h2", {}, "Checklists de hoje"), h("p", { class: "pequeno" }, "Marque cada item no momento em que fizer. Item fora do padrão pede a ação corretiva.")),
+    ...cartoesChecklistDoDia(d, msg, (id) => { estado.chkExec = { id, aba: estado.aba }; desenhar(); }));
+}
+
+// Tela da gerência: andamento do dia, pendências, aderência e modelos.
+async function abaChecklists() {
+  const alvo = h("div"); moldura(alvo);
+  if (estado.chkExec && estado.chkExec.aba === estado.aba) { return checklistExecucao(alvo, estado.chkExec.id, () => { estado.chkExec = null; desenhar(); }); }
+  const subs = [["dia", "Do dia"], ["pendencias", "Pendências"], ["aderencia", "Aderência"]].concat(["administrador", "proprietario"].includes(estado.eu.perfil) ? [["modelos", "Modelos"]] : []);
+  if (!estado.chkSub || !subs.some(([s]) => s === estado.chkSub)) estado.chkSub = "dia";
+  const msg = h("div"), corpo = h("div");
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  const nav = h("div", { class: "subnav" }, subs.map(([id, nome]) => h("button", { class: id === estado.chkSub ? "ativo" : "", onclick: () => { estado.chkSub = id; desenhar(); } }, nome)));
+  alvo.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, "Checklists"), nav), msg, corpo);
+  const tab = (cab, linhas) => h("div", { class: "tabela" }, h("table", {}, h("thead", {}, h("tr", {}, cab.map((t) => h("th", {}, t)))), h("tbody", {}, linhas)));
+  try {
+    if (estado.chkSub === "dia") {
+      const [d, pend] = await Promise.all([api("GET", "/checklists/hoje"), api("GET", "/checklists/pendencias")]);
+      const alerta = pend.length ? aviso("alerta", pend.length + " pendência(s) aberta(s). Veja em Pendências.") : null;
+      corpo.replaceChildren(...(alerta ? [alerta] : []), ...cartoesChecklistDoDia(d, msg, (id) => { estado.chkExec = { id, aba: estado.aba }; desenhar(); }));
+    } else if (estado.chkSub === "pendencias") {
+      const lista = await api("GET", "/checklists/pendencias");
+      const linhas = lista.map((p) => {
+        const extra = h("div");
+        return h("tr", {}, h("td", {}, p.descricao, h("div", { class: "pequeno" }, p.modelo_nome + " · " + new Date(p.data + "T12:00:00").toLocaleDateString("pt-BR"))), h("td", {}, p.perfil_responsavel || "qualquer função"),
+          h("td", {}, h("button", { class: "sec", onclick: () => pedirTextoChk(extra, "O que foi feito para resolver?", async (res) => {
+            try { await api("POST", "/checklists/pendencias/" + p.id + "/resolver", { resolucao: res }); desenhar(); } catch (e) { falha(e); }
+          }) }, "Resolver"), extra));
+      });
+      corpo.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, "Pendências abertas"), lista.length ? tab(["Pendência", "Responsável", ""], linhas) : h("p", {}, "Nenhuma pendência aberta.")));
+    } else if (estado.chkSub === "aderencia") {
+      const a = await api("GET", "/checklists/aderencia");
+      const linhas = a.modelos.map((m) => h("tr", {}, h("td", {}, m.nome), h("td", {}, String(m.execucoes)), h("td", {}, String(m.concluidas)),
+        h("td", {}, m.aderencia_pct == null ? "" : String(m.aderencia_pct).replace(".", ",") + "%"), h("td", {}, String(m.nao_conformes)),
+        h("td", { class: "pequeno" }, m.mais_nao_se_aplica.map((x) => x.codigo + " (" + x.vezes + "x)").join(", "))));
+      corpo.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, "Aderência de " + new Date(a.de + "T12:00:00").toLocaleDateString("pt-BR") + " a " + new Date(a.ate + "T12:00:00").toLocaleDateString("pt-BR")),
+        a.modelos.length ? tab(["Checklist", "Execuções", "Concluídas", "Itens obrigatórios feitos", "Não conformes", "Mais 'não se aplica'"], linhas) : h("p", {}, "Nenhuma execução no período."),
+        h("p", { class: "pequeno" }, "Pendências abertas: " + a.pendencias_abertas + " · resolvidas: " + a.pendencias_resolvidas + ". Confira por amostra: toda semana, escolha 3 itens de um checklist concluído e veja se a realidade bate.")));
+    } else {
+      const ms = await api("GET", "/checklists/modelos");
+      const instalar = h("button", { class: "principal", onclick: async (ev) => {
+        ev.target.disabled = true;
+        try { const r = await api("POST", "/checklists/modelos/padrao"); msg.replaceChildren(aviso("ok", r.instalados.length ? "Instalados: " + r.instalados.join(", ") + "." : "Todos os modelos padrão já estavam instalados.")); desenhar(); }
+        catch (e) { ev.target.disabled = false; falha(e); }
+      } }, "Instalar modelos padrão");
+      corpo.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, "Modelos"),
+        ms.length ? tab(["Código", "Nome", "Versão vigente", "Itens"], ms.map((m) => h("tr", {}, h("td", {}, m.codigo), h("td", {}, m.nome), h("td", {}, m.versao == null ? "" : String(m.versao)), h("td", {}, String(m.itens))))) : h("p", {}, "Nenhum modelo instalado."),
+        h("div", { class: "acoes-linha" }, instalar),
+        h("p", { class: "pequeno" }, "Edição de itens e publicação de nova versão: pela API (POST /api/checklists/modelos/{codigo}/versoes) nesta versão. Os limites de temperatura ficam em Parâmetros.")));
+    }
+  } catch (e) { falha(e); }
+}
+
 async function desenhar() {
   if (!estado.token) return telaLogin();
   if (!estado.eu) {
@@ -1969,7 +2160,7 @@ async function desenhar() {
   }
   if (estado.eu.deve_trocar_senha) return telaTrocaSenha();
   if (!abasDoPerfil().some(([id]) => id === estado.aba)) estado.aba = abaInicial();
-  const abas = { painel: abaPainel, vendas: abaVendas, producao: abaProducao, caixa: abaCaixa, estoque: abaEstoque, compras: abaCompras, contas: abaContas, custos: abaCustos, bi: abaBi, imobilizado: abaImobilizado, rh: abaRh, meusdados: abaMeusDados, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, canais: abaCanais, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
+  const abas = { painel: abaPainel, vendas: abaVendas, producao: abaProducao, caixa: abaCaixa, estoque: abaEstoque, compras: abaCompras, contas: abaContas, custos: abaCustos, bi: abaBi, imobilizado: abaImobilizado, rh: abaRh, meusdados: abaMeusDados, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, canais: abaCanais, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria, checklist_funcao: abaChecklistFuncao, checklist_vendas: abaChecklistFuncao, checklists: abaChecklists };
   await (abas[estado.aba] || abaPainel)();
 }
 

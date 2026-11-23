@@ -17,6 +17,8 @@ Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). Para 
 | Aprovar título a pagar ou ordem de serviço acima do limite; dar baixa em bem (sempre) | Não (administrador ou proprietário) | Não |
 | Editar parâmetros, gerir usuários, ver salários e folha | Não (administrador ou proprietário) | Não |
 | Ativar canal, ligar "aceitar sozinho", editar o mapa de produtos | Não (administrador ou proprietário) | Não |
+| Desligar no RH um funcionário que tem login de gerente, subgerente, administrador ou proprietário | Não (administrador ou proprietário) | Não |
+| Editar os modelos de checklist | Não (administrador ou proprietário) | Não |
 
 ## 2. Produção
 
@@ -68,16 +70,25 @@ Além de tudo o que o atendente faz:
 - **Bebidas e acompanhamentos** saem do estoque quando o pedido fica acabado.
 - A baixa automática **nunca trava a produção**. Se faltar saldo, o estoque fica **negativo**, para a falta aparecer. Produto sem ficha gera uma pendência em Estoque > Alertas.
 - **Alerta de estoque** (Estoque > Alertas, e alerta no BI): ingrediente **NEGATIVO**, **ZERADO**, **repor** (chegou ao ponto de pedido) ou **abaixo do mínimo** (estoque mínimo do cadastro), do mais grave para o menos grave. Vale para qualquer item com estoque mínimo, não só ingrediente. Trate na loja (conferir, repor) e, se for o caso, ajuste o saldo por um Inventário.
-- **Fechar vendas dos sabores:** no alerta, toque no botão do item. O sistema mostra os sabores afetados (exemplo: ovo fecha Portuguesa, Paulista, Baiana) e pede confirmação. **O que isso faz hoje:** o balcão não consegue vender esses sabores (aparecem como VENDA FECHADA e o sistema recusa o pedido), pedidos do canal com eles não são aceitos sozinhos e a pausa no Anota Ai fica preparada (depende da API). Para reabrir, use **Reabrir vendas** no cartão **Vendas fechadas agora**, no topo de Estoque > Alertas; o cartão continua lá mesmo depois que o item é reposto e sai do alerta. Perda e consumo interno também podem deixar o saldo negativo; transferência entre locais não.
+- **Fechar vendas dos sabores:** no alerta, toque no botão do item. O sistema mostra os sabores afetados (exemplo: ovo fecha Portuguesa, Paulista, Baiana) e pede confirmação. **O que isso faz hoje:** o balcão não consegue vender esses sabores (aparecem como VENDA FECHADA e o sistema recusa o pedido), pedidos do canal com eles não são aceitos sozinhos e a pausa no Anota Ai fica preparada (depende da API). Para reabrir, use **Reabrir vendas** no cartão **Vendas fechadas agora**, no topo de Estoque > Alertas; o cartão continua lá mesmo depois que o item é reposto e sai do alerta. Se o ingrediente em falta for da **massa ou molho base**, fecha toda pizza daquele tamanho; se for de uma **borda ou adicional**, fecha só aquela borda ou adicional. Perda e consumo interno também podem deixar o saldo negativo; transferência entre locais não.
 
 Mantenha o **estoque mínimo** de cada ingrediente preenchido em Estoque > Saldos (configuração do item). Sem ele, o alerta de "baixo" não funciona.
 
-## 5. Rotina sugerida
+## 5. Checklists (Administrativo > Checklists)
+
+- **Do dia:** mostra cada checklist e quantos itens obrigatórios já foram feitos. Abra uma execução para ver todos os itens (cada resposta mostra quem respondeu e a hora) e **Concluir checklist** quando tudo estiver respondido. O sistema não deixa concluir com item obrigatório em branco.
+- **Corrigir depois de concluir:** a gerência pode corrigir uma resposta de uma execução já concluída, informando o que foi feito. A resposta anterior continua registrada e a situação acompanha as pendências abertas.
+- **Pendências:** cada item não conforme vira uma pendência. Toque em **Resolver** e escreva o que foi feito. Quando todas as pendências de uma execução são resolvidas, ela passa de "concluído com pendência" para "concluído".
+- **Aderência:** mostra, por checklist, quantos itens obrigatórios foram feitos, quantos ficaram não conformes e quais itens mais aparecem como "não se aplica". Toda semana, confira por amostra: escolha 3 itens de um checklist concluído e veja se a realidade bate.
+- **BI de entregas:** em BI > Produção, o cartão "Entregas: até atribuir e até sair" mostra os minutos do pedido até atribuir o entregador e até a saída. O tempo na rua não é medido, porque o sistema não registra a chegada ao cliente. Atribua o entregador na hora em que ele sai para o número ser fiel.
+- **Loja aberta:** ao ligar a loja sem o checklist de início concluído, o sistema avisa. Se o administrador ligou o bloqueio, ele pede o motivo para liberar.
+
+## 6. Rotina sugerida
 
 | Quando | O quê |
 |---|---|
 | Abertura | Conferir caixa aberto, ligar loja aberta, ver alertas de estoque (fechar sabores se preciso) e de manutenção |
 | Pico | Andamento da cozinha, fila de entrada do canal (prazo de 15 minutos), autorizações |
-| Fechamento | Desligar loja aberta, acerto de todos os entregadores, contagem cega, aprovar diferença (gerente), CF dos pedidos, backup |
+| Fechamento | Depois da meia-noite, vendas, estornos, sangrias e acertos continuam no caixa ainda aberto (data do caixa, não do relógio). Desligar loja aberta, acerto de todos os entregadores, contagem cega, aprovar diferença (gerente), CF dos pedidos, backup |
 | Semanal | Lista de compras, inventário, ponto da equipe |
 | Mensal | Fechamento do CMV, DRE, resultado do mês, folha gerencial (administrador) |

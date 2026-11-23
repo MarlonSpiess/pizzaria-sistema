@@ -1,4 +1,4 @@
-"""Gera tecnico/Apendice_B_Permissoes_por_Perfil.md a partir de PERMISSOES em sistema/api/security.py.
+"""Gera tecnico/Apendice_B_Permissoes_por_Perfil.md a partir de _MATRIZ (PERMISSOES) em sistema/api/security.py.
 Uso, na raiz do repositório: python planejamento/documentacao/fonte/gerar_apendice_permissoes.py
 Lê o arquivo como texto (não importa o sistema, não precisa de banco)."""
 import ast
@@ -58,7 +58,8 @@ def carregar():
             # só a forma exata {k: frozenset(x) for k, x in MATRIZ.items()}, sem filtro: o conteúdo é o da matriz
             return {k: set(x) for k, x in avaliar(v.generators[0].iter.func.value).items()}
         raise ValueError(ast.dump(v))
-    return avaliar(nomes["PERFIS"]), avaliar(nomes["PERMISSOES"])
+    # PERMISSOES congela _MATRIZ em frozenset (PR #4); a matriz legível é _MATRIZ.
+    return avaliar(nomes["PERFIS"]), avaliar(nomes["_MATRIZ"] if "_MATRIZ" in nomes else nomes["PERMISSOES"])
 
 
 def main():
