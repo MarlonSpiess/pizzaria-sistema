@@ -1319,7 +1319,7 @@ async function abaEstoque() {
     const fechar = async (i, em_falta) => {  // integração com o fechamento de vendas por ingrediente (só a gerência)
       try {
         const r = await api("GET", "/vendas-fechadas/ingredientes/" + i.id + "/sabores");
-        const nomes = r.sabores.map((x) => x.nome).join(", ") || "nenhum sabor";
+        const nomes = r.sabores.map((x) => x.nome).concat(r.outros || []).join(", ") || "nenhum sabor";
         if (!window.confirm((em_falta ? "Fechar a venda de: " : "Reabrir a venda de: ") + nomes + ". Ingrediente: " + i.nome + ".")) return;
         await api("PUT", "/vendas-fechadas/ingredientes/" + i.id + "/falta", { em_falta });
         acao("GET", "/estoque/alertas", undefined, em_falta ? "Venda fechada para " + nomes + "." : "Venda reaberta.");
@@ -1328,9 +1328,9 @@ async function abaEstoque() {
     let fechadas = { sabores_fechados: [], ingredientes_em_falta: [] };
     try { fechadas = await api("GET", "/vendas-fechadas"); } catch (e) { /* sem vendas.gerir: sem o cartão */ }
     const cartaoFechadas = fechadas.ingredientes_em_falta.length ? h("div", { class: "cartao" }, h("h2", {}, "Vendas fechadas agora"),
-      h("p", { class: "pequeno" }, "Sabores com venda fechada por falta de ingrediente. Reabra quando o ingrediente voltar."),
+      h("p", { class: "pequeno" }, "Sabores, tamanhos e bordas com venda fechada por falta de ingrediente. Reabra quando o ingrediente voltar."),
       tabela(["Ingrediente em falta", "Sabores", ""], fechadas.ingredientes_em_falta.map((e) => h("tr", {}, h("td", {}, e.nome),
-        h("td", { class: "pequeno" }, fechadas.sabores_fechados.filter((s) => s.motivo.split(", ").includes(e.nome)).map((s) => s.nome).join(", ")),
+        h("td", { class: "pequeno" }, fechadas.sabores_fechados.concat(fechadas.outros_fechados || []).filter((s) => s.motivo.split(", ").includes(e.nome)).map((s) => s.nome).join(", ")),
         h("td", {}, h("button", { class: "sec", onclick: () => fechar({ id: e.item_id, nome: e.nome }, false) }, "Reabrir vendas")))))) : null;
     const rotuloEst = { negativo: "NEGATIVO", zerado: "ZERADO", repor: "repor", "abaixo do mínimo": "abaixo do mínimo" };
     return h("div", {}, cartaoFechadas, h("div", { class: "cartao" }, h("h2", {}, "Ingredientes: negativo, zerado, para repor"),

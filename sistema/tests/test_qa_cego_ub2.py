@@ -108,3 +108,34 @@ def test_c7_fluxo_do_gerente_soma_a_folha_nas_saidas_sem_linha_propria(client, c
     assert "folha" not in fl.text.lower()
     dia = next(x for x in fl.json()["projecao"] if x["data"] == venc.isoformat())
     assert D(dia["saidas"]) >= D("4321.09")  # o saldo projetado continua verdadeiro
+
+
+def test_c8_ingrediente_da_base_fecha_o_tamanho_e_o_da_borda_fecha_a_borda(client, cardapio):
+    """Decisão de Marlon (23/11/2026): ingrediente da ficha base em falta fecha toda pizza daquele tamanho; ingrediente da
+    ficha de uma borda fecha só aquela borda naquele tamanho. O resto continua vendendo."""
+    from tests.test_fichas import _ficha, _item
+    _, hg = entrar(client, "gerente")
+    _, ha = entrar(client, "atendente")
+    molho, recheio = _item(client, hg, "insumo", "g"), _item(client, hg, "insumo", "g")
+    base = client.get("/api/fichas/base/grande", headers=hg).json()
+    linhas = [{"item_id": x["item_id"], "quantidade": str(x["quantidade"]), "perda_pct": str(x.get("perda_pct", "0"))} for x in base.get("linhas", [])]
+    assert _ficha(client, hg, "base/grande", linhas + [{"item_id": molho["id"], "quantidade": "80", "perda_pct": "0"}]).status_code == 200
+    borda = cardapio["borda"]["id"]
+    assert _ficha(client, hg, f"adicional/{borda}/grande", [{"item_id": recheio["id"], "quantidade": "50", "perda_pct": "0"}]).status_code == 200
+    pix = lambda v: [{"forma": "pix", "valor": v}]  # noqa: E731
+    try:
+        r = client.put(f"/api/vendas-fechadas/ingredientes/{molho['id']}/falta", json={"em_falta": True}, headers=hg)
+        assert r.status_code == 200 and "toda pizza Grande" in r.json()["outros"], r.text
+        venda = _pedido(client, ha, [_pizza_item(cardapio)], pix("35,00"))
+        assert venda.status_code == 409 and "toda pizza Grande" in venda.json()["detail"], venda.text
+        assert _pedido(client, ha, [_pizza_item(cardapio, tamanho="broto")], pix("22,00")).status_code == 201  # Broto segue
+        assert any(o["nome"] == "toda pizza Grande" for o in client.get("/api/vendas-fechadas", headers=hg).json()["outros_fechados"])
+        client.put(f"/api/vendas-fechadas/ingredientes/{molho['id']}/falta", json={"em_falta": False}, headers=hg)
+
+        assert client.put(f"/api/vendas-fechadas/ingredientes/{recheio['id']}/falta", json={"em_falta": True}, headers=hg).status_code == 200
+        com_borda = _pedido(client, ha, [_pizza_item(cardapio, adicional_ids=[borda])], pix("43,00"))
+        assert com_borda.status_code == 409, com_borda.text
+        assert _pedido(client, ha, [_pizza_item(cardapio)], pix("35,00")).status_code == 201  # sem a borda segue
+    finally:
+        for i in (molho, recheio):
+            client.put(f"/api/vendas-fechadas/ingredientes/{i['id']}/falta", json={"em_falta": False}, headers=hg)

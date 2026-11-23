@@ -39,7 +39,7 @@ def ingredientes(busca: Optional[str] = Query(default=None, max_length=60), sess
 def sabores(item_id: int, sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
     """Antes de marcar: quais sabores fecham (para a gerência conferir)."""
     i = _item(conn, item_id)
-    return {"ingrediente": i["nome"], "sabores": svc.sabores_que_usam(conn, [item_id])}
+    return {"ingrediente": i["nome"], "sabores": svc.sabores_que_usam(conn, [item_id]), "outros": svc.outros_que_usam(conn, [item_id])}
 
 
 @router.put("/ingredientes/{item_id}/falta")
@@ -51,9 +51,9 @@ def falta(item_id: int, d: FaltaIn, sessao=Depends(requer("vendas.gerir")), conn
     afetados = svc.sabores_que_usam(conn, [item_id])
     if mudou:
         auditar(conn, sessao, "falta" if d.em_falta else "reabrir", "ingrediente_em_falta", item_id,
-                depois={"ingrediente": i["nome"], "em_falta": d.em_falta, "sabores": [s["nome"] for s in afetados]})
+                depois={"ingrediente": i["nome"], "em_falta": d.em_falta, "sabores": [s["nome"] for s in afetados], "outros": svc.outros_que_usam(conn, [item_id])})
     conn.commit()
-    return {"ingrediente": i["nome"], "em_falta": d.em_falta, "sabores": afetados, "mudou": mudou}
+    return {"ingrediente": i["nome"], "em_falta": d.em_falta, "sabores": afetados, "outros": svc.outros_que_usam(conn, [item_id]), "mudou": mudou}
 
 
 @router.get("")
@@ -61,5 +61,7 @@ def fechadas(sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
     """Sabores com a venda fechada agora e o motivo, mais o ingrediente em falta."""
     fech = svc.produtos_fechados(conn)
     prods = conn.execute("SELECT id, nome, tipo FROM produto WHERE loja_id = %s AND id = ANY(%s) ORDER BY nome", (LOJA_ID, list(fech))).fetchall() if fech else []
+    outros = svc.base_e_adicionais_fechados(conn)
     return {"ingredientes_em_falta": svc.ingredientes_em_falta(conn),
-            "sabores_fechados": [{**p, "motivo": ", ".join(fech[p["id"]])} for p in prods]}
+            "sabores_fechados": [{**p, "motivo": ", ".join(fech[p["id"]])} for p in prods],
+            "outros_fechados": [{"nome": outros["nomes"][k], "motivo": ", ".join(v)} for grupo in ("tamanhos", "adicionais") for k, v in outros[grupo].items()]}

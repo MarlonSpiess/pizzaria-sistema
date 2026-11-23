@@ -10,7 +10,7 @@ from typing import Protocol
 from api.config import LOJA_ID
 from api.database import agora, hoje
 from api.services.caixa import ultimo_caixa
-from api.services.ingredientes import produtos_fechados
+from api.services.ingredientes import base_e_adicionais_fechados, produtos_fechados
 
 log = logging.getLogger("pizzaria.canais")
 EVENTOS = ("pronto", "finalizado")
@@ -224,6 +224,9 @@ def pode_aceitar_sozinho(conn, canal: dict, ids_externos: list[str]) -> tuple[bo
     faltam = [i for i in ids if i not in mapeados]
     if faltam:
         return False, "Itens fora do mapa de produtos: " + ", ".join(faltam)[:150]
+    outros = base_e_adicionais_fechados(conn)
+    if outros["nomes"]:  # o mapa liga só o produto, sem tamanho nem borda: na dúvida, a gerência aceita um a um
+        return False, ("Venda fechada para " + "; ".join(sorted(outros["nomes"].values())))[:190]
     fechados = produtos_fechados(conn)
     if fechados:
         achados = conn.execute("SELECT m.id_externo, p.nome, m.produto_id FROM mapa_produto_canal m JOIN produto p ON p.id = m.produto_id "

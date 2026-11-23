@@ -15,7 +15,7 @@ from api.services import producao as svc_producao
 from api.services import canais, estoque
 from api.services.caixa import data_do_lancamento, exigir_nao_encerrado
 from api.services.dinheiro import fmt
-from api.services.ingredientes import produtos_fechados
+from api.services.ingredientes import base_e_adicionais_fechados, produtos_fechados
 from api.services.vendas import SITUACOES, autorizar, excede_limite, limite_desconto, repartir_pagamentos, totais
 
 router = APIRouter(prefix="/pedidos", tags=["vendas"])
@@ -92,13 +92,20 @@ def avulsas_disponiveis(sessao=Depends(requer("vendas.criar")), conn=Depends(get
 
 def _sabor_fechado(conn, d, ignorar_avulsas: bool = False) -> Optional[str]:
     """Texto dos sabores com venda FECHADA (ingrediente em falta) no pedido, ou None. Estoque baixo apenas não fecha."""
-    ids = {x for it in d.itens if not (ignorar_avulsas and it.avulsa_id) for x in (it.produto_id, it.sabor2_id) if x}  # a avulsa já está pronta
+    itens = [it for it in d.itens if not (ignorar_avulsas and it.avulsa_id)]  # a avulsa já está pronta
+    ids = {x for it in itens for x in (it.produto_id, it.sabor2_id) if x}
     fech = produtos_fechados(conn)
     ruins = [i for i in ids if i in fech]
+    partes = []
     if ruins:
         nomes = {p["id"]: p["nome"] for p in conn.execute("SELECT id, nome FROM produto WHERE id = ANY(%s)", (ruins,)).fetchall()}
-        return "Venda fechada para: " + "; ".join(f"{nomes.get(i, i)} (falta {', '.join(fech[i])})" for i in ruins) + ". Remova do pedido."
-    return None
+        partes += [f"{nomes.get(i, i)} (falta {', '.join(fech[i])})" for i in ruins]
+    outros = base_e_adicionais_fechados(conn)  # base do tamanho e adicional/borda (decisão de Marlon, 23/11/2026)
+    chaves = {it.tamanho for it in itens if it.tipo == "pizza" and it.tamanho in outros["tamanhos"]}
+    chaves |= {(a, it.tamanho) for it in itens for a in it.adicional_ids if (a, it.tamanho) in outros["adicionais"]}
+    for k in sorted(chaves, key=str):
+        partes.append(f"{outros['nomes'][k]} (falta {', '.join(outros['tamanhos' if isinstance(k, str) else 'adicionais'][k])})")
+    return "Venda fechada para: " + "; ".join(partes) + ". Remova do pedido." if partes else None
 
 
 def _recusar_sabor_fechado(conn, d, ignorar_avulsas: bool = False) -> None:
