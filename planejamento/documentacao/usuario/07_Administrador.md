@@ -40,7 +40,7 @@ Hoje a integração **não está conectada**: falta o token e a documentação d
 
 - Títulos a pagar lançados à mão acima do valor do parâmetro (Contas).
 - Ordens de serviço acima do valor do parâmetro e baixa de bem (Imobilizado).
-- Folha gerencial e salários (RH > Folha gerencial): prévia, resumo e lançamento em Contas.
+- Folha gerencial e salários (RH > Folha gerencial): prévia, resumo e lançamento em Contas. Quem entra ou sai no meio do mês aparece com o salário mensal proporcional: salário ÷ 30 × dias corridos trabalhados.
 - Diferença de caixa acima da tolerância: administrador, proprietário ou gerente, sempre quem não fez a contagem (não é exclusivo de vocês; o subgerente não aprova).
 
 ## 5. Checklists (modelos e limites)

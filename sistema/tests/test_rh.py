@@ -183,6 +183,17 @@ def test_folha_previa_resumo_e_titulo_em_contas(client, base):
     assert D(r["fixos_detalhe"]["pessoal"]) >= D(t["valor"])
 
 
+def test_folha_mensal_proporcional_para_quem_entra_no_meio_do_mes(client, base):
+    fim = date.today().replace(day=1) - timedelta(days=1)  # último dia do mês passado
+    ini = fim.replace(day=1)
+    adm = ini + timedelta(days=15)  # entrou no dia 16
+    fid = _func(client, base, admissao=str(adm))
+    _contrato(client, base, fid, valor="3000,00", vigente_desde=str(adm))
+    p = client.get(f"/api/rh/folha/previa?mes={ini.strftime('%Y-%m')}", headers=base["administrador"]).json()
+    dias = min((fim - adm).days + 1, 30)
+    assert D(next(x for x in p["linhas"] if x["funcionario_id"] == fid)["bruto"]) == (D("3000") / 30 * dias).quantize(D("0.01"))  # C15
+
+
 def test_resumo_do_contador_vale_no_lugar_da_previa(client, base):
     mes = (date.today().replace(day=1) - timedelta(days=1)).strftime("%Y-%m")  # mês passado
     f = _func(client, base)

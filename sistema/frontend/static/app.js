@@ -860,7 +860,7 @@ async function abaVendas() {
       h("h3", {}, "Desconto ou acréscimo"), h("div", { class: "linha" }, campo("Tipo", ajTipo), campo("Valor (R$)", ajValor), campo("Motivo", ajMotivo)),
       h("button", { class: "sec", onclick: aplicarAjuste }, "Aplicar ajuste"),
       r.tipo === "entrega" ? h("div", { class: "linha" }, campo("Taxa de entrega (padrão " + (calc ? brl(calc.taxa_entrega_padrao) : "") + ")", taxa), campo("Motivo da taxa", taxaMotivo)) : null,
-      calc && calc.precisa_autorizacao ? h("div", {}, aviso("erro", "Desconto de " + virgula(calc.desconto_pct) + "% passa do seu limite de " + virgula(calc.limite_desconto_pct) + "%. Um gerente confirma abaixo."), aut.caixa) : null,
+      calc && calc.precisa_autorizacao ? h("div", {}, aviso("erro", "O desconto" + (r.tipo === "entrega" && calc.taxa_entrega !== calc.taxa_entrega_padrao ? ", somado à redução da taxa de entrega," : " de " + virgula(calc.desconto_pct) + "%") + " passa do seu limite de " + virgula(calc.limite_desconto_pct) + "% ou a taxa ficou menor que a padrão. Um gerente confirma abaixo."), aut.caixa) : null,
       calc ? h("div", { class: "resultado" }, h("div", { class: "pequeno" }, "Itens " + brl(calc.subtotal) + " · Entrega " + brl(calc.taxa_entrega) + " · Desconto " + brl(calc.desconto) + " · Acréscimo " + brl(calc.acrescimo)),
         h("div", { class: "total" }, "Total " + brl(calc.total))) : null);
 
@@ -936,7 +936,7 @@ async function abaVendas() {
         const d = await api("GET", "/pedidos/" + p.id);
         painel.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, "Pedido #" + d.id_dia + " · " + rotuloSit[d.situacao]),
           h("ul", {}, d.itens.map((i) => h("li", {}, i.quantidade + "x " + i.descricao + (i.adicionais.length ? " + " + i.adicionais.map((a) => a.nome).join(", ") : "") + " · " + brl(i.preco_unit)))),
-          h("p", { class: "pequeno" }, "Pagamentos: " + d.pagamentos.map((x) => x.forma + " " + brl(x.valor) + (Number(x.troco) > 0 ? " (troco " + brl(x.troco) + ")" : "")).join(", ")),
+          h("p", { class: "pequeno" }, "Total " + brl(d.total) + (d.pagamentos ? ". Pagamentos: " + d.pagamentos.map((x) => x.forma + " " + brl(x.valor) + (Number(x.troco) > 0 ? " (troco " + brl(x.troco) + ")" : "")).join(", ") : ". Forma de pagamento e troco: só a gerência vê (contagem cega).")),
           d.ajustes.length ? h("p", { class: "pequeno" }, d.ajustes.map((a) => a.tipo + " " + brl(a.valor) + ": " + a.motivo + (a.autorizado ? " (autorizado)" : "")).join("; ")) : null,
           h("p", { class: "pequeno" }, "Histórico: " + d.eventos.map((e) => rotuloSit[e.situacao] || e.situacao).join(" → ")),
           h("button", { class: "sec", onclick: () => painel.replaceChildren() }, "Fechar")));

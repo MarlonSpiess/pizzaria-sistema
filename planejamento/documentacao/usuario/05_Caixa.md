@@ -4,7 +4,7 @@ Versão 2.0, 04/11/2026. Para quem opera o caixa: atendente e gerência. Leia an
 
 **Tela:** Vendas > **Caixa e entregas**, com as abas **Caixa do dia**, **Entregas** e **Motivos e maquininhas**.
 
-**Regras da loja:** um caixa por dia e uma gaveta. A contagem é **cega**: você informa o que contou antes de ver o valor esperado. O caixa vai da abertura até o fechamento, mesmo que a loja venda depois da meia-noite.
+**Regras da loja:** um caixa por dia e uma gaveta. A contagem é **cega**: você informa o que contou antes de ver o valor esperado. Por isso, fora da gerência, os pedidos já lançados mostram o total, mas não a forma de pagamento nem o troco. O caixa vai da abertura até o fechamento, mesmo que a loja venda depois da meia-noite.
 
 ## 1. Abrir o caixa
 

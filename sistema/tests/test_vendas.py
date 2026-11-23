@@ -83,6 +83,9 @@ def test_pagamento_dividido_e_troco_so_em_dinheiro(client, cardapio):
     assert ok.status_code == 201 and ok.json()["troco"] == "30.00"
     assert _pedido(client, h, it, [{"forma": "dinheiro", "valor": "10,00"}, {"forma": "pix", "valor": "35,00"}]).status_code == 400  # troco maior que o dinheiro
     det = client.get(f"/api/pedidos/{ok.json()['id']}", headers=h).json()
+    assert det["pagamentos"] is None and det["total"] == "35.00"  # contagem cega (C10): o atendente vê o total, não a forma nem o troco
+    _, hg = entrar(client, "gerente")
+    det = client.get(f"/api/pedidos/{ok.json()['id']}", headers=hg).json()
     assert [p["troco"] for p in det["pagamentos"]] == ["0.00", "30.00"]
 
 
@@ -118,6 +121,13 @@ def test_entrega_exige_cliente_com_endereco_e_aplica_taxa(client, cardapio, admi
     gratis = _pedido(client, hg, it, [{"forma": "pix", "valor": "35,00"}], tipo="entrega", cliente_id=cli["id"], taxa_entrega="0,00",
                      taxa_motivo="Cortesia")
     assert gratis.status_code == 201 and gratis.json()["total"] == "35.00"
+    # a taxa reduzida soma no limite da gerência (C12): 4,00 de desconto + 6,00 de taxa = 28,6% de 35,00, acima dos 20% do gerente
+    acima = _pedido(client, hg, it, [{"forma": "pix", "valor": "31,00"}], tipo="entrega", cliente_id=cli["id"], taxa_entrega="0,00",
+                    taxa_motivo="Cortesia", ajuste={"tipo": "desconto", "valor": "4,00", "motivo": "Cliente antigo"})
+    assert acima.status_code == 403
+    # só o desconto (4,00 = 11,4%) cabe no limite do gerente
+    assert _pedido(client, hg, it, [{"forma": "pix", "valor": "37,00"}], tipo="entrega", cliente_id=cli["id"],
+                   ajuste={"tipo": "desconto", "valor": "4,00", "motivo": "Cliente antigo"}).status_code == 201
     # taxa maior que a padrão não precisa de autorização, só de motivo
     assert _pedido(client, h, it, [{"forma": "pix", "valor": "45,00"}], tipo="entrega", cliente_id=cli["id"], taxa_entrega="10,00",
                    taxa_motivo="Longe").status_code == 201

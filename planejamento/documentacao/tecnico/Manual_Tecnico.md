@@ -211,10 +211,13 @@ A matriz completa permissão por perfil está no [Apêndice B](Apendice_B_Permis
 Regras que chamam atenção:
 
 - O **acabamento não vê o valor do pedido** e só despacha com o **caixa do dia aberto**.
+- **Contagem cega (C10, 23/11/2026):** fora da gerência (`vendas.gerir`), `GET /pedidos/{id}` devolve `pagamentos: null`: o atendente vê o total de cada pedido, mas não a forma de pagamento nem o troco dos pedidos já lançados. O troco aparece só na resposta da venda.
+- **Custo de entrada (C14, 23/11/2026):** no recebimento da nota, frete − desconto é rateado pelo valor de cada item no custo unitário que alimenta o custo médio e o CMV; o preço pago (`preco_compra`, `recebimento_item`) continua o da nota.
+- **Folha gerencial (C15, 23/11/2026):** contrato mensal de quem entra ou sai no meio do mês entra como salário ÷ 30 × dias corridos trabalhados; mês inteiro paga cheio.
 - O **Andamento** (visão geral da cozinha) é só da gerência. O atendente não acessa Produção; a hora de entrega calculada aparece em Vendas > Pedidos do dia.
 - **Canais:** ativar canal, ligar "aceitar sozinho" e editar o mapa de produtos é só de administrador e proprietário (`canais.configurar`). A gerência (`vendas.gerir`) vê a fila, recusa, manda tentar de novo, liga e desliga **loja aberta** e fecha ou reabre vendas por ingrediente.
 - **Alerta de estoque** (negativo, zerado, repor, abaixo do mínimo): visto por quem tem `estoque.ver` (administrador, proprietário, gerente, subgerente), em Estoque > Alertas e no BI.
-- **Aprovação por outra pessoa:** quem contou o caixa não aprova a própria diferença; desconto acima do limite, taxa de entrega abaixo da padrão e cancelamento de pedido pago pelo atendente exigem login e senha de um gerente ou subgerente na hora; sangria acima do limite exige gerente, proprietário ou administrador.
+- **Aprovação por outra pessoa:** quem contou o caixa não aprova a própria diferença; desconto acima do limite (a redução da taxa de entrega soma no desconto para todos os perfis, inclusive a gerência), taxa de entrega abaixo da padrão e cancelamento de pedido pago pelo atendente exigem login e senha de um gerente ou subgerente na hora; sangria acima do limite exige gerente, proprietário ou administrador.
 
 ### 5.3 Login e sessão
 
@@ -360,7 +363,7 @@ Proposta de 16/11/2026 (melhoria M4), implementada e **ainda sem aprovação do 
 
 ## 8. Testes e qualidade
 
-- Suíte pytest em `sistema/tests/` (com banco) e `sistema/tests_unidade/` (sem banco, segundos), incluindo `test_checklists.py`, `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso. Última execução completa: 23/11/2026, depois da chave contra reenvio (migração 025), 378 testes verdes (QA da integração dos Checklists em `sistema/docs/qa_integracao_checklists.md`).
+- Suíte pytest em `sistema/tests/` (com banco) e `sistema/tests_unidade/` (sem banco, segundos), incluindo `test_checklists.py`, `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso. Última execução completa: 23/11/2026, depois da chave contra reenvio (migração 025) e das decisões C10, C12, C14 e C15, 384 testes verdes (QA da integração dos Checklists em `sistema/docs/qa_integracao_checklists.md`).
 - Exige PostgreSQL local; o banco de teste precisa terminar em `_teste` e é recriado a cada execução. Variáveis `TEST_DB_PASS`, `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_NAME`.
 - Chave contra reenvio: `POST /pedidos`, `/caixa/movimentos`, `/contas/titulos`, `/producao/massa/lote` e `/producao/massa/perda` aceitam `chave` opcional (8 a 64 letras, números ou hífen), gerada pela tela a cada formulário. O reenvio com a mesma chave (duplo clique, rede lenta) devolve 200 com o que já foi gravado; nas quatro gravações da 025, a mesma chave com outros dados ou de outra pessoa dá 409.
 - Rodar: `python -m pytest -q` (cerca de 11 minutos com 4 núcleos).
