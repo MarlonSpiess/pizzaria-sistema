@@ -1,4 +1,6 @@
 import os
+import threading
+import uuid
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -6,6 +8,8 @@ import psycopg
 import pytest
 
 from tests.conftest import BASE, criar_usuario_direto, entrar, novo_login
+
+_UID = uuid.uuid4().hex[:12]  # chaves de reenvio únicas por execução (o banco de teste pode ser reaproveitado)
 
 D = Decimal
 TABELAS = ("conciliacao, extrato_linha, baixa_titulo, titulo, recorrente, canal_repasse, tipo_despesa, conta_bancaria, "
@@ -70,6 +74,24 @@ def test_titulo_baixa_parcial_e_total(client, base):
     assert client.post(f"/api/contas/titulos/{tid}/baixas", json={**b, "valor": "1,00"}, headers=h).status_code == 409
     saldo = next(c for c in client.get("/api/contas/contas-bancarias", headers=h).json() if c["id"] == base["conta"])["saldo"]
     assert saldo == "195.00"  # 1000 - (300 + 5) - 500
+
+
+def test_reenvio_do_titulo_nao_duplica(client, base, conn_teste):
+    corpo = {"sentido": "pagar", "descricao": "Gás reenvio", "valor": "90,00", "vencimento": str(date.today()), "parcelas": 3,
+             "tipo_despesa_id": base["tipos"]["Aluguel"], "chave": "titulo-reenvio-01-" + _UID}
+    prim = client.post("/api/contas/titulos", json=corpo, headers=base["hg"])
+    assert prim.status_code == 201 and len(prim.json()["ids"]) == 3
+    rep = client.post("/api/contas/titulos", json=corpo, headers=base["hg"])
+    assert rep.status_code == 200 and rep.json() == prim.json()
+    assert conn_teste.execute("SELECT count(*) FROM titulo WHERE descricao = 'Gás reenvio'").fetchone()[0] == 3
+    assert client.post("/api/contas/titulos", json={**corpo, "valor": "95,00"}, headers=base["hg"]).status_code == 409  # mesma chave, outros dados
+    # dois envios ao mesmo tempo com a mesma chave: um grava, o outro recebe o mesmo título
+    corpo2, res = {**corpo, "descricao": "Gás simultâneo", "parcelas": 1, "chave": "titulo-reenvio-02-" + _UID}, []
+    ts = [threading.Thread(target=lambda: res.append(client.post("/api/contas/titulos", json=corpo2, headers=base["hg"]))) for _ in range(2)]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert sorted(r.status_code for r in res) == [200, 201] and res[0].json() == res[1].json()
+    assert conn_teste.execute("SELECT count(*) FROM titulo WHERE descricao = 'Gás simultâneo'").fetchone()[0] == 1
 
 
 def test_aprovacao_parcelas_e_cancelamento(client, base):

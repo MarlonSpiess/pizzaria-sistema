@@ -109,7 +109,7 @@ Legenda de caminhos: `S/estoque.py` = api/services/estoque.py; `S/compras.py` = 
 - **B1. Sugestão de validade soma só um lote.** `S/compras.py:286-289` agrupa por (item, lote) mas o dicionário guarda só o último lote. Teste J: lotes 10 e 7 perto de vencer, sugestão sai 7 (saldo 17). E sugerir comprar mais de um item que está vencendo só faz sentido se o consumo futuro cobrir; revisar a regra.
 - **B2. Sugestões ignoram o que já foi pedido.** `S/compras.py:296-298` não desconta pedidos emitidos/parciais, e duas listas abertas repetem os mesmos itens (nenhuma trava). Risco de compra em dobro.
 - **B3. `saldo_apos` do custo_item** usa o saldo positivo (ver M5). Informação de apoio incorreta.
-- **B4. Frete e desconto não entram no custo** (`R/compras.py:464-466`). O custo médio fica abaixo do real; ratear frete/desconto proporcionalmente ao valor dos itens, ou decidir e documentar.
+- **B4. Frete e desconto não entram no custo** (`R/compras.py:464-466`). O custo médio fica abaixo do real; ratear frete/desconto proporcionalmente ao valor dos itens, ou decidir e documentar. **Decidido e feito em 23/11/2026 (C14): rateio pelo valor dos itens.**
 - **B5. Pedido parcial não pode ser encerrado.** `cancelar_pedido` só aceita "emitido" (`R/compras.py:412`) e o gatilho do pedido não deixa fechar o saldo pendente; fica "parcial" para sempre. Falta "encerrar com o que chegou".
 - **B6. Fornecedor do pedido sobrescreve em silêncio.** `R/compras.py:439`: se o corpo traz `fornecedor_id` diferente do pedido, ele é ignorado sem erro.
 - **B7. Quem montou a lista.** `R/compras.py:333` só compara `definida_por`. `criado_por` (quem montou de fato) pode aprovar. Comparar com os dois.

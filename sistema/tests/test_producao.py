@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 
 import pytest
@@ -5,6 +6,8 @@ import pytest
 from tests.conftest import criar_usuario_direto, entrar, novo_login
 from tests.test_cadastros import _adic, _cat, _pizza
 from tests.test_vendas import cardapio  # noqa: F401  (fixture)
+
+_UID = uuid.uuid4().hex[:12]  # chaves de reenvio únicas por execução (o banco de teste pode ser reaproveitado)
 
 PARAMS = {"forno_pizzas_por_vez": "2", "calzone_massa_tamanho": "broto", "producao_montagem_min": "3", "producao_pizzaiolos_ativos": "2",
           "producao_acabamento_min": "2", "entrega_deslocamento_min": "10", "limite_desconto_gerente_pct": "20"}
@@ -197,6 +200,17 @@ def test_saldo_de_massa_contagem_lote_uso_e_perda(client, cardapio, hs):
     client.post(f"/api/producao/pizzas/{p['id']}/produzida", headers=hs["pizzaiolo"])
     assert client.get("/api/producao/massa", headers=hs["massa"]).json()["grande"]["saldo"] == 14
     assert client.post("/api/producao/massa/perda", json={"tamanho": "grande", "quantidade": 2, "motivo_id": m["perda"]}, headers=hs["massa"]).json()["grande"]["saldo"] == 12
+    assert client.post("/api/producao/massa/contagem", json={"tamanho": "grande", "quantidade": 3}, headers=hs["massa"]).json()["grande"]["saldo"] == 3
+    # reenvio com a mesma chave (duplo clique) não soma de novo
+    lote = {"tamanho": "grande", "quantidade": 4, "chave": "lote-reenvio-01-" + _UID}
+    assert client.post("/api/producao/massa/lote", json=lote, headers=hs["massa"]).status_code == 201
+    r = client.post("/api/producao/massa/lote", json=lote, headers=hs["massa"])
+    assert r.status_code == 200 and r.json()["grande"]["saldo"] == 7
+    assert client.post("/api/producao/massa/lote", json={**lote, "quantidade": 5}, headers=hs["massa"]).status_code == 409  # mesma chave, outra quantidade
+    perda = {"tamanho": "grande", "quantidade": 1, "motivo_id": m["perda"], "chave": "perda-reenvio-01-" + _UID}
+    assert client.post("/api/producao/massa/perda", json=perda, headers=hs["massa"]).status_code == 201
+    r = client.post("/api/producao/massa/perda", json=perda, headers=hs["massa"])
+    assert r.status_code == 200 and r.json()["grande"]["saldo"] == 6
     assert client.post("/api/producao/massa/contagem", json={"tamanho": "grande", "quantidade": 3}, headers=hs["massa"]).json()["grande"]["saldo"] == 3
     assert client.post("/api/producao/massa/lote", json={"tamanho": "media", "quantidade": 1}, headers=hs["massa"]).status_code == 422
     assert client.post("/api/producao/massa/lote", json={"tamanho": "grande", "quantidade": 0}, headers=hs["massa"]).status_code == 422

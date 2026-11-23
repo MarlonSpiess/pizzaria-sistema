@@ -1,5 +1,6 @@
 """Vendas de balcão: pedidos, pagamento dividido, desconto com limite, cancelamento e situação."""
 from datetime import date
+from decimal import Decimal
 from typing import Optional
 
 import psycopg
@@ -44,9 +45,16 @@ def _gerencia(sessao) -> bool:
     return tem_permissao(sessao, "vendas.gerir")
 
 
+def _desconto_efetivo(t) -> Decimal:
+    """Desconto do pedido mais a redução da taxa de entrega abaixo do padrão (desconto disfarçado).
+    Conta no limite de todos os perfis, inclusive da gerência (decisão de Marlon de 23/11/2026, item C12)."""
+    reducao = t["taxa_padrao"] - t["taxa"] if t["tipo"] == "entrega" and t["taxa"] < t["taxa_padrao"] else Decimal("0.00")
+    return t["desconto"] + reducao
+
+
 def _precisa_autorizacao(sessao, t, lim) -> bool:
-    """Desconto acima do limite do perfil, ou taxa de entrega abaixo do padrão (que é desconto disfarçado), sem ser gerência."""
-    return excede_limite(t["desconto"], t["subtotal"], lim) or (t["tipo"] == "entrega" and t["taxa"] < t["taxa_padrao"] and not _gerencia(sessao))
+    """Desconto com a redução da taxa acima do limite do perfil, ou qualquer taxa abaixo do padrão sem ser gerência."""
+    return excede_limite(_desconto_efetivo(t), t["subtotal"], lim) or (t["tipo"] == "entrega" and t["taxa"] < t["taxa_padrao"] and not _gerencia(sessao))
 
 
 def _resolver_avulsas(conn, d, travar: bool = False) -> list[int]:
@@ -153,8 +161,9 @@ def _autorizador(conn, request: Request, d: PedidoCreate, t: dict, sessao: dict)
     if not d.autorizacao:
         raise HTTPException(status_code=403, detail="Esta operação passa do seu limite (desconto ou taxa de entrega menor que a padrão). "
                                                      "Peça a autorização de um gerente.")
+    efetivo = _desconto_efetivo(t)
     return autorizar(conn, request, d.autorizacao, sessao["usuario_id"],
-                     t["desconto"] if excede_limite(t["desconto"], t["subtotal"], lim) else None, t["subtotal"])
+                     efetivo if excede_limite(efetivo, t["subtotal"], lim) else None, t["subtotal"])
 
 
 def _gravar_itens(conn, pedido_id: int, d: PedidoCreate, t: dict, sessao: dict, quando) -> None:
@@ -283,8 +292,10 @@ def detalhar(pid: int, sessao=Depends(requer("vendas.ver")), conn=Depends(get_db
         i["preco_unit"] = fmt(i["preco_unit"])
         i["adicionais"] = [{"nome": a["nome"], "valor": fmt(a["valor"])} for a in conn.execute(
             "SELECT nome, valor FROM item_adicional WHERE item_id = %s ORDER BY id", (i["id"],)).fetchall()]
+    # Contagem cega (decisão de Marlon de 23/11/2026, item C10): fora da gerência, o pedido já lançado mostra o total,
+    # mas não a forma de pagamento nem o troco; sem isso o atendente somaria o dinheiro esperado na gaveta antes de contar.
     pags = [{"forma": r["forma"], "valor": fmt(r["valor"]), "troco": fmt(r["troco"])} for r in conn.execute(
-        "SELECT forma, valor, troco FROM pagamento WHERE pedido_id = %s ORDER BY id", (pid,)).fetchall()]
+        "SELECT forma, valor, troco FROM pagamento WHERE pedido_id = %s ORDER BY id", (pid,)).fetchall()] if _gerencia(sessao) else None
     ajustes = [{"tipo": r["tipo"], "valor": fmt(r["valor"]), "motivo": r["motivo"], "autorizado": r["autorizado_por"] is not None}
                for r in conn.execute("SELECT tipo, valor, motivo, autorizado_por FROM ajuste_pedido WHERE pedido_id = %s", (pid,)).fetchall()]
     eventos = conn.execute("SELECT situacao, criado_em FROM evento_pedido WHERE pedido_id = %s ORDER BY id", (pid,)).fetchall()

@@ -423,6 +423,23 @@ def _linha_recebida(conn, x, pedido, itens_pedido) -> tuple:
     return c, qtd, unit, (qtd * unit).quantize(Q2), pedida, x
 
 
+def _custos_com_frete(linhas, frete: Decimal, desconto: Decimal) -> list[Decimal]:
+    """Custo unitário de entrada no estoque: preço da nota + frete − desconto rateados pelo valor de cada item
+    (decisão de Marlon de 23/11/2026, item C14). Rateio cumulativo: cada item erra no máximo 1 centavo e a soma fecha
+    exatamente no ajuste da nota. O preço pago (cotações) não muda."""
+    total_itens = sum((linha[3] for linha in linhas), Decimal("0.00"))
+    ajuste = frete - desconto
+    if not ajuste or not total_itens:
+        return [linha[2] for linha in linhas]
+    custos, acumulado, anterior = [], Decimal("0.00"), Decimal("0.00")
+    for _, qtd, _, valor, _, _ in linhas:
+        acumulado += valor
+        ate_aqui = (ajuste * acumulado / total_itens).quantize(Q2)
+        parte, anterior = ate_aqui - anterior, ate_aqui
+        custos.append(max((valor + parte) / qtd, Decimal("0")).quantize(Decimal("0.000001")))
+    return custos
+
+
 def _conferir_sangria(conn, movimento_id: int, total: Decimal) -> None:
     s = conn.execute("SELECT tipo, valor FROM movimento_caixa WHERE id = %s AND loja_id = %s", (movimento_id, LOJA_ID)).fetchone()
     if not s or s["tipo"] != "sangria":
@@ -460,8 +477,9 @@ def receber(d: RecebimentoIn, sessao=Depends(requer("compras.operar")), conn=Dep
                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (LOJA_ID, d.pedido_id, forn_id, d.numero_nota, d.data_nota, d.conferente_id or sessao["usuario_id"], frete, desconto, total, forma, venc,
                           d.movimento_caixa_id, d.observacao, sessao["usuario_id"], quando)).fetchone()
-        for c, qtd, unit, valor, pedida, x in sorted(linhas, key=lambda t: t[0]["id"]):  # ordem fixa nos locks de item
-            mov = est.entrada(conn, LOJA_ID, c["id"], qtd, unit, "entrada_compra", sessao["usuario_id"], quando, origem=("recebimento", r["id"]),
+        linhas = sorted(linhas, key=lambda t: t[0]["id"])  # ordem fixa nos locks de item
+        for (c, qtd, unit, valor, pedida, x), custo in zip(linhas, _custos_com_frete(linhas, frete, desconto)):
+            mov = est.entrada(conn, LOJA_ID, c["id"], qtd, custo, "entrada_compra", sessao["usuario_id"], quando, origem=("recebimento", r["id"]),
                               lote_codigo=x.lote_codigo, validade=x.validade, fornecedor_origem="compra")
             conn.execute("INSERT INTO recebimento_item (recebimento_id, item_id, quantidade_pedida, quantidade, preco_unit, valor, lote_codigo, validade, diferenca_motivo, movimento_estoque_id) "
                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (r["id"], c["id"], pedida, qtd, unit, valor, x.lote_codigo, x.validade, x.diferenca_motivo, mov))

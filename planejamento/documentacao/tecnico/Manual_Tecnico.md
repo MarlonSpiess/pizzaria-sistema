@@ -103,7 +103,7 @@ Regras para escrever uma migração nova:
 
 `--dry-run` mostra o que seria aplicado sem alterar nada.
 
-### 3.2 Migrações existentes (até a 024)
+### 3.2 Migrações existentes (até a 025)
 
 | Nº | Arquivo | Fatia | Tabelas criadas ou alteradas |
 |---|---|---|---|
@@ -131,8 +131,9 @@ Regras para escrever uma migração nova:
 | 022 | `022_checklists.sql` | Checklists | checklist_modelo, checklist_versao (uma vigente por modelo), checklist_item, checklist_execucao (uma por modelo, dia e turno), checklist_resposta (só inserção, com gatilho), checklist_pendencia |
 | 023 | `023_pedido_controle.sql` | Checklists | pedido_controle (só inserção): leitura_de_volta, conferencia_final e causa_atraso por pedido |
 | 024 | `024_pedido_volta_para_producao.sql` | Produção | Gatilho `pedido_so_situacao`: além de avançar um passo, aceita só o retorno de `acabado` para `em producao` (pizza perdida ou refeita em pedido acabado; decisão de Marlon de 23/11/2026). Não cria tabela. Escrita como 022 no PR #5 e renumerada para 024 porque a 022 e a 023 já estavam em uso na pasta da loja |
+| 025 | `025_chave_reenvio.sql` | Caixa, Contas, Produção | Coluna opcional `chave` e índice único parcial `(loja_id, chave)` em movimento_caixa, titulo (só na 1ª parcela), lote_massa e perda, no padrão do `uq_pedido_chave` da 004 (decisão de Marlon de 23/11/2026, item C11). Não cria tabela |
 
-São 110 tabelas (103 até a migração 021 e 7 das migrações 022 e 023; a 024 só troca um gatilho). O sabor com venda fechada **não é guardado**: é calculado a partir dos ingredientes em falta e da ficha técnica mais recente (incluindo preparos, até 5 níveis), para nunca ficar fora de sincronia.
+São 110 tabelas (103 até a migração 021 e 7 das migrações 022 e 023; a 024 só troca um gatilho e a 025 só acrescenta colunas e índices). O sabor com venda fechada **não é guardado**: é calculado a partir dos ingredientes em falta e da ficha técnica mais recente (incluindo preparos, até 5 níveis), para nunca ficar fora de sincronia.
 
 ### 3.3 Máquinas de estado principais
 
@@ -210,10 +211,13 @@ A matriz completa permissão por perfil está no [Apêndice B](Apendice_B_Permis
 Regras que chamam atenção:
 
 - O **acabamento não vê o valor do pedido** e só despacha com o **caixa do dia aberto**.
+- **Contagem cega (C10, 23/11/2026):** fora da gerência (`vendas.gerir`), `GET /pedidos/{id}` devolve `pagamentos: null`: o atendente vê o total de cada pedido, mas não a forma de pagamento nem o troco dos pedidos já lançados. O troco aparece só na resposta da venda.
+- **Custo de entrada (C14, 23/11/2026):** no recebimento da nota, frete − desconto é rateado pelo valor de cada item no custo unitário que alimenta o custo médio e o CMV; o preço pago (`preco_compra`, `recebimento_item`) continua o da nota.
+- **Folha gerencial (C15, 23/11/2026):** contrato mensal de quem entra ou sai no meio do mês entra como salário ÷ 30 × dias corridos trabalhados; mês inteiro paga cheio.
 - O **Andamento** (visão geral da cozinha) é só da gerência. O atendente não acessa Produção; a hora de entrega calculada aparece em Vendas > Pedidos do dia.
 - **Canais:** ativar canal, ligar "aceitar sozinho" e editar o mapa de produtos é só de administrador e proprietário (`canais.configurar`). A gerência (`vendas.gerir`) vê a fila, recusa, manda tentar de novo, liga e desliga **loja aberta** e fecha ou reabre vendas por ingrediente.
 - **Alerta de estoque** (negativo, zerado, repor, abaixo do mínimo): visto por quem tem `estoque.ver` (administrador, proprietário, gerente, subgerente), em Estoque > Alertas e no BI.
-- **Aprovação por outra pessoa:** quem contou o caixa não aprova a própria diferença; desconto acima do limite, taxa de entrega abaixo da padrão e cancelamento de pedido pago pelo atendente exigem login e senha de um gerente ou subgerente na hora; sangria acima do limite exige gerente, proprietário ou administrador.
+- **Aprovação por outra pessoa:** quem contou o caixa não aprova a própria diferença; desconto acima do limite (a redução da taxa de entrega soma no desconto para todos os perfis, inclusive a gerência), taxa de entrega abaixo da padrão e cancelamento de pedido pago pelo atendente exigem login e senha de um gerente ou subgerente na hora; sangria acima do limite exige gerente, proprietário ou administrador.
 
 ### 5.3 Login e sessão
 
@@ -248,7 +252,7 @@ O roteiro passo a passo, para quem instala no PC da loja, está em [Roteiro_de_I
 2. `python -m venv venv`, `venv\Scripts\activate`, `pip install -r requirements.txt` (FastAPI 0.158.2, Uvicorn 0.53.0, Pydantic 2.13.5, psycopg 3.3.6, psycopg-pool 3.3.3, bcrypt 5.0.0).
 3. Copiar `set_env.bat.example` para `set_env.bat` e preencher.
 4. `python scripts\aplicar_migrations_pg.py`, depois `psql -U postgres -d pizzaria -v app_role=pizzaria_app -f scripts\papel_app.sql`, depois `python scripts\criar_admin.py --usuario admin --nome "..." --loja-nome "..."` (senha pedida sem eco).
-5. `start_api.bat` (aplica migrações e sobe em `0.0.0.0:8080` com `--no-proxy-headers`).
+5. `start_api.bat` (entra na própria pasta, usa o Python de `sistema\venv` sem precisar ativar, aplica migrações e sobe em `0.0.0.0:8080` com `--no-proxy-headers`; sem venv, avisa e usa o `python` do PATH).
 6. Firewall do Windows: liberar a porta 8080 **só para rede privada**. Nunca abrir para a internet.
 
 ### 6.3 Variáveis de ambiente
@@ -359,8 +363,9 @@ Proposta de 16/11/2026 (melhoria M4), implementada e **ainda sem aprovação do 
 
 ## 8. Testes e qualidade
 
-- Suíte pytest em `sistema/tests/` (com banco) e `sistema/tests_unidade/` (sem banco, segundos), incluindo `test_checklists.py`, `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso. Última execução completa: 23/11/2026, depois da integração dos Checklists com os PRs #2 a #5, 374 testes verdes (QA em `sistema/docs/qa_integracao_checklists.md`).
+- Suíte pytest em `sistema/tests/` (com banco) e `sistema/tests_unidade/` (sem banco, segundos), incluindo `test_checklists.py`, `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso. Última execução completa: 23/11/2026, depois da chave contra reenvio (migração 025) e das decisões C10, C12, C14 e C15, 384 testes verdes (QA da integração dos Checklists em `sistema/docs/qa_integracao_checklists.md`).
 - Exige PostgreSQL local; o banco de teste precisa terminar em `_teste` e é recriado a cada execução. Variáveis `TEST_DB_PASS`, `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_NAME`.
+- Chave contra reenvio: `POST /pedidos`, `/caixa/movimentos`, `/contas/titulos`, `/producao/massa/lote` e `/producao/massa/perda` aceitam `chave` opcional (8 a 64 letras, números ou hífen), gerada pela tela a cada formulário. O reenvio com a mesma chave (duplo clique, rede lenta) devolve 200 com o que já foi gravado; nas quatro gravações da 025, a mesma chave com outros dados ou de outra pessoa dá 409.
 - Rodar: `python -m pytest -q` (cerca de 11 minutos com 4 núcleos).
 - **Regra permanente do projeto (03/11/2026):** todo código passa por dois revisores, um cego (sem contexto) e outro conferindo contra o código e os documentos aprovados. Os relatórios de QA cego de cada fatia estão em `sistema/docs/`.
 

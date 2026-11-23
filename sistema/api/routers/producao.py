@@ -5,10 +5,10 @@ from typing import Optional
 
 import psycopg
 import psycopg.errors
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, transacao
+from api.database import agora, auditar, conferir_reenvio, get_db, reenvio_perdeu_corrida, traduzir_erro, transacao
 from api.routers.vendas import _pedido, mudar_situacao, voltar_para_producao
 from api.schemas import ContagemMassaIn, LoteMassaIn, MontagemErradaIn, MotivoIn, MotivoRef, MotivoUpdate, PerdaMassaIn
 from api.security import permissoes_de, requer, requer_alguma, tem_permissao
@@ -426,13 +426,42 @@ def massa(sessao=Depends(requer_alguma("producao.massa", "producao.gerir")), con
     return svc.saldo_massa(conn, LOJA_ID)
 
 
+def _ja_gravado(conn, tabela: str, d, sessao) -> bool:
+    """Lote ou perda de massa já gravado com esta chave de reenvio (pela mesma pessoa e com os mesmos dados; senão 409)."""
+    if not d.chave:
+        return False
+    r = conn.execute(f"SELECT tamanho, quantidade, usuario_id, motivo_id FROM {tabela} WHERE loja_id = %s AND chave = %s" if tabela == "perda" else
+                     f"SELECT tamanho, quantidade, usuario_id FROM {tabela} WHERE loja_id = %s AND chave = %s", (LOJA_ID, d.chave)).fetchone()
+    if not r:
+        return False
+    esperado = {"tamanho": d.tamanho, "quantidade": d.quantidade, "usuario_id": sessao["usuario_id"]}
+    conferir_reenvio(r, esperado | ({"motivo_id": d.motivo_id} if tabela == "perda" else {}))
+    return True
+
+
+def _gravar_massa(conn, tabela: str, d, sessao, gravar) -> bool:
+    """Grava uma vez por chave de reenvio. Devolve False quando o mesmo formulário já tinha gravado (duplo clique, rede lenta)."""
+    if _ja_gravado(conn, tabela, d, sessao):
+        return False
+    try:
+        gravar()
+        conn.commit()
+    except psycopg.Error as e:
+        conn.rollback()
+        if reenvio_perdeu_corrida(e) and _ja_gravado(conn, tabela, d, sessao):  # dois envios simultâneos: vale o que gravou
+            return False
+        raise traduzir_erro(e) from e
+    return True
+
+
 @router.post("/massa/lote", status_code=201)
-def lote(d: LoteMassaIn, sessao=Depends(requer("producao.massa")), conn=Depends(get_db)):
-    quando = agora()
-    conn.execute("INSERT INTO lote_massa (loja_id, tamanho, quantidade, usuario_id, criado_em) VALUES (%s,%s,%s,%s,%s)",
-                 (LOJA_ID, d.tamanho, d.quantidade, sessao["usuario_id"], quando))
-    auditar(conn, sessao, "lote_massa", "lote_massa", None, depois={"tamanho": d.tamanho, "quantidade": d.quantidade})
-    conn.commit()
+def lote(d: LoteMassaIn, response: Response, sessao=Depends(requer("producao.massa")), conn=Depends(get_db)):
+    def gravar():
+        conn.execute("INSERT INTO lote_massa (loja_id, tamanho, quantidade, usuario_id, criado_em, chave) VALUES (%s,%s,%s,%s,%s,%s)",
+                     (LOJA_ID, d.tamanho, d.quantidade, sessao["usuario_id"], agora(), d.chave))
+        auditar(conn, sessao, "lote_massa", "lote_massa", None, depois={"tamanho": d.tamanho, "quantidade": d.quantidade})
+    if not _gravar_massa(conn, "lote_massa", d, sessao, gravar):
+        response.status_code = 200
     return svc.saldo_massa(conn, LOJA_ID)
 
 
@@ -446,12 +475,18 @@ def contagem(d: ContagemMassaIn, sessao=Depends(requer("producao.massa")), conn=
 
 
 @router.post("/massa/perda", status_code=201)
-def perda_massa(d: PerdaMassaIn, sessao=Depends(requer("producao.perda_massa")), conn=Depends(get_db)):
+def perda_massa(d: PerdaMassaIn, response: Response, sessao=Depends(requer("producao.perda_massa")), conn=Depends(get_db)):
+    if _ja_gravado(conn, "perda", d, sessao):  # reenvio: não exige de novo o motivo (pode ter sido desativado entre os dois envios)
+        response.status_code = 200
+        return svc.saldo_massa(conn, LOJA_ID)
     m = _motivo(conn, "motivo_perda", d.motivo_id)
-    conn.execute("INSERT INTO perda (loja_id, tipo, tamanho, quantidade, motivo_id, usuario_id, criado_em) VALUES (%s,'massa',%s,%s,%s,%s,%s)",
-                 (LOJA_ID, d.tamanho, d.quantidade, m["id"], sessao["usuario_id"], agora()))
-    auditar(conn, sessao, "perda_massa", "perda", None, depois={"tamanho": d.tamanho, "quantidade": d.quantidade, "motivo": m["nome"]})
-    conn.commit()
+
+    def gravar():
+        conn.execute("INSERT INTO perda (loja_id, tipo, tamanho, quantidade, motivo_id, usuario_id, criado_em, chave) VALUES (%s,'massa',%s,%s,%s,%s,%s,%s)",
+                      (LOJA_ID, d.tamanho, d.quantidade, m["id"], sessao["usuario_id"], agora(), d.chave))
+        auditar(conn, sessao, "perda_massa", "perda", None, depois={"tamanho": d.tamanho, "quantidade": d.quantidade, "motivo": m["nome"]})
+    if not _gravar_massa(conn, "perda", d, sessao, gravar):
+        response.status_code = 200
     return svc.saldo_massa(conn, LOJA_ID)
 
 

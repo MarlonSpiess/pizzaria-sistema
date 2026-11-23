@@ -26,7 +26,15 @@ Suíte completa depois das correções e das 5 decisões: 342 passed e 1 falha (
 
 ## Decisões de regra de negócio (para Marlon, uma a uma)
 
-1. **C9 a C15** (por leitura): pedido agendado (C9), contagem cega contornável (C10, = A10), chave contra reenvio em sangria, título e massa (C11), gerência zera taxa de entrega fora do limite (C12), frete fora do custo médio (C14, = 2AB M13), folha sem proporcionalidade no mês (C15).
+1. **C9 a C15 decididos por Marlon em 23/11/2026 (cartões, um a um):**
+   - C9 pedido agendado: fica para depois (pendência).
+   - C10 contagem cega: fora da gerência, `GET /pedidos/{id}` mostra o total, mas não a forma de pagamento nem o troco (`pagamentos: null`).
+   - C11 chave contra reenvio: feito (migração 025).
+   - C12: a redução da taxa de entrega soma no limite de desconto de todos os perfis, inclusive a gerência.
+   - C14: frete e desconto da nota rateados pelo valor dos itens no custo de entrada (custo médio e CMV); o preço pago das cotações não muda.
+   - C15: salário mensal proporcional a dias corridos (÷ 30) para quem entra ou sai no meio do mês; mês inteiro paga cheio.
+
+**C11 (detalhe).** Marlon aprovou "como no pedido de venda": migração 025 (`chave` com índice único parcial em movimento_caixa, titulo, lote_massa e perda), reenvio devolve o já gravado com 200, mesma chave com outros dados ou de outra pessoa dá 409, e as telas de caixa, contas e massa mandam a chave. Testes em `test_caixa.py`, `test_contas.py` e `test_producao.py`, com corrida real na sangria e no título.
 
 ## Fica para a próxima rodada (técnico)
 

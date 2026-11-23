@@ -272,15 +272,17 @@ def test_lista_cotacao_mapa_definicao_aprovacao_pedido_e_recebimento(client, hs)
     assert client.get(f"/api/compras/pedidos/{ped['id']}", headers=h).json()["situacao"] == "parcial"
     assert _saldo(client, h, queijo["id"]) == 17  # 5 + 12
     assert client.post("/api/compras/recebimentos", json=rec, headers=h).status_code == 409  # mesma nota de novo
-    rec2 = {**rec, "numero_nota": novo_login("NF"), "itens": [{**rec["itens"][0], "quantidade": "8", "lote_codigo": "Q2", "diferenca_motivo": None}]}
+    rec2 = {**rec, "numero_nota": novo_login("NF"), "frete": "8,00", "itens": [{**rec["itens"][0], "quantidade": "8", "lote_codigo": "Q2", "diferenca_motivo": None}]}
     r2 = client.post("/api/compras/recebimentos", json=rec2, headers=h)
     assert r2.status_code == 201, r2.text
+    assert r2.json()["total_nota"] == "88.00"
     assert client.get(f"/api/compras/pedidos/{ped['id']}", headers=h).json()["situacao"] == "recebido"
     assert client.post("/api/compras/recebimentos", json={**rec2, "numero_nota": novo_login("NF")}, headers=h).status_code == 409  # pedido já recebido
     d = client.get(f"/api/estoque/itens/{queijo['id']}", headers=h).json()
     assert d["saldo"] == "25" and len(d["ultimos_precos_pagos"]) == 2 and D(d["ultimos_precos_pagos"][0]["preco_unit"]) == D("10")
-    # custo médio: (5x10 + 12x10 + 8x10)/25 = 10
-    assert D(d["ultimos_custos_medios"][0]["custo_medio"]) == D("10")
+    # custo médio com o frete da 2ª nota no custo de entrada (C14): 8 kg a (80 + 8)/8 = 11 -> (5x10 + 12x10 + 8x11)/25 = 10,32
+    assert D(d["ultimos_custos_medios"][0]["custo_medio"]) == D("10.32")
+    assert all(D(x["preco_unit"]) == D("10") for x in d["ultimos_precos_pagos"])  # o preço pago continua o da nota
     assert any(r["numero_nota"] == rec["numero_nota"] for r in client.get("/api/compras/recebimentos", headers=h).json())
 
 

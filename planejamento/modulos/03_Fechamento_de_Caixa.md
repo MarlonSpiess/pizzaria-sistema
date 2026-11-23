@@ -63,6 +63,7 @@ Cada ligação tem forma manual, para o módulo funcionar sozinho **[Prática]**
 - **I1:** o caixa fecha **por dia**, um fechamento diário **[Decisão]**.
 - **I2:** **uma só** gaveta de dinheiro para a loja; um caixa aberto por vez, com o operador registrado **[Decisão]**.
 - **I5:** **contagem cega sim**, com o atendente contando e o gerente aprovando diferenças **[Decisão]**.
+- **I5, complemento (C10, 23/11/2026):** para a contagem cega não ser contornável, fora da gerência os pedidos já lançados mostram o total, mas não a forma de pagamento nem o troco **[Decisão]**.
 - **I8:** o entregador é **registrado por pedido** (o que recebeu e o troco levado) e **acerta no fim do turno** **[Decisão]**.
 
 ### 5.2 Respondidas em 19/10/2026 (todas as recomendações aceitas)

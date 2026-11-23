@@ -454,17 +454,28 @@ def meus_dados(sessao=Depends(requer("rh.proprio")), conn=Depends(get_db)):
 
 
 # ---------------------------------------------------------------- folha gerencial
+def _mensal_proporcional(valor: Decimal, admissao: date, desligamento: date | None, ini: date, prox: date) -> Decimal:
+    """Salário mensal de quem entra ou sai no meio do mês: valor ÷ 30 × dias corridos trabalhados (mês comercial da CLT;
+    decisão de Marlon de 23/11/2026, item C15). Mês inteiro paga o valor cheio, inclusive em fevereiro e nos meses de 31 dias."""
+    de = max(admissao, ini)
+    ate = min(desligamento, prox - timedelta(days=1)) if desligamento else prox - timedelta(days=1)
+    if de == ini and ate == prox - timedelta(days=1):
+        return valor
+    dias = min((ate - de).days + 1, 30)
+    return (valor / 30 * max(dias, 0)).quantize(Decimal("0.01"))
+
+
 def _previa(conn, ini: date) -> dict:
     prox = ini.replace(year=ini.year + (ini.month == 12), month=ini.month % 12 + 1)
     enc_pct = vigentes(conn, LOJA_ID)["rh_encargos_pct"]["valor"]
     enc_pct = Decimal(enc_pct) if enc_pct is not None else ZERO
     linhas, tb, te, tbe = [], ZERO, ZERO, ZERO
-    for f in conn.execute("SELECT id, nome FROM funcionario WHERE loja_id = %s AND admissao < %s AND (desligamento IS NULL OR desligamento >= %s) ORDER BY nome", (LOJA_ID, prox, ini)).fetchall():
+    for f in conn.execute("SELECT id, nome, admissao, desligamento FROM funcionario WHERE loja_id = %s AND admissao < %s AND (desligamento IS NULL OR desligamento >= %s) ORDER BY nome", (LOJA_ID, prox, ini)).fetchall():
         c = conn.execute("SELECT tipo, forma_pagamento, valor FROM contrato WHERE funcionario_id = %s AND vigente_desde < %s AND (vigente_ate IS NULL OR vigente_ate >= %s) ORDER BY vigente_desde DESC LIMIT 1", (f["id"], prox, ini)).fetchone()
         if not c:
             continue
         if c["forma_pagamento"] == "mensal":
-            bruto = c["valor"]
+            bruto = _mensal_proporcional(c["valor"], f["admissao"], f["desligamento"], ini, prox)
         elif c["forma_pagamento"] == "diaria":
             dias = conn.execute("SELECT count(*) AS n FROM ponto WHERE funcionario_id = %s AND data >= %s AND data < %s", (f["id"], ini, prox)).fetchone()["n"]
             bruto = c["valor"] * dias

@@ -185,6 +185,16 @@ def _reais_positivo(v: str) -> str:
 
 
 Reais = Annotated[str, AfterValidator(_reais_positivo)]
+
+
+def _chave_reenvio(v: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9-]{8,64}", v):
+        raise ValueError("Chave inválida.")
+    return v
+
+
+# Gerada pela tela a cada formulário; reenvio com a mesma chave (duplo clique, rede lenta) devolve o que já foi gravado.
+ChaveReenvio = Annotated[str, AfterValidator(_chave_reenvio)]
 TIPOS_PRODUTO = ("pizza", "calzone", "bebida", "acompanhamento")
 
 
@@ -753,6 +763,7 @@ class MontagemErradaIn(Base):
 class LoteMassaIn(Base):
     tamanho: str
     quantidade: int
+    chave: Optional[ChaveReenvio] = None  # vale para lote e perda; a contagem repetida não muda o saldo e ignora a chave
 
     @field_validator("tamanho")
     @classmethod
@@ -794,6 +805,7 @@ class MovimentoIn(Base):
     observacao: Optional[str] = None
     comprovante: Optional[str] = None
     autorizacao: Optional[Autorizacao] = None
+    chave: Optional[ChaveReenvio] = None
 
     @field_validator("tipo")
     @classmethod
@@ -1353,6 +1365,7 @@ class TituloIn(Base):
     competencia: Optional[DataISO] = None
     parcelas: int = 1
     comprovante: Optional[str] = None
+    chave: Optional[ChaveReenvio] = None
 
     @field_validator("sentido")
     @classmethod

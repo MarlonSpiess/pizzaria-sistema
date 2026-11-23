@@ -9,6 +9,7 @@ Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). Para 
 | Ação | Gerente | Subgerente |
 |---|---|---|
 | Autorizar desconto acima do limite do atendente (login e senha na hora) | Sim, até o próprio limite | Sim, até o próprio limite |
+| Reduzir a taxa de entrega | Sim; a redução soma no próprio limite de desconto (23/11/2026) | Sim; a redução soma no próprio limite de desconto |
 | Autorizar cancelamento de pedido pago feito pelo atendente | Sim | Sim |
 | Autorizar sangria acima do limite (e lançar sangria sem pedir autorização) | Sim | **Não** |
 | Aprovar diferença de caixa acima da tolerância (se não fez a contagem) | Sim | **Não** |
@@ -54,7 +55,7 @@ Além de tudo o que o atendente faz:
 | **Cardápio** | Sabores de pizza, preços por categoria (Tradicional, Especial e outras), bordas e adicionais, calzones, bebidas e outros, simulador de preço. É o cardápio único da loja. Todo preço novo guarda o histórico |
 | **Fichas e etapas** | Fichas técnicas (quanto de cada insumo vai em cada produto, por tamanho), itens (insumos e preparos), etapas de produção, e "O que falta" (produtos sem ficha) |
 | **Estoque** | Saldos, lançar movimento (perda, consumo interno, estoque inicial, transferência), inventário (contar, conferir, fechar; é por ele que se ajusta o saldo), alertas, locais |
-| **Compras** | Lista de compras (necessidades, itens avulsos, cotação por fornecedor, definir e aprovar), pedidos de compra, recebimento com a nota, fornecedores |
+| **Compras** | Lista de compras (necessidades, itens avulsos, cotação por fornecedor, definir e aprovar), pedidos de compra, recebimento com a nota (frete e desconto da nota entram no custo dos itens, rateados pelo valor de cada um), fornecedores |
 | **Contas** | Fluxo de caixa de 30 dias (7 em destaque), a pagar, a receber, lançar título, conciliação com o extrato, cadastros (contas bancárias, tipos de despesa, canais de repasse, despesas recorrentes) |
 | **BI** | Painel do dia, DRE por competência, lucratividade por sabor e categoria, produção; exportação em CSV |
 | **Custos** | Custo dos produtos pela ficha técnica, CMV teórico e real do mês (fechamento), resultado do mês, fator de correção por insumo |

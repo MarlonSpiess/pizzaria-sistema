@@ -113,6 +113,7 @@ Formato da ficha técnica (Marlon, 19/10/2026): a planilha traz, para **1/2 Gran
 - **J12:** refeição de funcionário e consumo interno saem do estoque como **"consumo interno"**, com valor para **Custos** (não para o RH) **[Decisão]**. Em Vendas, funcionário compra com **preço especial com desconto e limite de quantidade** (ver seção 7).
 - **J13:** estoque mínimo por **sugestão pelo consumo médio**, com Marlon aprovando **[Decisão]**.
 - **J14:** custo por **custo médio móvel**, com os **últimos 3 preços visíveis**, para enxergar tendência e sazonalidade **[Decisão]**.
+- **J14, complemento (C14, 23/11/2026):** frete e desconto da nota entram no custo de entrada, rateados pelo valor de cada item; o preço pago visível na cotação continua o da nota **[Decisão]**.
 
 Todas as perguntas do módulo estão respondidas.
 

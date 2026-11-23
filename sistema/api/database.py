@@ -108,6 +108,19 @@ def transacao(conn: psycopg.Connection):
         raise traduzir_erro(e) from e
 
 
+def reenvio_perdeu_corrida(e: Exception) -> bool:
+    """A gravação caiu em violação de unicidade (vinda de transacao(), já traduzida, ou crua).
+    Quem chama confere pela chave de reenvio se o outro envio do mesmo formulário já gravou."""
+    return isinstance(e, psycopg.errors.UniqueViolation) or isinstance(e.__cause__, psycopg.errors.UniqueViolation)
+
+
+def conferir_reenvio(gravado: dict, esperado: dict) -> None:
+    """A chave de reenvio só devolve o já gravado quando é o MESMO lançamento: mesma pessoa e mesmos dados.
+    Se a resposta se perdeu e a pessoa mudou o valor antes de reenviar, recusa (409) em vez de dizer que gravou o novo."""
+    if any(gravado.get(k) != v for k, v in esperado.items()):
+        raise HTTPException(status_code=409, detail="Este formulário já gravou um lançamento com outros dados. Atualize a tela e confira antes de lançar de novo.")
+
+
 def gravar_um(conn: psycopg.Connection, sql: str, params) -> dict | None:
     """Executa um comando de gravação e devolve a linha do RETURNING, sem comitar (quem chama audita e comita)."""
     try:

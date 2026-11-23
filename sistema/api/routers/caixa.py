@@ -3,10 +3,10 @@ from datetime import date
 from decimal import Decimal
 
 import psycopg
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, hoje, traduzir_erro, transacao
+from api.database import agora, auditar, get_db, hoje, conferir_reenvio, reenvio_perdeu_corrida, traduzir_erro, transacao
 from api.schemas import (AcertoIn, CaixaAbrir, ContagemIn, EntregaIn, FecharIn, MaquininhaIn, MaquininhaUpdate, MotivoMovimentoIn,
                          MotivoMovimentoUpdate, MovimentoIn, RegraRecebimentoIn)
 from api.security import requer, tem_permissao
@@ -239,8 +239,21 @@ def _sangria_sem_autorizacao(conn, fx) -> Decimal:
                         (LOJA_ID, fx[0], fx[1])).fetchone()["s"]
 
 
+def _movimento_por_chave(conn, d: MovimentoIn, sessao):
+    if not d.chave:
+        return None
+    r = conn.execute("SELECT id, tipo, valor, motivo_id, usuario_id FROM movimento_caixa WHERE loja_id = %s AND chave = %s", (LOJA_ID, d.chave)).fetchone()
+    if not r:
+        return None
+    conferir_reenvio(r, {"tipo": d.tipo, "valor": parse_reais(d.valor), "motivo_id": d.motivo_id, "usuario_id": sessao["usuario_id"]})
+    return {"id": r["id"], "tipo": r["tipo"], "valor": fmt(r["valor"])}
+
+
 @router.post("/movimentos", status_code=201)
-def movimentar(d: MovimentoIn, request: Request, sessao=Depends(requer("caixa.operar")), conn=Depends(get_db)):
+def movimentar(d: MovimentoIn, request: Request, response: Response, sessao=Depends(requer("caixa.operar")), conn=Depends(get_db)):
+    if antigo := _movimento_por_chave(conn, d, sessao):  # reenvio do mesmo lançamento (duplo clique, rede lenta)
+        response.status_code = 200
+        return antigo
     valor = parse_reais(d.valor)
     quando = agora()
     c = svc.exigir_aberto(conn, LOJA_ID)
@@ -258,16 +271,26 @@ def movimentar(d: MovimentoIn, request: Request, sessao=Depends(requer("caixa.op
         lim = Decimal(lim) if lim is not None else svc.ZERO
         # Uma sangria sem autorização por vez na loja: duas simultâneas não furam o limite acumulado.
         conn.execute("SELECT pg_advisory_xact_lock(7201, %s)", (LOJA_ID,))
+        if antigo := _movimento_por_chave(conn, d, sessao):  # o envio repetido esperou a trava: não conta a sangria duas vezes no limite
+            conn.rollback()
+            response.status_code = 200
+            return antigo
         if _sangria_sem_autorizacao(conn, svc.faixa(conn, LOJA_ID, c)) + valor > lim:
             if not d.autorizacao:
                 raise HTTPException(status_code=403, detail=f"A soma das sangrias passa de R$ {fmt(lim)}: peça a autorização de um gerente.")
             autorizador = autorizar(conn, request, d.autorizacao, sessao["usuario_id"], perfis=APROVADORES)
             svc.exigir_aberto(conn, LOJA_ID)
-    with transacao(conn):
-        r = conn.execute("INSERT INTO movimento_caixa (loja_id, data, tipo, valor, motivo_id, motivo_nome, vira_despesa, observacao, comprovante, usuario_id, autorizado_por, criado_em) "
-                         "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id", (LOJA_ID, c["data"], d.tipo, valor, d.motivo_id, m["nome"], m["vira_despesa"],
-                                                                                      d.observacao, d.comprovante, sessao["usuario_id"], autorizador, quando)).fetchone()
-        auditar(conn, sessao, d.tipo, "movimento_caixa", r["id"], depois={"valor": fmt(valor), "motivo_id": d.motivo_id, "autorizado_por": autorizador})
+    try:
+        with transacao(conn):
+            r = conn.execute("INSERT INTO movimento_caixa (loja_id, data, tipo, valor, motivo_id, motivo_nome, vira_despesa, observacao, comprovante, usuario_id, autorizado_por, criado_em, chave) "
+                             "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id", (LOJA_ID, c["data"], d.tipo, valor, d.motivo_id, m["nome"], m["vira_despesa"],
+                                                                                             d.observacao, d.comprovante, sessao["usuario_id"], autorizador, quando, d.chave)).fetchone()
+            auditar(conn, sessao, d.tipo, "movimento_caixa", r["id"], depois={"valor": fmt(valor), "motivo_id": d.motivo_id, "autorizado_por": autorizador})
+    except HTTPException as e:
+        if reenvio_perdeu_corrida(e) and (antigo := _movimento_por_chave(conn, d, sessao)):  # dois envios simultâneos: vale o que gravou
+            response.status_code = 200
+            return antigo
+        raise
     return {"id": r["id"], "tipo": d.tipo, "valor": fmt(valor)}
 
 

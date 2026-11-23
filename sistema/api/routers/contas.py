@@ -3,10 +3,10 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, transacao
+from api.database import agora, auditar, conferir_reenvio, get_db, reenvio_perdeu_corrida, transacao
 from api.schemas import (AtivoIn, BaixaIn, CancelarTituloIn, CanalRepasseIn, ConciliarIn, ContaBancariaIn, ExtratoIn, RecorrenteIn, TipoDespesaIn, TituloIn)
 from api.security import requer, tem_permissao
 from api.services import contas as svc
@@ -183,8 +183,23 @@ def titulos(sentido: Optional[str] = None, situacao: Optional[str] = None, de: O
     return [_titulo_out(t, hoje) for t in conn.execute(sql + " ORDER BY t.vencimento, t.id LIMIT 3000", p).fetchall()]
 
 
+def _titulo_por_chave(conn, d: TituloIn, sessao):
+    if not d.chave:
+        return None
+    t = conn.execute("SELECT id, aprovado, sentido, descricao, criado_por FROM titulo WHERE loja_id = %s AND chave = %s", (LOJA_ID, d.chave)).fetchone()
+    if not t:
+        return None
+    grupo = conn.execute("SELECT id, valor FROM titulo WHERE loja_id = %s AND (id = %s OR grupo_id = %s) ORDER BY id", (LOJA_ID, t["id"], t["id"])).fetchall()
+    conferir_reenvio({**t, "valor": sum(r["valor"] for r in grupo), "parcelas": len(grupo)},
+                     {"sentido": d.sentido, "descricao": d.descricao, "valor": parse_reais(d.valor), "parcelas": d.parcelas, "criado_por": sessao["usuario_id"]})
+    return {"ids": [r["id"] for r in grupo], "aprovado": t["aprovado"]}
+
+
 @router.post("/titulos", status_code=201)
-def criar_titulo(d: TituloIn, sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
+def criar_titulo(d: TituloIn, response: Response, sessao=Depends(requer("contas.operar")), conn=Depends(get_db)):
+    if antigo := _titulo_por_chave(conn, d, sessao):  # reenvio do mesmo lançamento (duplo clique, rede lenta)
+        response.status_code = 200
+        return antigo
     valor = parse_reais(d.valor)
     if d.fornecedor_id and not conn.execute("SELECT 1 FROM fornecedor WHERE id = %s AND loja_id = %s", (d.fornecedor_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Fornecedor não encontrado.")
@@ -199,6 +214,10 @@ def criar_titulo(d: TituloIn, sessao=Depends(requer("contas.operar")), conn=Depe
             hoje_ = agora().date()
             # Um lançamento a pagar por vez para quem lança: dois terminais simultâneos não furam o acumulado do dia.
             conn.execute("SELECT pg_advisory_xact_lock(7202, %s)", (sessao["usuario_id"],))
+            if antigo := _titulo_por_chave(conn, d, sessao):  # o envio repetido esperou a trava: não soma duas vezes no acumulado
+                conn.rollback()
+                response.status_code = 200
+                return antigo
             ja = conn.execute("SELECT COALESCE(sum(valor), 0) AS s FROM titulo WHERE loja_id = %s AND criado_por = %s AND sentido = 'pagar' AND origem_tipo IN ('manual','parcela') "
                               "AND situacao <> 'cancelado' AND criado_em::date = %s", (LOJA_ID, sessao["usuario_id"], hoje_)).fetchone()["s"]
             aprovado = ja + valor <= Decimal(lim)
@@ -210,18 +229,25 @@ def criar_titulo(d: TituloIn, sessao=Depends(requer("contas.operar")), conn=Depe
     if parc < Decimal("0.01"):
         raise HTTPException(status_code=400, detail="O valor é pequeno demais para este número de parcelas.")
     ids, quando = [], agora()
-    with transacao(conn):
-        for i in range(d.parcelas):
-            v = parc if i < d.parcelas - 1 else valor - parc * (d.parcelas - 1)  # a última absorve o centavo da divisão
-            venc = svc._soma_meses(d.vencimento, i)
-            r = conn.execute("INSERT INTO titulo (loja_id, sentido, descricao, fornecedor_id, tipo_despesa_id, canal, valor, vencimento, competencia, origem_tipo, parcela_num, parcela_total, "
-                             "comprovante, aprovado, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                             (LOJA_ID, d.sentido, d.descricao, d.fornecedor_id, d.tipo_despesa_id, d.canal, v, venc, d.competencia, "parcela" if d.parcelas > 1 else "manual",
-                              i + 1 if d.parcelas > 1 else None, d.parcelas if d.parcelas > 1 else None, d.comprovante, aprovado, quando, sessao["usuario_id"])).fetchone()
-            ids.append(r["id"])
-        if d.parcelas > 1:
-            conn.execute("UPDATE titulo SET grupo_id = %s WHERE id = ANY(%s)", (ids[0], ids))
-        auditar(conn, sessao, "criar", "titulo", ids[0], depois={"sentido": d.sentido, "valor": fmt(valor), "parcelas": d.parcelas, "aprovado": aprovado})
+    try:
+        with transacao(conn):
+            for i in range(d.parcelas):
+                v = parc if i < d.parcelas - 1 else valor - parc * (d.parcelas - 1)  # a última absorve o centavo da divisão
+                venc = svc._soma_meses(d.vencimento, i)
+                r = conn.execute("INSERT INTO titulo (loja_id, sentido, descricao, fornecedor_id, tipo_despesa_id, canal, valor, vencimento, competencia, origem_tipo, parcela_num, parcela_total, "
+                                 "comprovante, aprovado, criado_em, criado_por, chave) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                                 (LOJA_ID, d.sentido, d.descricao, d.fornecedor_id, d.tipo_despesa_id, d.canal, v, venc, d.competencia, "parcela" if d.parcelas > 1 else "manual",
+                                  i + 1 if d.parcelas > 1 else None, d.parcelas if d.parcelas > 1 else None, d.comprovante, aprovado, quando, sessao["usuario_id"],
+                                  d.chave if i == 0 else None)).fetchone()  # a chave fica só na 1ª parcela; as outras vêm pelo grupo
+                ids.append(r["id"])
+            if d.parcelas > 1:
+                conn.execute("UPDATE titulo SET grupo_id = %s WHERE id = ANY(%s)", (ids[0], ids))
+            auditar(conn, sessao, "criar", "titulo", ids[0], depois={"sentido": d.sentido, "valor": fmt(valor), "parcelas": d.parcelas, "aprovado": aprovado})
+    except HTTPException as e:
+        if reenvio_perdeu_corrida(e) and (antigo := _titulo_por_chave(conn, d, sessao)):  # dois envios simultâneos: vale o que gravou
+            response.status_code = 200
+            return antigo
+        raise
     return {"ids": ids, "aprovado": aprovado}
 
 
