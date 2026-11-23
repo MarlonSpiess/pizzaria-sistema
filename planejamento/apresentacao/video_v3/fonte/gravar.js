@@ -431,7 +431,7 @@ const CENAS = {
         await c.clicar(num.nth(0).locator("button:text-is('Registrar')").first(), { ms: 400 });
         await dormir(700);
       }
-      await c.quando("padrão", 1, 1.5);
+      await c.quando("padrão", 1, 2.8);
       const num2 = f.locator(".chk-item:has(input[inputmode='decimal'])");
       if (await num2.count() > 1) {
         await c.digitar(num2.nth(1).locator("input").first(), "-12", { ms: 400 });
@@ -444,7 +444,7 @@ const CENAS = {
         }
         await c.foto("fora");
       }
-      await c.quando("gerência", 1, 0.6);
+      await c.quando("gerência", 1, 0.3);
       await c.clicar(f.locator("button:text-is('Voltar')").first());
       await c.quando("aderência", 1, 0.2);
       await c.clicar(f.locator("button:text-is('Aderência')").first());
