@@ -1,6 +1,6 @@
 # Documentação do Sistema Integrado da Pizzaria
 
-Versão 2.1, 23/11/2026. Fiel ao código da branch main depois dos PRs #2 a #5 e da integração do trabalho local de 16/11 (Checklists). Comece por aqui.
+Versão 3.0, 23/11/2026. Fiel ao código da main com os PRs #2 a #6 (Checklists integrados; 24 migrações, 110 tabelas, 270 rotas). Comece por aqui.
 
 ## Para quem instala e mantém
 
@@ -23,9 +23,10 @@ Versão 2.1, 23/11/2026. Fiel ao código da branch main depois dos PRs #2 a #5 e
 
 ## Apresentações e fluxogramas (PDF)
 
-- [Apresentação do sistema v2](../apresentacao/Apresentacao_do_Sistema_v2.pdf)
-- [Apresentação comercial v2](../apresentacao/Apresentacao_Comercial_v2.pdf)
-- [Fluxogramas v2](../apresentacao/Fluxogramas_v2.pdf): 3 áreas, ciclo do pedido, importação do Anota Ai, produção por função, caixa do dia, estoque e vendas fechadas.
+- [Apresentação do sistema v3](../apresentacao/Apresentacao_do_Sistema_v3.pdf): inclui produção quando a pizza sai errada, Checklists e pontos de controle do pedido.
+- [Apresentação comercial v3](../apresentacao/Apresentacao_Comercial_v3.pdf)
+- [Fluxogramas v3](../apresentacao/Fluxogramas_v3.pdf): 3 áreas, ciclo do pedido (com a volta à produção), importação do Anota Ai, produção por função, caixa do dia, estoque e vendas fechadas, Checklists.
+- Versões anteriores mantidas como registro: v2 (04/11/2026) e v1 (outubro de 2026), na mesma pasta.
 
 ## Planejamento (registro das decisões)
 
@@ -46,4 +47,4 @@ Versão 2.1, 23/11/2026. Fiel ao código da branch main depois dos PRs #2 a #5 e
 1. Quando uma rota ou permissão mudar, na raiz do repositório: `python planejamento/documentacao/fonte/gerar_apendice_rotas.py` e `python planejamento/documentacao/fonte/gerar_apendice_permissoes.py`.
 2. Nova migração: acrescentar a linha na seção 3.2 do Manual Técnico.
 3. Manuais de usuário em Word: `python planejamento/documentacao/fonte/gerar_docx.py` (usa o pandoc).
-4. Apresentações: em `planejamento/apresentacao/fonte_v2`, `python gen_v2.py` e depois `node render.js`.
+4. Apresentações: `python planejamento/apresentacao/fonte_v3/gen_v3.py` e depois `node planejamento/apresentacao/fonte_v3/render.js` (rodam de qualquer pasta; migrações, tabelas e rotas são contadas do código por `contagem.py`).

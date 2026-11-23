@@ -1,6 +1,6 @@
 # Manual do Usuário: Administrador e proprietário
 
-Versão 2.0, 04/11/2026. Administrador e proprietário têm **todas** as permissões, com uma diferença: o proprietário não cria, não altera e não redefine a senha de um administrador. Leia antes o [manual da gerência](06_Gerencia.md); aqui está só o que é exclusivo de vocês.
+Versão 3.0, 23/11/2026. Administrador e proprietário têm **todas** as permissões, com uma diferença: o proprietário não cria, não altera e não redefine a senha de um administrador. Leia antes o [manual da gerência](06_Gerencia.md); aqui está só o que é exclusivo de vocês.
 
 ## 1. Usuários (Administrativo > Usuários)
 
@@ -40,7 +40,9 @@ Hoje a integração **não está conectada**: falta o token e a documentação d
 
 - Títulos a pagar lançados à mão acima do valor do parâmetro (Contas).
 - Ordens de serviço acima do valor do parâmetro e baixa de bem (Imobilizado).
-- Folha gerencial e salários (RH > Folha gerencial): prévia, resumo e lançamento em Contas.
+- Folha gerencial e salários (RH > Folha gerencial): prévia, resumo e lançamento em Contas. Títulos e baixas da folha só aparecem para vocês: para a gerência eles não existem nas listas, na baixa nem na conciliação; no fluxo de caixa do gerente a folha entra somada às outras saídas do dia.
+- Desligar no RH um funcionário que tem login de gerente, subgerente, administrador ou proprietário: só vocês (o gerente recebe recusa).
+- Depreciação dos bens: a parcela mensal é cortada no centavo e a última parcela absorve o resto, então a soma nunca passa do valor a depreciar.
 - Diferença de caixa acima da tolerância: administrador, proprietário ou gerente, sempre quem não fez a contagem (não é exclusivo de vocês; o subgerente não aprova).
 
 ## 5. Checklists (modelos e limites)

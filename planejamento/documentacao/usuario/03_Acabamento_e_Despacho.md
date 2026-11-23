@@ -1,6 +1,6 @@
 # Manual do Usuário: Acabamento e Despacho
 
-Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
+Versão 3.0, 23/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
 
 **As suas telas:** Produção > **Forno**, **Acabamento** e **Despacho**. O forno e o despacho fazem parte da sua função (decisão de 03/11/2026).
 

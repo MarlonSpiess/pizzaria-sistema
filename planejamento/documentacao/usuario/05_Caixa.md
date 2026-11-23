@@ -1,6 +1,6 @@
 # Manual do Usuário: Caixa do dia e acerto dos entregadores
 
-Versão 2.0, 04/11/2026. Para quem opera o caixa: atendente e gerência. Leia antes o [manual comum](00_Comum_a_Todos.md).
+Versão 3.0, 23/11/2026. Para quem opera o caixa: atendente e gerência. Leia antes o [manual comum](00_Comum_a_Todos.md).
 
 **Tela:** Vendas > **Caixa e entregas**, com as abas **Caixa do dia**, **Entregas** e **Motivos e maquininhas**.
 
@@ -28,7 +28,7 @@ Os motivos são cadastrados em **Motivos e maquininhas** (na primeira vez, a ger
 
 **Entregas de hoje:** lista os pedidos de entrega. O despacho (escolher o entregador) é feito pelo acabamento ou aqui. Atribuir não muda a situação: quando o entregador sair, marque o pedido como despachado em Pedidos do dia.
 
-**Acerto do entregador:** o entregador devolve o dinheiro que recebeu dos clientes e recebe o valor das entregas mais a diária (uma vez por dia). Só entram pedidos já marcados como **despachado ou retirado**. Escolha o entregador e confirme. A diária vem do parâmetro; valor diferente só a gerência define.
+**Acerto do entregador:** o entregador devolve o dinheiro que recebeu dos clientes e recebe o valor das entregas mais a diária (uma vez por caixa: depois da meia-noite, o acerto ainda conta no caixa aberto e não paga outra diária). Só entram pedidos já marcados como **despachado ou retirado**. Escolha o entregador e confirme. A diária vem do parâmetro; valor diferente só a gerência define.
 
 Para pedidos do Anota Ai, o acerto do entregador também **finaliza** os pedidos dele no Anota Ai (quando a integração estiver conectada). Por isso pedido de entrega do Anota Ai só pode ser marcado como despachado depois de ter o entregador atribuído.
 

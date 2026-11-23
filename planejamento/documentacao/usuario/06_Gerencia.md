@@ -1,6 +1,6 @@
 # Manual do Usuário: Gerência (gerente e subgerente)
 
-Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). Para a operação de balcão e caixa, use também os manuais do [atendente](04_Atendente.md) e do [caixa](05_Caixa.md).
+Versão 3.0, 23/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md). Para a operação de balcão e caixa, use também os manuais do [atendente](04_Atendente.md) e do [caixa](05_Caixa.md).
 
 **As suas áreas:** 🍕 Produção, 🧾 Vendas e 🏢 Administrativo. Troque de área no seletor no alto do menu lateral (o trilho de ícones). Ao entrar, o sistema abre na última área que você usou.
 
@@ -55,7 +55,7 @@ Além de tudo o que o atendente faz:
 | **Fichas e etapas** | Fichas técnicas (quanto de cada insumo vai em cada produto, por tamanho), itens (insumos e preparos), etapas de produção, e "O que falta" (produtos sem ficha) |
 | **Estoque** | Saldos, lançar movimento (perda, consumo interno, estoque inicial, transferência), inventário (contar, conferir, fechar; é por ele que se ajusta o saldo), alertas, locais |
 | **Compras** | Lista de compras (necessidades, itens avulsos, cotação por fornecedor, definir e aprovar), pedidos de compra, recebimento com a nota, fornecedores |
-| **Contas** | Fluxo de caixa de 30 dias (7 em destaque), a pagar, a receber, lançar título, conciliação com o extrato, cadastros (contas bancárias, tipos de despesa, canais de repasse, despesas recorrentes) |
+| **Contas** | Fluxo de caixa de 30 dias (7 em destaque; a folha de pagamento entra somada às outras saídas do dia, sem linha própria, para o saldo ficar certo sem mostrar salários), a pagar, a receber, lançar título, conciliação com o extrato, cadastros (contas bancárias, tipos de despesa, canais de repasse, despesas recorrentes) |
 | **BI** | Painel do dia, DRE por competência, lucratividade por sabor e categoria, produção; exportação em CSV |
 | **Custos** | Custo dos produtos pela ficha técnica, CMV teórico e real do mês (fechamento), resultado do mês, fator de correção por insumo |
 | **Imobilizado** | Alertas de manutenção, bens, ordens de serviço (abrir, iniciar, peças, fechar), plano de manutenção, leituras, inventário de bens, categorias |

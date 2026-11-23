@@ -1,6 +1,6 @@
 # Manual do Usuário: o que vale para todos
 
-Versão 2.0, 04/11/2026. Leia isto antes do manual da sua função.
+Versão 3.0, 23/11/2026. Leia isto antes do manual da sua função.
 
 ## 1. Entrar no sistema
 

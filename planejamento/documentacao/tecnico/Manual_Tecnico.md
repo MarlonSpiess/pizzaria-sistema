@@ -1,6 +1,6 @@
 # Manual Técnico do Sistema Integrado da Pizzaria
 
-Versão 2.0, 04/11/2026. Descreve o sistema como ele está no código do PR #2 (branch `claude/project-thread-qkmkh7`, commit `a55b10d`), com 3 módulos, 1 login e acesso rígido por função conferido no servidor. Substitui, para o que é técnico, o README antigo de `sistema/` (que ainda falava só da fatia 1A).
+Versão 3.0, 23/11/2026. Descreve o sistema como ele está na main depois dos PRs #2 a #5 e da integração dos Checklists (PR #6, migrações até a 024), com 3 módulos, 1 login e acesso rígido por função conferido no servidor. Substitui, para o que é técnico, o README antigo de `sistema/` (que ainda falava só da fatia 1A).
 
 **Público:** quem instala, mantém ou continua o desenvolvimento. Marlon é o dono do projeto e quem decide as regras de negócio.
 
@@ -161,6 +161,7 @@ O app conecta com um papel sem privilégio de dono (`pizzaria_app`). `scripts/pa
 - Tudo em `/api/...`, JSON, mesma origem das telas.
 - Autenticação por `Authorization: Bearer <token>`. O token vem de `POST /api/auth/login` e é guardado no banco só como SHA-256.
 - Erros: 400 dado inválido, 401 sem sessão, 403 sem permissão ou regra de autorização, 404 não encontrado, 409 conflito de estado (ex.: caixa não aberto), 413 corpo acima de 1 MB, 422 validação, 429 excesso de tentativas de login. Mensagens em português, prontas para a tela.
+- Banco ocupado: trava, deadlock ou conflito de serialização respondem 503 com `Retry-After` (a tela pode repetir); consulta que passou do `statement_timeout` responde 504, sem repetir, com a pilha no log. Nenhum dos dois vira 500.
 - `/health` responde 200 se servidor e banco estão no ar, 503 se o banco caiu. Não exige login e não devolve dado sensível.
 - `/docs` e `/openapi.json` só existem com `DOCS_ENABLED=1`. Deixe desligado na loja: eles listam todas as rotas.
 
@@ -240,7 +241,7 @@ O roteiro passo a passo, para quem instala no PC da loja, está em [Roteiro_de_I
 
 - Windows no PC da loja, ligado durante o expediente, com IP fixo reservado no roteador.
 - Python 3.11 ou mais novo; PostgreSQL 16 ou mais novo.
-- Tablets Android 14 ou mais novo, com navegador Chrome.
+- Tablets Android 14 ou mais novo, com navegador Chrome. Acesso pela rede da loja em `http://<IP do PC>:8080`; o passo a passo e o diagnóstico de rede estão em [Acesso_pelo_Tablet.md](../../instalacao/Acesso_pelo_Tablet.md).
 
 ### 6.2 Passos
 
@@ -330,7 +331,8 @@ Ficam em Administrativo > Parâmetros, com histórico. Só administrador e propr
 
 | Sintoma | Verificar |
 |---|---|
-| Tablet não abre a página | `start_api.bat` aberto, IP do PC, regra do firewall para rede privada |
+| Tablet não abre a página | `start_api.bat` aberto, IP do PC, regra do firewall para rede privada, tablet na mesma rede (ver [Acesso_pelo_Tablet.md](../../instalacao/Acesso_pelo_Tablet.md)) |
+| "Servidor ocupado. Tente novamente em instantes." (503) | Duas pessoas gravando a mesma coisa ao mesmo tempo; repetir. Se for 504, a consulta demorou demais: ver o log |
 | "Erro de conexão com o banco" ou `/health` 503 | Serviço do PostgreSQL parado ou senha errada no `set_env.bat` |
 | 429 no login | 5 falhas em 15 minutos; aguardar |
 | "Troque a senha antes de continuar" | Primeiro acesso ou senha redefinida |
@@ -362,6 +364,7 @@ Proposta de 16/11/2026 (melhoria M4), implementada e **ainda sem aprovação do 
 - Exige PostgreSQL local; o banco de teste precisa terminar em `_teste` e é recriado a cada execução. Variáveis `TEST_DB_PASS`, `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_NAME`.
 - Rodar: `python -m pytest -q` (cerca de 11 minutos com 4 núcleos).
 - **Regra permanente do projeto (03/11/2026):** todo código passa por dois revisores, um cego (sem contexto) e outro conferindo contra o código e os documentos aprovados. Os relatórios de QA cego de cada fatia estão em `sistema/docs/`.
+- **Ferramentas de revisão** em `sistema/tools/` (ver o README da pasta): `crapper.py` (complexidade x cobertura, com radon), código morto e duplicação (pylint) e teste de mutação nas funções puras (mutmut). Usadas nas duas rodadas ub-mode de 06/11 e 23/11/2026.
 
 ---
 
@@ -394,8 +397,10 @@ A estrutura de menus aprovada está em [01_Estrutura_de_Menus.md](../../menus/01
 | 4 | Teste da impressora térmica Bluetooth pelo navegador do tablet | Marlon, na loja |
 | 5 | Backup diário fora da máquina | Adiado por Marlon |
 | 6 | Aviso de cancelamento ao Anota Ai | API |
-| 7 | Cópia em C:\Maria Gabriela\Pizzaria | Pasta disponível |
-| 8 | Valor por entrega diferente do padrão só pela API (sem tela) | Decidir se precisa de tela |
-| 9 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
+| 7 | Valor por entrega diferente do padrão só pela API (sem tela) | Decidir se precisa de tela |
+| 8 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
+| 9 | Decisões de regra C9 a C15 da 2ª rodada ub-mode: pedido agendado, contagem cega contornável, chave contra reenvio em sangria, título e massa, taxa de entrega zerada pela gerência, frete fora do custo médio, folha sem proporcionalidade no mês (`sistema/docs/qa_resposta_ub_mode2.md`) | Marlon |
+| 10 | `canais.pode_aceitar_sozinho` exige caixa com a data de hoje; depois da meia-noite o caixa em uso é o de ontem. Rever junto com o aceite, que ainda não existe | API do Anota Ai |
+| 11 | Checklists: aprovação do Marlon, piloto em papel, limites de temperatura e frequência dos itens | Marlon |
 
 **Recomendação:** antes do primeiro dia de uso, priorizar o teste da impressora e o pedido do token do Anota Ai, porque são os dois pontos que podem mudar o desenho (caminho de impressão e formato do pedido); o resto do sistema já roda na loja sem eles.

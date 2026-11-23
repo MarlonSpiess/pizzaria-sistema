@@ -22,7 +22,7 @@ def mapa_areas():
 
 def ciclo_pedido():
     f = Fluxo(6, 3, bw=230, bh=96)
-    f.no('ini', 0, 0, 'Pedido no balcão ou importado do canal', 'ini')
+    f.no('ini', 0, 0, 'Pedido no balcão (lido de volta) ou do canal', 'ini')
     f.no('rec', 1, 0, 'Recebido (pago por completo)', 'passo')
     f.no('fila', 2, 0, 'Pizzas na lista, urgente na frente', 'passo')
     f.no('mont', 3, 0, 'Montagem (pizzaiolo)', 'passo')
@@ -30,7 +30,7 @@ def ciclo_pedido():
     f.no('acab', 5, 0, 'Acabada e etiqueta', 'passo')
     f.no('ped', 5, 1, 'Pedido acabado', 'passo')
     f.no('tipo', 4, 1, 'Entrega?', 'dec', w=200, h=130)
-    f.no('desp', 3, 1, 'Despacho: entregador (caixa aberto)', 'passo')
+    f.no('desp', 3, 1, 'Despacho: entregador (caixa aberto, nenhuma pizza pendente)', 'passo', fs=17)
     f.no('saiu', 2, 1, 'Saiu para entrega · aviso "pronto"', 'passo')
     f.no('acerto', 1, 1, 'Acerto do entregador · "finalizado"', 'passo')
     f.no('ret', 4, 2, 'Pronto no balcão · aviso "pronto"', 'passo')
@@ -43,6 +43,8 @@ def ciclo_pedido():
     f.seta('tipo', 'ret', 'não')
     f.seta('acerto', 'fim', None)
     f.seta('cli', 'fim', None)
+    f.no('volta', 5, 2, 'Pizza perdida ou refeita: pedido volta para em produção e a nova entra na frente da fila', 'alerta', fs=15)
+    f.seta('ped', 'volta', 'perda', tracejado=True)
     return f.svg()
 
 
@@ -53,7 +55,7 @@ def importacao():
     f.no('nada', 1, 1, 'Não consulta', 'passo')
     f.no('pend', 2, 0, 'Entrada na fila (pendente)', 'passo')
     f.no('imp', 3, 0, 'Importando: a varredura espera', 'passo')
-    f.no('auto', 4, 0, 'Aceitar sozinho? Loja aberta, caixa de hoje, itens no mapa, sabores abertos', 'dec', w=290, h=180, fs=15)
+    f.no('auto', 4, 0, 'Aceitar sozinho? Loja aberta, caixa de hoje, itens no mapa, nada fechado', 'dec', w=290, h=180, fs=15)
     f.no('bloq', 4, 1, 'Fica para a gerência (bloqueada)', 'alerta')
     f.no('rec', 3, 2, 'Recusada', 'fim')
     f.no('aceita', 5, 0, 'Aceitar no Anota Ai (até 15 min)', 'pend')
@@ -126,7 +128,7 @@ def estoque():
     f.no('neg', 2, 0, 'Saldo pode ficar negativo', 'passo')
     f.no('al', 3, 0, 'Alerta: baixo, zerado ou negativo', 'passo')
     f.no('dz', 4, 0, 'Zerado ou negativo?', 'dec', w=230, h=150)
-    f.no('fs', 4, 1, 'Fechar os sabores que usam o ingrediente', 'passo')
+    f.no('fs', 4, 1, 'Fechar o que usa o ingrediente (sabor; base: o tamanho; borda: a borda)', 'passo', fs=17)
     f.no('api', 3, 1, 'Pausar no Anota Ai', 'pend')
     f.no('rep', 2, 1, 'Repor ou ajustar o estoque', 'passo')
     f.no('ab', 1, 1, 'Reabrir os sabores', 'fim')
@@ -137,11 +139,32 @@ def estoque():
     return f.svg()
 
 
+def checklists():
+    f = Fluxo(5, 3, bw=270, bh=110)
+    f.no('ini', 0, 0, 'Checklist do dia: início, acompanhamento ou fim', 'ini', fs=18)
+    f.no('func', 1, 0, 'Cada função responde os itens dela', 'passo')
+    f.no('resp', 2, 0, 'Conforme?', 'dec', w=220, h=140)
+    f.no('ok', 3, 0, 'Conforme (ou não se aplica, com motivo)', 'passo', fs=18)
+    f.no('nc', 2, 1, 'Não conforme: ação corretiva obrigatória', 'alerta', fs=18)
+    f.no('pend', 2, 2, 'Pendência para a gerência', 'alerta')
+    f.no('res', 3, 2, 'Gerência resolve e escreve o que fez', 'passo', fs=18)
+    f.no('conc', 4, 0, 'Gerência conclui (itens automáticos lidos agora)', 'passo', fs=18)
+    f.no('fim', 4, 2, 'Concluído; aderência no painel', 'fim')
+    for a, b in [('ini', 'func'), ('func', 'resp'), ('ok', 'conc'), ('nc', 'pend'), ('pend', 'res')]:
+        f.seta(a, b)
+    f.seta('resp', 'ok', 'sim')
+    f.seta('resp', 'nc', 'não')
+    f.seta('conc', 'fim', 'sem pendência')
+    f.seta('res', 'fim', None)
+    return f.svg()
+
+
 ALL = [
     ('As 3 áreas e o que passa entre elas', 'Um login, um servidor, acesso conferido por função. O Anota Ai é consultado pelo sistema.', mapa_areas),
-    ('Ciclo do pedido', 'Da venda ao caixa, com os avisos ao Anota Ai em cada passo.', ciclo_pedido),
+    ('Ciclo do pedido', 'Da venda ao caixa, com os avisos ao Anota Ai em cada passo. Pizza perdida depois de acabado devolve o pedido à produção (23/11/2026).', ciclo_pedido),
     ('Importação de pedidos do Anota Ai', 'Estrutura pronta; aceitar e criar o pedido dependem da documentação da API. Hoje o pedido do Anota Ai é aceito no aplicativo dele e digitado no balcão.', importacao),
     ('Produção: uma tela por função', 'A unidade de trabalho é a pizza. Cada função só vê a sua etapa.', producao),
     ('Caixa do dia', 'Um caixa por dia, uma gaveta, contagem cega.', caixa),
-    ('Estoque, alertas e vendas fechadas', 'Decisões de 04/11/2026: o estoque pode ficar negativo e a falta fecha a venda dos sabores.', estoque),
+    ('Estoque, alertas e vendas fechadas', 'O estoque pode ficar negativo e a falta fecha a venda (04/11/2026); ingrediente da base fecha o tamanho e o da borda fecha a borda (23/11/2026).', estoque),
+    ('Checklists do dia', 'Proposta de 16/11/2026 já no código, aguardando aprovação e piloto. Respostas só de inserção: corrigir grava outra.', checklists),
 ]

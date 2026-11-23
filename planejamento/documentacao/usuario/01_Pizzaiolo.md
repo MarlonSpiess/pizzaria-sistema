@@ -1,6 +1,6 @@
 # Manual do Usuário: Pizzaiolo
 
-Versão 2.0, 04/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
+Versão 3.0, 23/11/2026. Leia antes o [manual comum](00_Comum_a_Todos.md).
 
 **A sua tela:** Produção > **Montagem**. É a única tela da sua função. O forno, o acabamento e o despacho são da função acabamento.
 
