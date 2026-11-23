@@ -72,7 +72,16 @@ Além de tudo o que o atendente faz:
 
 Mantenha o **estoque mínimo** de cada ingrediente preenchido em Estoque > Saldos (configuração do item). Sem ele, o alerta de "baixo" não funciona.
 
-## 5. Rotina sugerida
+## 5. Checklists (Administrativo > Checklists)
+
+- **Do dia:** mostra cada checklist e quantos itens obrigatórios já foram feitos. Abra uma execução para ver todos os itens (cada resposta mostra quem respondeu e a hora) e **Concluir checklist** quando tudo estiver respondido. O sistema não deixa concluir com item obrigatório em branco.
+- **Corrigir depois de concluir:** a gerência pode corrigir uma resposta de uma execução já concluída, informando o que foi feito. A resposta anterior continua registrada e a situação acompanha as pendências abertas.
+- **Pendências:** cada item não conforme vira uma pendência. Toque em **Resolver** e escreva o que foi feito. Quando todas as pendências de uma execução são resolvidas, ela passa de "concluído com pendência" para "concluído".
+- **Aderência:** mostra, por checklist, quantos itens obrigatórios foram feitos, quantos ficaram não conformes e quais itens mais aparecem como "não se aplica". Toda semana, confira por amostra: escolha 3 itens de um checklist concluído e veja se a realidade bate.
+- **BI de entregas:** em BI > Produção, o cartão "Entregas: até atribuir e até sair" mostra os minutos do pedido até atribuir o entregador e até a saída. O tempo na rua não é medido, porque o sistema não registra a chegada ao cliente. Atribua o entregador na hora em que ele sai para o número ser fiel.
+- **Loja aberta:** ao ligar a loja sem o checklist de início concluído, o sistema avisa. Se o administrador ligou o bloqueio, ele pede o motivo para liberar.
+
+## 6. Rotina sugerida
 
 | Quando | O quê |
 |---|---|

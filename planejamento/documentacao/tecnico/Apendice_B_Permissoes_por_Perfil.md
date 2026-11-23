@@ -13,6 +13,10 @@ Gerado automaticamente de `PERMISSOES` em `sistema/api/security.py` por `planeja
 | `canais.configurar` | ✔ | ✔ |  |  |  |  |  |  |
 | `cardapio.editar` | ✔ | ✔ | ✔ | ✔ |  |  |  |  |
 | `cardapio.ver` | ✔ | ✔ | ✔ | ✔ | ✔ |  |  |  |
+| `checklist.executar` | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ |
+| `checklist.gerir` | ✔ | ✔ |  |  |  |  |  |  |
+| `checklist.resolver` | ✔ | ✔ | ✔ | ✔ |  |  |  |  |
+| `checklist.ver` | ✔ | ✔ | ✔ | ✔ |  |  |  |  |
 | `clientes.editar` | ✔ | ✔ | ✔ | ✔ | ✔ |  |  |  |
 | `clientes.ver` | ✔ | ✔ | ✔ | ✔ | ✔ |  |  |  |
 | `compras.aprovar` | ✔ | ✔ | ✔ | ✔ |  |  |  |  |
@@ -56,4 +60,4 @@ Gerado automaticamente de `PERMISSOES` em `sistema/api/security.py` por `planeja
 | `vendas.gerir` | ✔ | ✔ | ✔ | ✔ |  |  |  |  |
 | `vendas.ver` | ✔ | ✔ | ✔ | ✔ | ✔ |  |  |  |
 
-Total: 51 permissões, 8 perfis.
+Total: 55 permissões, 8 perfis.

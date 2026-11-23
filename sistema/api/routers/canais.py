@@ -2,9 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, transacao
-from api.schemas import Base
+from api.database import agora, auditar, get_db, hoje, transacao
+from api.schemas import Base, LojaAbertaIn
 from api.security import requer
+from api.services import checklists
+from api.services.parametros import vigentes
 
 router = APIRouter(prefix="/canais", tags=["canais"])
 PADRAO = (("anotaai", "Anota Ai"), ("ifood", "iFood"))
@@ -56,7 +58,7 @@ def estado_loja(sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
 
 
 @router.patch("/loja")
-def definir_loja(d: AtivoIn, sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
+def definir_loja(d: LojaAbertaIn, sessao=Depends(requer("vendas.gerir")), conn=Depends(get_db)):
     """Flag manual da gerência: liga quando a loja já pode receber pedidos dos canais; desliga ao fechar. Não muda sozinha."""
     r = conn.execute("SELECT loja_aberta FROM loja WHERE id = %s FOR UPDATE", (LOJA_ID,)).fetchone()
     if not r:
@@ -64,11 +66,20 @@ def definir_loja(d: AtivoIn, sessao=Depends(requer("vendas.gerir")), conn=Depend
     if r["loja_aberta"] == d.ativo:  # nada mudou: não regrava a hora da última troca
         conn.rollback()
         return {"loja_aberta": d.ativo, "desde": conn.execute("SELECT loja_aberta_desde FROM loja WHERE id = %s", (LOJA_ID,)).fetchone()["loja_aberta_desde"]}
+    aviso = None
+    if d.ativo and checklists.inicio_pendente(conn, LOJA_ID, hoje()):  # só cobra se a loja instalou o checklist de início
+        if vigentes(conn, LOJA_ID)["checklist_bloqueia_loja_aberta"]["valor"] == "sim":
+            if not d.liberar_motivo:
+                conn.rollback()
+                raise HTTPException(status_code=409, detail="Conclua o checklist de início do dia ou informe o motivo para liberar a abertura.")
+            auditar(conn, sessao, "loja_aberta_sem_checklist", "loja", LOJA_ID, depois={"motivo": d.liberar_motivo})
+        else:
+            aviso = "O checklist de início do dia ainda não foi concluído."
     quando = agora()
     conn.execute("UPDATE loja SET loja_aberta = %s, loja_aberta_desde = %s WHERE id = %s", (d.ativo, quando, LOJA_ID))
     auditar(conn, sessao, "loja_aberta", "loja", LOJA_ID, antes={"loja_aberta": r["loja_aberta"]}, depois={"loja_aberta": d.ativo})
     conn.commit()
-    return {"loja_aberta": d.ativo, "desde": quando}
+    return {"loja_aberta": d.ativo, "desde": quando, "aviso_checklist": aviso}
 
 
 @router.patch("/{cid}/ativo")

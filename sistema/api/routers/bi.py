@@ -217,7 +217,17 @@ def producao(mes: Optional[str] = None, sessao=Depends(requer("bi.ver")), conn=D
                       "COUNT(d.pizza_id) FILTER (WHERE d.destino = 'perda' OR vp.situacao = 'cancelado') AS descartadas "
                       "FROM pizza_producao p LEFT JOIN pizza_avulsa_destino d ON d.pizza_id = p.id LEFT JOIN pedido vp ON vp.id = d.pedido_id WHERE p.loja_id = %s AND p.situacao = 'avulsa' AND p.criado_em >= %s AND p.criado_em < %s",
                       (LOJA_ID, ini, fim)).fetchone()
+    # Melhoria M2. entrega_real é gravada quando o pedido vira "despachado ou retirado": na entrega, é a SAÍDA do entregador, não a chegada ao cliente.
+    # Por isso medimos o que existe: pedido até atribuir o entregador e pedido até a saída. O tempo na rua não é medido (falta o carimbo de chegada).
+    ent = conn.execute(
+        "SELECT COUNT(*) AS n, avg(extract(epoch FROM e.atribuido_em - p.criado_em) / 60) AS ate_atribuir, "
+        "avg(extract(epoch FROM p.entrega_real - p.criado_em) / 60) FILTER (WHERE p.entrega_real IS NOT NULL) AS ate_sair, "
+        "COUNT(*) FILTER (WHERE p.entrega_real IS NOT NULL) AS saidas "
+        "FROM entrega e JOIN pedido p ON p.id = e.pedido_id WHERE e.loja_id = %s AND p.criado_em >= %s AND p.criado_em < %s AND p.situacao <> 'cancelado'",
+        (LOJA_ID, ini, fim)).fetchone()
     return {"mes": m, "pizzas_acabadas": tot["feitas"], "refacoes": tot["refacoes"],
+            "tempos_entrega": {"entregas": ent["n"], "atribuir_minutos_medios": round(float(ent["ate_atribuir"]), 1) if ent["ate_atribuir"] is not None else None,
+                               "saidas": ent["saidas"], "sair_minutos_medios": round(float(ent["ate_sair"]), 1) if ent["ate_sair"] is not None else None},
             "avulsas": {"geradas": av["n"], "vendidas": av["vendidas"], "descartadas": av["descartadas"], "abertas": av["n"] - av["vendidas"] - av["descartadas"]},
             "tempo_por_etapa": [{"etapa": e["situacao"], "ocorrencias": e["n"], "minutos_medios": round(float(e["minutos"] or 0), 1)} for e in etapas],
             "retrocessos_por_motivo": [{"motivo": r["nome"], "quantidade": r["n"]} for r in retro], "perdas_por_motivo": [{"motivo": r["nome"], "quantidade": int(r["n"])} for r in perdas]}
