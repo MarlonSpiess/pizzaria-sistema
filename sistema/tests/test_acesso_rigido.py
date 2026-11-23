@@ -12,6 +12,9 @@ LEITURAS = {
     "/api/producao/motivos": {"massa", "pizzaiolo", "acabamento", "gerente", "subgerente"},
     "/api/producao/fila": {"pizzaiolo", "acabamento", "gerente", "subgerente"},
     "/api/rh/escalados?data=2026-01-05": {"gerente", "subgerente"},
+    "/api/checklists/hoje": {"massa", "pizzaiolo", "acabamento", "atendente", "gerente", "subgerente"},
+    "/api/checklists/pendencias": {"gerente", "subgerente"},
+    "/api/checklists/aderencia": {"gerente", "subgerente"},
 }
 PERFIS = ("massa", "pizzaiolo", "acabamento", "atendente", "gerente", "subgerente")
 

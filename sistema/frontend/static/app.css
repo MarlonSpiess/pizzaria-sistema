@@ -153,3 +153,18 @@ tr.atrasado td { color: #e5484d; }
 .prod td.pequeno, .prod .pequeno { font-size: 13px; }
 .prod .etiqueta { border-left: 2px dashed var(--line); }
 .prod .etiqueta .total { font-size: 26px; color: inherit; }
+
+/* checklists (melhoria M4) */
+.chk-item{border-top:1px solid var(--line);padding:12px 0;display:grid;gap:8px}
+.chk-item:first-of-type{border-top:0}
+.chk-topo{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.chk-botoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chk-botoes button{min-height:44px;min-width:110px}
+.chk-botoes input{min-height:44px;max-width:180px}
+.chk-etq{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;background:var(--panel2);color:var(--txt2);white-space:nowrap}
+.chk-etq.ok{background:var(--aviso-ok-bg);color:var(--aviso-ok-txt)}
+.chk-etq.nc{background:var(--aviso-erro-bg);color:var(--aviso-erro-txt)}
+.chk-etq.na{background:var(--aviso-alerta-bg);color:var(--aviso-alerta-txt)}
+.chk-progresso{height:8px;background:var(--panel2);border-radius:6px;overflow:hidden;margin:8px 0}
+.chk-progresso>div{height:100%;background:var(--ok)}
+@media(max-width:760px){.chk-botoes button{flex:1}.chk-botoes input{max-width:none;flex:1}}

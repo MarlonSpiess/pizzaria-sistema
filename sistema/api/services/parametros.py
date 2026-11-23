@@ -48,6 +48,9 @@ CATALOGO = {
     "perda_padrao_pct": ("pct", "10", "Perda padrão (%) de cada insumo nas fichas técnicas"),
     "forno_tempo_min": ("decimal_pos", "2", "Tempo de forno por pizza (minutos)"),
     "forno_pizzas_por_vez": ("inteiro_pos", None, "Pizzas que o forno comporta por vez"),
+    "checklist_bloqueia_loja_aberta": ("sim_nao", "nao", "Recusar ligar a loja aberta enquanto o checklist de início do dia não estiver concluído (nao = só avisa)"),
+    "checklist_temp_refrigerado_max": ("temperatura", None, "Temperatura máxima da câmara fria (°C) usada nos checklists; vazio = sem limite. Confirmar com a vigilância local"),
+    "checklist_temp_congelado_max": ("temperatura", None, "Temperatura máxima do freezer (°C) usada nos checklists; vazio = sem limite. Confirmar com a vigilância local"),
 }
 
 
@@ -102,6 +105,13 @@ def normalizar(chave: str, valor) -> str | None:
             if valor not in ("sim", "nao"):
                 raise ValueError("Informe sim ou nao.")
             return valor
+        if tipo == "temperatura":  # pode ser negativa (freezer)
+            if not re.match(r"^-?[0-9]{1,3}([.,][0-9]{1,2})?$", valor):
+                raise ValueError("Temperatura inválida.")
+            t = Decimal(valor.replace(",", "."))
+            if t < Decimal(-60) or t > Decimal(300):
+                raise ValueError("Temperatura fora da faixa permitida (-60 a 300 °C).")
+            return format(t.quantize(Decimal("0.01")), "f")
         if tipo == "tamanho_massa":
             if valor not in ("grande", "broto"):
                 raise ValueError("Informe grande ou broto.")

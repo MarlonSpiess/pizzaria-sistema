@@ -103,7 +103,7 @@ Regras para escrever uma migração nova:
 
 `--dry-run` mostra o que seria aplicado sem alterar nada.
 
-### 3.2 Migrações existentes (até a 021)
+### 3.2 Migrações existentes (até a 023)
 
 | Nº | Arquivo | Fatia | Tabelas criadas ou alteradas |
 |---|---|---|---|
@@ -128,8 +128,10 @@ Regras para escrever uma migração nova:
 | 019 | `019_montagem_errada_avulsa.sql` | Produção | situação `avulsa` em pizza_producao (final); aviso_producao (sabor_errado, formato, sem_ingredientes; resolvido_em/por); pizza_avulsa_destino (vendida ou perda com motivo; só inserção) |
 | 020 | `020_venda_avulsa.sql` | Vendas | item_pedido.`avulsa_pizza_id` (índice único: uma venda por avulsa); pizza_avulsa_destino.`pedido_id` |
 | 021 | `021_avulsa_observacao.sql` | Produção | aviso_producao.`observacao` (observação de quem apontou o erro, vai junto na venda da avulsa) |
+| 022 | `022_checklists.sql` | Checklists | checklist_modelo, checklist_versao (uma vigente por modelo), checklist_item, checklist_execucao (uma por modelo, dia e turno), checklist_resposta (só inserção, com gatilho), checklist_pendencia |
+| 023 | `023_pedido_controle.sql` | Checklists | pedido_controle (só inserção): leitura_de_volta, conferencia_final e causa_atraso por pedido |
 
-São 103 tabelas. O sabor com venda fechada **não é guardado**: é calculado a partir dos ingredientes em falta e da ficha técnica mais recente (incluindo preparos, até 5 níveis), para nunca ficar fora de sincronia.
+São 110 tabelas (103 até a migração 021 e 7 das migrações 022 e 023). O sabor com venda fechada **não é guardado**: é calculado a partir dos ingredientes em falta e da ficha técnica mais recente (incluindo preparos, até 5 níveis), para nunca ficar fora de sincronia.
 
 ### 3.3 Máquinas de estado principais
 
@@ -163,7 +165,7 @@ O app conecta com um papel sem privilégio de dono (`pizzaria_app`). `scripts/pa
 
 ### 4.2 Rotas por área
 
-São 250 rotas. A lista completa, com a permissão de cada uma, está no [Apêndice A](Apendice_A_Rotas_da_API.md). Resumo por área de uso:
+São 270 rotas. A lista completa, com a permissão de cada uma, está no [Apêndice A](Apendice_A_Rotas_da_API.md). Resumo por área de uso:
 
 | Área | Grupos de rotas |
 |---|---|
@@ -317,6 +319,7 @@ Ficam em Administrativo > Parâmetros, com histórico. Só administrador e propr
 | Estoque e compras | dias de alerta de validade (7), perda padrão das fichas (10%), valor de compra que exige aprovação |
 | Contas, imobilizado e RH | valor de título que exige aprovação, valor mínimo de bem, valor de ordem de serviço que exige aprovação, encargos estimados, limite de hora extra |
 | BI | meta de CMV (vazio = sem meta), alertas ligados (CMV, estoque, caixa, atraso, manutenção) |
+| Checklists | recusar ligar a loja aberta sem o checklist de início concluído (padrão nao: só avisa), temperatura máxima da câmara fria e do freezer em °C (vazio = sem limite; confirmar com a vigilância local) |
 
 ### 7.4 Backup (a cópia diária fora da máquina foi adiada por Marlon)
 
@@ -336,9 +339,25 @@ Ficam em Administrativo > Parâmetros, com histórico. Só administrador e propr
 
 ---
 
+### 7.6 Checklists (início, acompanhamento e fim do dia)
+
+Proposta de 16/11/2026 (melhoria M4), implementada e **ainda sem aprovação do Marlon nem piloto em papel**; ver `planejamento/melhoria_continua/`. Rotas em `/api/checklists` (Apêndice A) e permissões `checklist.executar`, `checklist.ver`, `checklist.resolver` e `checklist.gerir` (Apêndice B).
+
+- **Modelos e versões.** Três modelos padrão (início, acompanhamento e fim do dia) saem de `api/services/checklists_padrao.py` e são instalados por Admin > Checklists > Modelos (administrador ou proprietário). Um modelo em uso não se edita: publica-se nova versão (`POST /api/checklists/modelos/{codigo}/versoes`); execuções antigas seguem na versão que usaram. Não há tela de edição de itens nesta versão.
+- **Execução.** Uma por modelo, dia e turno; dois toques simultâneos devolvem a mesma execução. Escritas travam a linha da execução. Uma função só inicia checklist que tenha item para ela. O progresso mostrado à função conta só os itens dela. O acompanhamento abre rodadas ("rodada 1", "rodada 2"). Cada função vê e responde só os itens dela; a gerência vê todos e é quem conclui (`checklist.resolver`).
+- **Respostas só de inserção.** Corrigir é gravar outra resposta; a mais recente vale e a anterior fica registrada. "Não conforme" exige ação corretiva e cria pendência. Sair de "não conforme" exige dizer o que foi feito (a ação corretiva vira o texto de resolução da pendência anterior, que sempre fecha). "Não se aplica" exige motivo. Depois de concluída, a execução só aceita correção da gerência (`checklist.resolver`), sempre com motivo, e a situação acompanha as pendências abertas.
+- **Itens numéricos.** Os limites de temperatura vêm dos parâmetros `checklist_temp_refrigerado_max` e `checklist_temp_congelado_max`, vazios até o Marlon definir. Sem limite, o valor só é registrado. Fora do limite, a resposta vira não conforme e pede ação corretiva.
+- **Itens automáticos.** Leituras que o sistema já faz (caixa de hoje aberto, loja aberta, backup nas últimas 24 horas). Aparecem só como leitura e são gravadas no momento em que a gerência conclui.
+- **Itens periódicos.** O modelo aceita recorrência (diário, semanal, mensal, semestral); o item só aparece quando vence. Os modelos padrão usam "todo turno" porque as frequências ainda não foram definidas.
+- **Loja aberta.** Ao ligar a flag sem o checklist de início concluído, o sistema avisa. Com `checklist_bloqueia_loja_aberta = sim`, recusa (erro 409), e a gerência libera informando o motivo, que fica na auditoria. Sem modelo de início instalado, não cobra nada.
+- **Pedido.** `POST /api/checklists/pedidos/{id}/controles` grava leitura de volta (atendente), conferência final (acabamento) e causa do atraso (gerência). A tela de pedido de balcão tem a caixa "Li o pedido de volta ao cliente".
+- **BI.** `GET /api/bi/producao` ganhou `tempos_entrega`: minutos do pedido até atribuir o entregador (`entrega.atribuido_em`) e do pedido até a saída (`pedido.entrega_real`, gravada quando o pedido vira "despachado ou retirado"). **O tempo na rua não é medido:** o sistema não registra a chegada ao cliente. Para o número de saída ser fiel, o entregador deve ser atribuído na hora em que sai.
+- **Não implementado:** conferência de bebida no despacho (melhoria M3, depende do novo layout da Produção), entrega sugerida no resumo do pedido (o cálculo só existe depois de criado o pedido), pauta automática da revisão semanal e tela de edição de modelos.
+- **Testes.** `tests/test_checklists.py`.
+
 ## 8. Testes e qualidade
 
-- Suíte pytest em `sistema/tests/` (20 arquivos de teste, incluindo `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso). O resultado da última execução completa fica registrado no PR #2.
+- Suíte pytest em `sistema/tests/` (21 arquivos de teste, incluindo `test_checklists.py` (escrito em 16/11/2026, ainda não executado), `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso). O resultado da última execução completa fica registrado no PR #2.
 - Exige PostgreSQL local; o banco de teste precisa terminar em `_teste` e é recriado a cada execução. Variáveis `TEST_DB_PASS`, `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_NAME`.
 - Rodar: `python -m pytest -q` (cerca de 5 minutos).
 - **Regra permanente do projeto (03/11/2026):** todo código passa por dois revisores, um cego (sem contexto) e outro conferindo contra o código e os documentos aprovados. Os relatórios de QA cego de cada fatia estão em `sistema/docs/`.

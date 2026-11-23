@@ -42,7 +42,19 @@ Todos têm a tela **Meus dados**, que abre ao tocar no seu nome no topo: a sua e
 - Mensagem vermelha: não foi feito. Leia o motivo (exemplo: "O caixa não está aberto.") e corrija.
 - "Sessão inválida ou expirada": entre de novo. A sessão dura até 12 horas.
 
-## 6. Se algo não funcionar
+## 6. Checklists do dia
+
+Quem trabalha na massa, na montagem, no acabamento e no balcão tem a aba **Checklists** (na área Produção ou Vendas). Ela lista os checklists de hoje:
+
+1. Toque em **Iniciar** (ou **Abrir**, se já começou). Você vê só os itens da sua função.
+2. Em cada item, toque em **Conforme** quando estiver certo, **Não conforme** quando não estiver (o sistema pede o que foi feito para corrigir) ou **Não se aplica** (pede o motivo).
+3. Itens de temperatura pedem o valor medido. Se passar do limite, o sistema pede a ação corretiva.
+4. Alguns itens aparecem com ✔ ou ✖ e não têm botão: o sistema conferiu sozinho.
+5. Errou? Toque de novo no item e responda outra vez; a resposta mais recente vale e a anterior fica registrada. Se o item estava "não conforme" e agora está certo, o sistema pede o que foi feito para corrigir.
+
+Quando você terminar os seus itens, a gerência confere e conclui o checklist. Cada resposta guarda quem respondeu e a hora.
+
+## 7. Se algo não funcionar
 
 1. Toque em **Atualizar** (nas telas de produção) ou recarregue a página.
 2. Confira se o aparelho está na rede da loja.
