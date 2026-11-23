@@ -59,7 +59,7 @@ Em **Clientes** você busca, cadastra e corrige nome, telefone e endereço. Cada
 
 ## 6. Checklists
 
-A aba **Checklists** (na área Vendas) traz os itens do balcão, do caixa e dos canais. Veja o passo a passo em "Comum a todos".
+Durante o piloto em papel a aba não aparece para o atendente (veja "Comum a todos"). Quando for ligada, a aba **Checklists** (na área Vendas) traz os itens do balcão, do caixa e dos canais. Veja o passo a passo em "Comum a todos".
 
 ## 7. Cupom fiscal
 

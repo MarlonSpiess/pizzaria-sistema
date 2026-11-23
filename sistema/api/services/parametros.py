@@ -48,6 +48,7 @@ CATALOGO = {
     "perda_padrao_pct": ("pct", "10", "Perda padrão (%) de cada insumo nas fichas técnicas"),
     "forno_tempo_min": ("decimal_pos", "2", "Tempo de forno por pizza (minutos)"),
     "forno_pizzas_por_vez": ("inteiro_pos", None, "Pizzas que o forno comporta por vez"),
+    "checklist_funcoes_ligado": ("sim_nao", "nao", "Checklists para massa, pizzaiolo, acabamento e atendente (nao = só a gerência vê, durante o piloto em papel; decisão de Marlon, 23/11/2026)"),
     "checklist_bloqueia_loja_aberta": ("sim_nao", "nao", "Recusar ligar a loja aberta enquanto o checklist de início do dia não estiver concluído (nao = só avisa)"),
     "checklist_temp_refrigerado_max": ("temperatura", None, "Temperatura máxima da câmara fria (°C) usada nos checklists; vazio = sem limite. Confirmar com a vigilância local"),
     "checklist_temp_congelado_max": ("temperatura", None, "Temperatura máxima do freezer (°C) usada nos checklists; vazio = sem limite. Confirmar com a vigilância local"),

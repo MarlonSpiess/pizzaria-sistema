@@ -101,6 +101,16 @@ def listar_modelos(conn, loja_id: int) -> list[dict]:
         "FROM checklist_modelo m LEFT JOIN checklist_versao v ON v.modelo_id = m.id AND v.vigente WHERE m.loja_id = %s ORDER BY m.id", (loja_id,)).fetchall()
 
 
+def funcoes_ligadas(conn, loja_id: int) -> bool:
+    return vigentes(conn, loja_id)["checklist_funcoes_ligado"]["valor"] == "sim"
+
+
+def exigir_funcao_liberada(conn, sessao, loja_id: int) -> None:
+    """Durante o piloto em papel só a gerência usa os checklists (decisão de Marlon, 23/11/2026); o parâmetro libera as funções."""
+    if sessao["perfil"] not in GERENCIA and not funcoes_ligadas(conn, loja_id):
+        raise HTTPException(status_code=403, detail="Checklists das funções desligados durante o piloto em papel.")
+
+
 def data_do_modelo(conn, loja_id: int, modelo_id: int, tipo: str, data: date) -> date:
     """Fim do dia feito logo depois de fechar o caixa que passou da meia-noite: o dia ainda é o do caixa fechado,
     enquanto não houver caixa do dia novo e o fim daquele dia não estiver concluído (revisão não cega, 23/11/2026)."""

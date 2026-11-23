@@ -12,7 +12,7 @@ LEITURAS = {
     "/api/producao/motivos": {"massa", "pizzaiolo", "acabamento", "gerente", "subgerente"},
     "/api/producao/fila": {"pizzaiolo", "acabamento", "gerente", "subgerente"},
     "/api/rh/escalados?data=2026-01-05": {"gerente", "subgerente"},
-    "/api/checklists/hoje": {"massa", "pizzaiolo", "acabamento", "atendente", "gerente", "subgerente"},
+    "/api/checklists/hoje": {"gerente", "subgerente"},  # administrador e proprietário também (GERENCIA); funções só depois do piloto em papel (parâmetro checklist_funcoes_ligado)
     "/api/checklists/pendencias": {"gerente", "subgerente"},
     "/api/checklists/aderencia": {"gerente", "subgerente"},
 }

@@ -321,7 +321,7 @@ Ficam em Administrativo > Parâmetros, com histórico. Só administrador e propr
 | Estoque e compras | dias de alerta de validade (7), perda padrão das fichas (10%), valor de compra que exige aprovação |
 | Contas, imobilizado e RH | valor de título que exige aprovação, valor mínimo de bem, valor de ordem de serviço que exige aprovação, encargos estimados, limite de hora extra |
 | BI | meta de CMV (vazio = sem meta), alertas ligados (CMV, estoque, caixa, atraso, manutenção) |
-| Checklists | recusar ligar a loja aberta sem o checklist de início concluído (padrão nao: só avisa), temperatura máxima da câmara fria e do freezer em °C (vazio = sem limite; confirmar com a vigilância local) |
+| Checklists | checklists para as funções (`checklist_funcoes_ligado`, padrão nao: só a gerência durante o piloto em papel), recusar ligar a loja aberta sem o checklist de início concluído (padrão nao: só avisa), temperatura máxima da câmara fria e do freezer em °C (vazio = sem limite; confirmar com a vigilância local) |
 
 ### 7.4 Backup (a cópia diária fora da máquina foi adiada por Marlon)
 
@@ -344,10 +344,11 @@ Ficam em Administrativo > Parâmetros, com histórico. Só administrador e propr
 
 ### 7.6 Checklists (início, acompanhamento e fim do dia)
 
-Proposta de 16/11/2026 (melhoria M4), implementada e **ainda sem aprovação do Marlon nem piloto em papel**; ver `planejamento/melhoria_continua/`. Rotas em `/api/checklists` (Apêndice A) e permissões `checklist.executar`, `checklist.ver`, `checklist.resolver` e `checklist.gerir` (Apêndice B).
+Proposta de 16/11/2026 (melhoria M4), implementada; **em piloto em papel desde 23/11/2026, com só a gerência na tela** (ver o item Piloto abaixo); ver `planejamento/melhoria_continua/`. Rotas em `/api/checklists` (Apêndice A) e permissões `checklist.executar`, `checklist.ver`, `checklist.resolver` e `checklist.gerir` (Apêndice B).
 
 - **Modelos e versões.** Três modelos padrão (início, acompanhamento e fim do dia) saem de `api/services/checklists_padrao.py` e são instalados por Admin > Checklists > Modelos (administrador ou proprietário). Um modelo em uso não se edita: publica-se nova versão (`POST /api/checklists/modelos/{codigo}/versoes`); execuções antigas seguem na versão que usaram. Não há tela de edição de itens nesta versão.
-- **Execução.** Uma por modelo, dia e turno; dois toques simultâneos devolvem a mesma execução. Escritas travam a linha da execução. Uma função só inicia checklist que tenha item para ela. O progresso mostrado à função conta só os itens dela. O acompanhamento abre rodadas ("rodada 1", "rodada 2"). Cada função vê e responde só os itens dela; a gerência vê todos e é quem conclui (`checklist.resolver`).
+- **Piloto (decisão de Marlon, 23/11/2026).** Com `checklist_funcoes_ligado` = nao (padrão), `GET /checklists/hoje`, iniciar, detalhe e responder dão 403 para massa, pizzaiolo, acabamento e atendente, e login e `/auth/me` trazem `checklists_funcoes: false` para a tela esconder a aba. Os pontos de controle do pedido não dependem dele (só a leitura de volta tem tela hoje).
+- **Execução.** Uma por modelo, dia e turno (início e fim do dia sempre turno "dia"; data operacional do caixa); dois toques simultâneos devolvem a mesma execução. Escritas travam a linha da execução. Uma função só inicia checklist que tenha item para ela. O progresso mostrado à função conta só os itens dela. O acompanhamento abre rodadas ("rodada 1", "rodada 2"). Cada função vê e responde só os itens dela; a gerência vê todos e é quem conclui (`checklist.resolver`).
 - **Respostas só de inserção.** Corrigir é gravar outra resposta; a mais recente vale e a anterior fica registrada. "Não conforme" exige ação corretiva e cria pendência. Sair de "não conforme" exige dizer o que foi feito (a ação corretiva vira o texto de resolução da pendência anterior, que sempre fecha). "Não se aplica" exige motivo. Depois de concluída, a execução só aceita correção da gerência (`checklist.resolver`), sempre com motivo, e a situação acompanha as pendências abertas.
 - **Itens numéricos.** Os limites de temperatura vêm dos parâmetros `checklist_temp_refrigerado_max` e `checklist_temp_congelado_max`, vazios até o Marlon definir. Sem limite, o valor só é registrado. Fora do limite, a resposta vira não conforme e pede ação corretiva.
 - **Itens automáticos.** Leituras que o sistema já faz (caixa de hoje aberto, loja aberta, backup nas últimas 24 horas). Aparecem só como leitura e são gravadas no momento em que a gerência conclui.
@@ -401,7 +402,7 @@ A estrutura de menus aprovada está em [01_Estrutura_de_Menus.md](../../menus/01
 | 8 | Itens do cardápio ainda pendentes: nomes de abreviações, fichas de bordas, adicionais e bebidas, massa, etapas, tempos, fator de correção | Marlon |
 | 9 | Decisões de regra C9 a C15 da 2ª rodada ub-mode: pedido agendado, contagem cega contornável, chave contra reenvio em sangria, título e massa, taxa de entrega zerada pela gerência, frete fora do custo médio, folha sem proporcionalidade no mês (`sistema/docs/qa_resposta_ub_mode2.md`) | Marlon |
 | 10 | `canais.pode_aceitar_sozinho` exige caixa com a data de hoje; depois da meia-noite o caixa em uso é o de ontem. Rever junto com o aceite, que ainda não existe | API do Anota Ai |
-| 11 | Checklists: aprovação do Marlon, piloto em papel, limites de temperatura e frequência dos itens. Conferência final e causa do atraso existem só na API (sem tela) | Marlon |
+| 11 | Checklists: piloto em papel (só a gerência na tela, `checklist_funcoes_ligado` = nao), depois ligar para as funções; limites de temperatura e frequência dos itens. Conferência final e causa do atraso existem só na API (sem tela) | Marlon |
 | 12 | Decisões A4, A7 e A11 da 1ª rodada ub-mode, ainda abertas: entrega do balcão despachada sem entregador nem caixa, pedido de compra direto sem aprovação acima do limite, venda sem caixa aberto que cai no caixa anterior já fechado (`sistema/docs/qa_resposta_ub_mode.md`) | Marlon |
 | 13 | Novo layout da Produção (trava a conferência de bebida no despacho, melhoria M3) e padronização visual das telas (`planejamento/desenho_tecnico/03_Padroes_de_Layout.md`) | Decisão de Marlon |
 

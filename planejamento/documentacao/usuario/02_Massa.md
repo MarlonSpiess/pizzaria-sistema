@@ -34,4 +34,4 @@ Escolha o **tamanho** e a **quantidade** e toque no botão:
 
 ## 4. Checklists
 
-A aba **Checklists** traz os itens da sua função no início, no acompanhamento e no fim do dia. Veja o passo a passo na seção 6 do [manual comum](00_Comum_a_Todos.md).
+Durante o piloto em papel (decisão de Marlon, 23/11/2026), o checklist da sua função é feito no papel e a aba **Checklists** não aparece para você. Quando o administrador ligar, ela traz os itens da sua função no início, no acompanhamento e no fim do dia; o passo a passo está na seção 6 do [manual comum](00_Comum_a_Todos.md).

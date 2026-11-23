@@ -166,5 +166,5 @@ ALL = [
     ('Produção: uma tela por função', 'A unidade de trabalho é a pizza. Cada função só vê a sua etapa.', producao),
     ('Caixa do dia', 'Um caixa por dia, uma gaveta, contagem cega.', caixa),
     ('Estoque, alertas e vendas fechadas', 'O estoque pode ficar negativo e a falta fecha a venda (04/11/2026); ingrediente da base fecha o tamanho; o de borda ou adicional fecha só ele naquele tamanho (23/11/2026).', estoque),
-    ('Checklists do dia', 'Proposta de 16/11/2026 já no código, aguardando aprovação e piloto. Respostas só de inserção: corrigir grava outra.', checklists),
+    ('Checklists do dia', 'Já no código; durante o piloto em papel só a gerência usa a tela. Respostas só de inserção: corrigir grava outra.', checklists),
 ]

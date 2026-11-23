@@ -44,6 +44,8 @@ Todos têm a tela **Meus dados**, que abre ao tocar no seu nome no topo: a sua e
 
 ## 6. Checklists do dia
 
+**Durante o piloto em papel (decisão de Marlon, 23/11/2026), só a gerência vê a aba Checklists.** Massa, pizzaiolo, acabamento e atendente seguem o checklist em papel; a aba aparece para eles quando o administrador ligar o parâmetro **Checklists para as funções** (vale a partir do próximo login). A leitura do pedido de volta ao cliente, no balcão, continua funcionando.
+
 Quem trabalha na massa, na montagem, no acabamento e no balcão tem a aba **Checklists** (na área Produção ou Vendas). Ela lista os checklists de hoje:
 
 1. Toque em **Iniciar** (ou **Abrir**, se já começou). Você vê só os itens da sua função.

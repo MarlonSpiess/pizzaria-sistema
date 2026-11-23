@@ -1,6 +1,6 @@
 # Documentação do Sistema Integrado da Pizzaria
 
-Versão 3.0, 23/11/2026. Fiel ao código da main com os PRs #2 a #6 (Checklists integrados; 24 migrações, 110 tabelas, 270 rotas). Comece por aqui.
+Versão 3.0, 23/11/2026. Fiel ao código da main com os PRs #2 a #7 (Checklists integrados, só da gerência durante o piloto em papel; 24 migrações, 110 tabelas, 270 rotas). Comece por aqui.
 
 ## Para quem instala e mantém
 

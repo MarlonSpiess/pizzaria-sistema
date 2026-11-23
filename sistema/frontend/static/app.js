@@ -25,6 +25,8 @@ async function api(metodo, caminho, corpo) {
   let dados = null;
   try { dados = await r.json(); } catch (e) { /* sem corpo */ }
   if (r.status === 401 && estado.token && caminho !== "/auth/login") { sair(false); throw new Error("Sessão expirada. Entre de novo."); }
+  // parâmetro do piloto desligado depois do login: relê o perfil para a aba sumir
+  if (r.status === 403 && dados && /desligados durante o piloto/.test(dados.detail || "") && estado.token) { try { estado.eu = await api("GET", "/auth/me"); setTimeout(desenhar, 0); } catch (e) { /* segue o erro original */ } }
   if (!r.ok) throw new Error((dados && dados.detail) || "Erro " + r.status);
   return dados;
 }
@@ -107,7 +109,9 @@ const ABAS = [
   ["meusdados", "Meus dados", null, "", "🗓️", "conta"],
 ];
 const ENTRADA_AREA = { atendente: "vendas", massa: "producao", pizzaiolo: "producao", acabamento: "producao" };
-const abasDoPerfil = () => ABAS.filter(([, , perfis]) => !perfis || perfis.includes(estado.eu.perfil));
+// Checklists das funções só aparecem quando o parâmetro libera (piloto em papel, decisão de Marlon de 23/11/2026); o servidor também confere.
+const abasDoPerfil = () => ABAS.filter(([id, , perfis]) => (!perfis || perfis.includes(estado.eu.perfil))
+  && (!["checklist_funcao", "checklist_vendas"].includes(id) || estado.eu.checklists_funcoes));
 const areasDoPerfil = () => AREAS.filter(([id]) => abasDoPerfil().some((a) => a[5] === id));
 function areaDaAba(id) { const a = ABAS.find((x) => x[0] === id); return a ? a[5] : null; }
 function abaInicial() {
