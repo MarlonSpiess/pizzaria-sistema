@@ -1,12 +1,8 @@
 # Sistema da Pizzaria: código
 
-Fatia 1A (Núcleo), versão 0.1. Desenho em [planejamento/desenho_tecnico/01_Primeiro_Incremento.md](../planejamento/desenho_tecnico/01_Primeiro_Incremento.md).
+Versão do PR #2 (04/11/2026): 3 áreas (Produção, Vendas, Administrativo), 1 login, acesso rígido por função conferido no servidor, servidor único, migrações até a 018.
 
-## O que já funciona
-
-Login seguro (bloqueio após 5 falhas, sessão em tabela, token guardado como hash), 8 perfis com permissão negada por padrão, usuários com troca de senha no primeiro acesso, parâmetros da loja com histórico, auditoria só de inserção, `/health`, backup com cópia para pastas extras e teste de restauração, e uma tela simples (entrar, painel, usuários, parâmetros, auditoria).
-
-Ainda não existe: cardápio, pedido, produção e caixa (fatias 1B a 1E).
+A documentação completa está em [planejamento/documentacao/00_Indice.md](../planejamento/documentacao/00_Indice.md): Manual Técnico (arquitetura, banco, API, instalação, operação), manuais de usuário por função, apresentações e fluxogramas.
 
 ## Instalar no PC da loja (Windows)
 

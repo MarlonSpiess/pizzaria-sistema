@@ -2,6 +2,9 @@
 
 Versão 0.2, 19/10/2026. Consolidada com as respostas I1 a I12 de Marlon. **APROVADA por Marlon em 19/10/2026.** Parte do [Plano Macro](../00_Plano_Macro.md). Depende de [Núcleo e Vendas](01_Nucleo_e_Vendas.md) e de [Produção](02_Producao.md), ambos aprovados.
 
+> **Situação em 04/11/2026 (documentação v2.0).** O conteúdo de negócio abaixo continua valendo como registro das decisões aprovadas. Desde 03/11/2026 o sistema não é mais apresentado como 9 módulos: ele tem **3 áreas** (Produção, Vendas e Administrativo), **1 login** e **acesso rígido por função conferido no servidor**, num **servidor único**. Onde a forma de uso mudou, vale o [Manual Técnico](../documentacao/tecnico/Manual_Tecnico.md) e os [manuais de usuário](../documentacao/usuario/). **Onde ficou:** área Vendas > Caixa e entregas (Caixa do dia, Entregas, Motivos e maquininhas). **Construído:** fatia 1E. **O que mudou:** (1) o caixa aberto passou a ser condição para o **despacho** pelo acabamento e para o **aceitar sozinho** dos canais (caixa **de hoje**); (2) a auditoria da atribuição de entregador registra a origem (despacho ou caixa); (3) o **acerto do entregador finaliza** os pedidos dele no Anota Ai (decisão de 04/11/2026), e pedido de entrega do canal só é despachado com entregador atribuído.
+
+
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 5 e diz "aprovado" ou aponta o que corrigir.
 
 Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fonte específica; **[Suposição]** é minha e precisa de confirmação.

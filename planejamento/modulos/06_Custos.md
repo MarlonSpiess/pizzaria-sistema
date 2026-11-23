@@ -2,6 +2,9 @@
 
 Versão 0.2, 20/10/2026. Consolidada com as respostas L1 a L12 de Marlon (L6 confirmada). **APROVADA por Marlon em 20/10/2026.** Depende de todos os módulos já aprovados: [Núcleo e Vendas](01_Nucleo_e_Vendas.md), [Produção](02_Producao.md), [Fechamento de Caixa](03_Fechamento_de_Caixa.md), [Estoques e Compras](04_Estoques_e_Compras.md) e [Contas e Fluxo de Caixa](05_Contas_e_Fluxo_de_Caixa.md).
 
+> **Situação em 04/11/2026 (documentação v2.0).** O conteúdo de negócio abaixo continua valendo como registro das decisões aprovadas. Desde 03/11/2026 o sistema não é mais apresentado como 9 módulos: ele tem **3 áreas** (Produção, Vendas e Administrativo), **1 login** e **acesso rígido por função conferido no servidor**, num **servidor único**. Onde a forma de uso mudou, vale o [Manual Técnico](../documentacao/tecnico/Manual_Tecnico.md) e os [manuais de usuário](../documentacao/usuario/). **Onde ficou:** Administrativo > Custos (Custo dos produtos, CMV, Resultado do mês, Fator de correção) e Fichas e etapas. **Construído:** fatia 4, com CMV real sem peças de manutenção e com entrada inicial e devolução. Sem mudança de regra de negócio desde a aprovação.
+
+
 **Critério de sucesso:** Marlon lê o desenho e as respostas da seção 6 e diz "aprovado" ou aponta o que corrigir.
 
 Marcações: **[Decisão]** é de Marlon; **[Prática]** é boa prática sem fonte específica; **[Suposição]** é minha e precisa de confirmação.
