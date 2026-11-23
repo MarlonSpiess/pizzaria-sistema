@@ -7,7 +7,7 @@ import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, traduzir_erro, transacao
 from api.schemas import (CotacaoIn, DefinirIn, FornecedorIn, FornecedorUpdate, ItemQtd, ListaGerarIn, ListaItemUpdate, PedidoCompraIn, RecebimentoIn)
 from api.security import requer
 from api.services import compras as svc
@@ -34,15 +34,11 @@ def fornecedores(ativo: Optional[bool] = None, sessao=Depends(requer("compras.ve
 
 @router.post("/fornecedores", status_code=201)
 def criar_fornecedor(d: FornecedorIn, sessao=Depends(requer("compras.operar")), conn=Depends(get_db)):
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO fornecedor (loja_id, nome, contato, telefone, prazo_dias, forma_pagamento, observacao, criado_em, criado_por) "
                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id, nome, contato, telefone, prazo_dias, forma_pagamento, observacao, ativo",
                          (LOJA_ID, d.nome, d.contato, d.telefone, d.prazo_dias, d.forma_pagamento, d.observacao, agora(), sessao["usuario_id"])).fetchone()
         auditar(conn, sessao, "criar", "fornecedor", r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -54,13 +50,9 @@ def alterar_fornecedor(fid: int, d: FornecedorUpdate, sessao=Depends(requer("com
     if not conn.execute("SELECT 1 FROM fornecedor WHERE id = %s AND loja_id = %s", (fid, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Fornecedor não encontrado.")
     sets = ", ".join(f"{c} = %s" for c in campos)
-    try:
+    with transacao(conn):
         r = conn.execute(f"UPDATE fornecedor SET {sets} WHERE id = %s RETURNING id, nome, contato, telefone, prazo_dias, forma_pagamento, observacao, ativo", (*campos.values(), fid)).fetchone()
         auditar(conn, sessao, "alterar", "fornecedor", fid, depois=campos)
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -117,15 +109,11 @@ def criar_lista(d: ListaGerarIn, sessao=Depends(requer("compras.operar")), conn=
         linhas[x.item_id] = (Decimal(x.quantidade), sug[1] if sug else None, sug[2] if sug else "manual")
     if not linhas:
         raise HTTPException(status_code=400, detail="Nada para comprar: não há itens abaixo do mínimo e nenhum item foi acrescentado.")
-    try:
+    with transacao(conn):
         l = conn.execute("INSERT INTO lista_compra (loja_id, observacao, criado_por, criado_em) VALUES (%s,%s,%s,%s) RETURNING id", (LOJA_ID, d.observacao, sessao["usuario_id"], quando)).fetchone()
         for item_id, (qtd, sug, origem) in linhas.items():
             conn.execute("INSERT INTO lista_compra_item (lista_id, item_id, quantidade, sugerida, origem) VALUES (%s,%s,%s,%s,%s)", (l["id"], item_id, qtd, sug, origem))
         auditar(conn, sessao, "criar", "lista_compra", l["id"], depois={"itens": len(linhas)})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _detalhe(conn, l["id"])
 
 
@@ -197,14 +185,10 @@ def ajustar(lid: int, liid: int, d: ListaItemUpdate, sessao=Depends(requer("comp
         raise HTTPException(status_code=400, detail="Informe o motivo de mudar ou tirar um item sugerido pelo sistema.")
     novo = {"quantidade": Decimal(campos["quantidade"]) if "quantidade" in campos else i["quantidade"], "removido": campos.get("removido", i["removido"]),
             "motivo": campos.get("motivo", i["motivo"])}
-    try:
+    with transacao(conn):
         conn.execute("UPDATE lista_compra_item SET quantidade = %s, removido = %s, motivo = %s WHERE id = %s", (novo["quantidade"], novo["removido"], novo["motivo"], liid))
         conn.execute("DELETE FROM lista_compra_escolha WHERE lista_id = %s AND lista_item_id = %s", (lid, liid))
         auditar(conn, sessao, "ajustar", "lista_compra", lid, antes={"quantidade": str(i["quantidade"]), "removido": i["removido"]}, depois={"quantidade": str(novo["quantidade"]), "removido": novo["removido"], "motivo": novo["motivo"]})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _detalhe(conn, lid)
 
 
@@ -226,16 +210,12 @@ def cotar(lid: int, d: CotacaoIn, sessao=Depends(requer("compras.operar")), conn
         raise HTTPException(status_code=404, detail="Item da lista não encontrado.")
     _fornecedor_ativo(conn, d.fornecedor_id)
     fator, unit = svc.converter_preco(conn, LOJA_ID, i["item_id"], Decimal(d.preco))
-    try:
+    with transacao(conn):
         conn.execute("INSERT INTO cotacao_resposta (lista_item_id, fornecedor_id, preco_embalagem, fator, preco_unit, prazo_dias, condicao, usuario_id, criado_em) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                      (d.lista_item_id, d.fornecedor_id, Decimal(d.preco), fator, unit, d.prazo_dias, d.condicao, sessao["usuario_id"], agora()))
         if l["situacao"] == "rascunho":
             conn.execute("UPDATE lista_compra SET situacao = 'cotando' WHERE id = %s", (lid,))
         auditar(conn, sessao, "cotar", "lista_compra", lid, depois={"item_id": i["item_id"], "fornecedor_id": d.fornecedor_id, "preco": d.preco})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _detalhe(conn, lid)
 
 
@@ -306,7 +286,7 @@ def definir(lid: int, d: DefinirIn, sessao=Depends(requer("compras.operar")), co
     total = sum(((q * u).quantize(Q2) for _, _, q, u, _ in linhas), Decimal("0.00"))
     limite = _limite_aprovacao(conn)
     auto = limite is None or total <= limite
-    try:
+    with transacao(conn):
         conn.execute("DELETE FROM lista_compra_escolha WHERE lista_id = %s", (lid,))
         for i, forn, q, u, o in linhas:
             conn.execute("INSERT INTO lista_compra_escolha (lista_id, lista_item_id, fornecedor_id, quantidade, preco_unit, origem_preco, valor) VALUES (%s,%s,%s,%s,%s,%s,%s)",
@@ -316,10 +296,6 @@ def definir(lid: int, d: DefinirIn, sessao=Depends(requer("compras.operar")), co
             conn.execute("UPDATE lista_compra SET situacao = 'aprovada', aprovada_por = %s, aprovada_em = %s WHERE id = %s", (sessao["usuario_id"], quando, lid))
             _gerar_pedidos(conn, _lista(conn, lid), quando, sessao["usuario_id"])
         auditar(conn, sessao, "definir", "lista_compra", lid, depois={"total": fmt(total), "aprovada_direto": auto})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _detalhe(conn, lid)
 
 
@@ -332,14 +308,10 @@ def aprovar(lid: int, sessao=Depends(requer("compras.aprovar")), conn=Depends(ge
     if l["definida_por"] == sessao["usuario_id"]:
         raise HTTPException(status_code=403, detail="Quem montou a lista não aprova a própria compra acima do limite.")
     quando = agora()
-    try:
+    with transacao(conn):
         conn.execute("UPDATE lista_compra SET situacao = 'aprovada', aprovada_por = %s, aprovada_em = %s WHERE id = %s", (sessao["usuario_id"], quando, lid))
         ids = _gerar_pedidos(conn, _lista(conn, lid), quando, sessao["usuario_id"])
         auditar(conn, sessao, "aprovar", "lista_compra", lid, depois={"pedidos": ids})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _detalhe(conn, lid)
 
 
@@ -390,17 +362,13 @@ def criar_pedido(d: PedidoCompraIn, sessao=Depends(requer("compras.operar")), co
         _, unit = svc.converter_preco(conn, LOJA_ID, x.item_id, Decimal(x.preco))
         linhas.append((x.item_id, Decimal(x.quantidade), unit))
     total = sum(((q * u).quantize(Q2) for _, q, u in linhas), Decimal("0.00"))
-    try:
+    with transacao(conn):
         p = conn.execute("INSERT INTO pedido_compra (loja_id, fornecedor_id, prazo_dias, forma_pagamento, previsao_entrega, total, observacao, criado_por, criado_em) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (LOJA_ID, d.fornecedor_id, d.prazo_dias if d.prazo_dias is not None else forn["prazo_dias"], d.forma_pagamento or forn["forma_pagamento"], d.previsao_entrega,
                           total, d.observacao, sessao["usuario_id"], agora())).fetchone()
         for item_id, q, u in linhas:
             conn.execute("INSERT INTO pedido_compra_item (pedido_id, item_id, quantidade, preco_unit) VALUES (%s,%s,%s,%s)", (p["id"], item_id, q, u))
         auditar(conn, sessao, "criar", "pedido_compra", p["id"], depois={"total": fmt(total)})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _pedido_out(conn, p["id"])
 
 
@@ -425,42 +393,57 @@ def recebimentos(sessao=Depends(requer("compras.ver")), conn=Depends(get_db)):
         "FROM recebimento r JOIN fornecedor f ON f.id = r.fornecedor_id LEFT JOIN usuario c ON c.id = r.conferente_id WHERE r.loja_id = %s ORDER BY r.id DESC LIMIT 100", (LOJA_ID,)).fetchall()]
 
 
+def _pedido_a_receber(conn, pedido_id):
+    """Pedido travado e seus itens por item_id; (None, {}) quando a entrega vem sem pedido."""
+    if pedido_id is None:
+        return None, {}
+    pedido = conn.execute("SELECT * FROM pedido_compra WHERE id = %s AND loja_id = %s FOR UPDATE", (pedido_id, LOJA_ID)).fetchone()
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido de compra não encontrado.")
+    if pedido["situacao"] not in ("emitido", "parcial"):
+        raise HTTPException(status_code=409, detail=f"Pedido {pedido['situacao']}: não recebe mais entrega.")
+    return pedido, {r["item_id"]: r for r in _pedido_out(conn, pedido_id)["itens"]}
+
+
+def _linha_recebida(conn, x, pedido, itens_pedido) -> tuple:
+    """Confere um item da nota contra o cadastro e o pedido: (config, quantidade, preço unitário, valor, pedida, entrada)."""
+    c = est.config_item(conn, LOJA_ID, x.item_id)
+    if not c["ativo"]:
+        raise HTTPException(status_code=400, detail=f"{c['nome']} está inativo.")
+    qtd = Decimal(x.quantidade)
+    _, unit = svc.converter_preco(conn, LOJA_ID, x.item_id, Decimal(x.preco))
+    pedida = None
+    if pedido:
+        ip = itens_pedido.get(x.item_id)
+        if not ip:
+            raise HTTPException(status_code=400, detail=f"{c['nome']} não está neste pedido.")
+        pedida = Decimal(ip["quantidade"]) - Decimal(ip["recebido"])
+        if (qtd != pedida or abs(unit - Decimal(ip["preco_unit"])) > Decimal("0.001")) and not x.diferenca_motivo:
+            raise HTTPException(status_code=400, detail=f"{c['nome']}: quantidade ou preço diferente do pedido, informe o motivo da diferença.")
+    return c, qtd, unit, (qtd * unit).quantize(Q2), pedida, x
+
+
+def _conferir_sangria(conn, movimento_id: int, total: Decimal) -> None:
+    s = conn.execute("SELECT tipo, valor FROM movimento_caixa WHERE id = %s AND loja_id = %s", (movimento_id, LOJA_ID)).fetchone()
+    if not s or s["tipo"] != "sangria":
+        raise HTTPException(status_code=404, detail="Sangria não encontrada.")
+    if s["valor"] != total:
+        raise HTTPException(status_code=400, detail=f"A sangria é de R$ {fmt(s['valor'])} e a nota de R$ {fmt(total)}: os valores precisam ser iguais.")
+
+
 @router.post("/recebimentos", status_code=201)
 def receber(d: RecebimentoIn, sessao=Depends(requer("compras.operar")), conn=Depends(get_db)):
     """Confere a entrega contra o pedido, dá entrada no estoque (lote e custo médio), guarda o preço pago e deixa a nota pronta para Contas a Pagar."""
     quando = agora()
-    pedido, itens_pedido, forn_id = None, {}, d.fornecedor_id
-    if d.pedido_id is not None:
-        pedido = conn.execute("SELECT * FROM pedido_compra WHERE id = %s AND loja_id = %s FOR UPDATE", (d.pedido_id, LOJA_ID)).fetchone()
-        if not pedido:
-            raise HTTPException(status_code=404, detail="Pedido de compra não encontrado.")
-        if pedido["situacao"] not in ("emitido", "parcial"):
-            raise HTTPException(status_code=409, detail=f"Pedido {pedido['situacao']}: não recebe mais entrega.")
-        forn_id = pedido["fornecedor_id"]
-        itens_pedido = {r["item_id"]: r for r in _pedido_out(conn, d.pedido_id)["itens"]}
+    pedido, itens_pedido = _pedido_a_receber(conn, d.pedido_id)
+    forn_id = pedido["fornecedor_id"] if pedido else d.fornecedor_id
     if forn_id is None:
         raise HTTPException(status_code=400, detail="Informe o fornecedor (ou o pedido).")
     forn = _fornecedor_ativo(conn, forn_id)
     if d.conferente_id is not None and not conn.execute("SELECT 1 FROM usuario WHERE id = %s AND loja_id = %s AND ativo", (d.conferente_id, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Conferente não encontrado.")
-    linhas, total_itens = [], Decimal("0.00")
-    for x in d.itens:
-        c = est.config_item(conn, LOJA_ID, x.item_id)
-        if not c["ativo"]:
-            raise HTTPException(status_code=400, detail=f"{c['nome']} está inativo.")
-        qtd = Decimal(x.quantidade)
-        fator, unit = svc.converter_preco(conn, LOJA_ID, x.item_id, Decimal(x.preco))
-        pedida = None
-        if pedido:
-            ip = itens_pedido.get(x.item_id)
-            if not ip:
-                raise HTTPException(status_code=400, detail=f"{c['nome']} não está neste pedido.")
-            pedida = Decimal(ip["quantidade"]) - Decimal(ip["recebido"])
-            if (qtd != pedida or abs(unit - Decimal(ip["preco_unit"])) > Decimal("0.001")) and not x.diferenca_motivo:
-                raise HTTPException(status_code=400, detail=f"{c['nome']}: quantidade ou preço diferente do pedido, informe o motivo da diferença.")
-        valor = (qtd * unit).quantize(Q2)
-        total_itens += valor
-        linhas.append((c, qtd, unit, valor, pedida, x))
+    linhas = [_linha_recebida(conn, x, pedido, itens_pedido) for x in d.itens]
+    total_itens = sum((linha[3] for linha in linhas), Decimal("0.00"))
     frete = parse_reais(d.frete) if d.frete is not None else Decimal("0.00")
     desconto = parse_reais(d.desconto) if d.desconto is not None else Decimal("0.00")
     total = total_itens + frete - desconto
@@ -470,13 +453,9 @@ def receber(d: RecebimentoIn, sessao=Depends(requer("compras.operar")), conn=Dep
     prazo = pedido["prazo_dias"] if pedido and pedido["prazo_dias"] is not None else forn["prazo_dias"]
     venc = d.vencimento or (d.data_nota + timedelta(days=prazo) if prazo is not None else None)
     if d.movimento_caixa_id is not None:  # compra urgente paga com o dinheiro do caixa
-        s = conn.execute("SELECT tipo, valor FROM movimento_caixa WHERE id = %s AND loja_id = %s", (d.movimento_caixa_id, LOJA_ID)).fetchone()
-        if not s or s["tipo"] != "sangria":
-            raise HTTPException(status_code=404, detail="Sangria não encontrada.")
-        if s["valor"] != total:
-            raise HTTPException(status_code=400, detail=f"A sangria é de R$ {fmt(s['valor'])} e a nota de R$ {fmt(total)}: os valores precisam ser iguais.")
+        _conferir_sangria(conn, d.movimento_caixa_id, total)
         forma, venc = "dinheiro", d.data_nota
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO recebimento (loja_id, pedido_id, fornecedor_id, numero_nota, data_nota, conferente_id, frete, desconto, total_nota, forma_pagamento, vencimento, movimento_caixa_id, observacao, criado_por, criado_em) "
                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (LOJA_ID, d.pedido_id, forn_id, d.numero_nota, d.data_nota, d.conferente_id or sessao["usuario_id"], frete, desconto, total, forma, venc,
@@ -493,8 +472,4 @@ def receber(d: RecebimentoIn, sessao=Depends(requer("compras.operar")), conn=Dep
             completo = all(Decimal(i["recebido"]) >= Decimal(i["quantidade"]) for i in ped["itens"])
             conn.execute("UPDATE pedido_compra SET situacao = %s WHERE id = %s", ("recebido" if completo else "parcial", d.pedido_id))
         auditar(conn, sessao, "receber", "recebimento", r["id"], depois={"fornecedor_id": forn_id, "total": fmt(total), "itens": len(linhas)})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"id": r["id"], "total_nota": fmt(total), "vencimento": venc, "forma_pagamento": forma}

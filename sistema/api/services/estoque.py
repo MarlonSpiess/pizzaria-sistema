@@ -119,6 +119,9 @@ def saida(conn, loja_id, item_id, qtd: Decimal, tipo, usuario_id, quando, motivo
     cfg = config_item(conn, loja_id, item_id)
     if not permitir_negativo and qtd > saldo_item(conn, item_id):
         raise HTTPException(status_code=400, detail="Saldo insuficiente para esta saída.")
+    if not permitir_negativo and local_id is not None and qtd > conn.execute(  # saldo líquido do local (lotes e falta sem lote)
+            "SELECT COALESCE(sum(quantidade), 0) AS s FROM movimento_estoque WHERE item_id = %s AND local_id = %s", (item_id, local_id)).fetchone()["s"]:
+        raise HTTPException(status_code=400, detail="Saldo insuficiente neste local para esta saída.")
     custo = custo_atual(conn, item_id)
     restante, movs = qtd, []
     if lote_id is not None:

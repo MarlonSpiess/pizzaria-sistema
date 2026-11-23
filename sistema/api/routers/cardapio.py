@@ -1,11 +1,10 @@
 """Cardápio: categorias, produtos (pizza, calzone, bebida, acompanhamento), bordas e adicionais, e simulação de preço."""
 from typing import Optional
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, gravar_um
 from api.schemas import (AdicionalCreate, AdicionalUpdate, CategoriaCreate, CategoriaUpdate, PizzaSimular, ProdutoCreate,
                          ProdutoUpdate, TIPOS_PRODUTO)
 from api.security import requer
@@ -35,14 +34,6 @@ def _precos_em_texto(row: dict | None) -> dict | None:
     return row
 
 
-def _grava(conn, comando: str, params) -> dict:
-    try:
-        return conn.execute(comando, params).fetchone()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
-
-
 # ---------------------------------------------------------------- categorias
 @router.get("/categorias")
 def listar_categorias(sessao=Depends(requer("cardapio.ver")), conn=Depends(get_db)):
@@ -53,7 +44,7 @@ def listar_categorias(sessao=Depends(requer("cardapio.ver")), conn=Depends(get_d
 
 @router.post("/categorias", status_code=201)
 def criar_categoria(d: CategoriaCreate, sessao=Depends(requer("cardapio.editar")), conn=Depends(get_db)):
-    nova = _grava(conn, "INSERT INTO categoria_pizza (loja_id, nome, preco_padrao_grande, preco_padrao_broto, criado_em, criado_por) "
+    nova = gravar_um(conn, "INSERT INTO categoria_pizza (loja_id, nome, preco_padrao_grande, preco_padrao_broto, criado_em, criado_por) "
                         "VALUES (%s,%s,%s,%s,%s,%s) RETURNING id, nome, preco_padrao_grande, preco_padrao_broto, ativo",
                   (LOJA_ID, d.nome, d.preco_padrao_grande, d.preco_padrao_broto, agora(), sessao["usuario_id"]))
     nova = _precos_em_texto(nova)
@@ -72,7 +63,7 @@ def alterar_categoria(cid: int, d: CategoriaUpdate, sessao=Depends(requer("carda
     if not antes:
         raise HTTPException(status_code=404, detail="Categoria não encontrada.")
     sets = ", ".join(f"{c} = %s" for c in campos)  # nomes de coluna vêm só do schema
-    novo = _grava(conn, f"UPDATE categoria_pizza SET {sets} WHERE id = %s RETURNING id, nome, preco_padrao_grande, "
+    novo = gravar_um(conn, f"UPDATE categoria_pizza SET {sets} WHERE id = %s RETURNING id, nome, preco_padrao_grande, "
                         "preco_padrao_broto, ativo", (*campos.values(), cid))
     antes, novo = _precos_em_texto(antes), _precos_em_texto(novo)
     auditar(conn, sessao, "alterar", "categoria_pizza", cid, antes={k: antes[k] for k in campos}, depois={k: novo[k] for k in campos})
@@ -120,7 +111,7 @@ def _novo_preco(conn, sessao, produto_id: int, tamanho: str, valor: str):
 def criar_produto(d: ProdutoCreate, sessao=Depends(requer("cardapio.editar")), conn=Depends(get_db)):
     if d.categoria_id is not None:
         _categoria_ativa(conn, d.categoria_id)
-    novo = _grava(conn, "INSERT INTO produto (loja_id, tipo, nome, categoria_id, ingredientes, criado_em, criado_por) "
+    novo = gravar_um(conn, "INSERT INTO produto (loja_id, tipo, nome, categoria_id, ingredientes, criado_em, criado_por) "
                         "VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id", (LOJA_ID, d.tipo, d.nome, d.categoria_id, d.ingredientes,
                                                                         agora(), sessao["usuario_id"]))
     for tam, valor in (("grande", d.preco_grande), ("broto", d.preco_broto), ("unico", d.preco_unico)):
@@ -146,7 +137,7 @@ def alterar_produto(pid: int, d: ProdutoUpdate, sessao=Depends(requer("cardapio.
     cols = {k: v for k, v in campos.items() if k in ("nome", "categoria_id", "ingredientes", "ativo")}
     if cols:
         sets = ", ".join(f"{c} = %s" for c in cols)  # nomes de coluna vêm só do schema
-        _grava(conn, f"UPDATE produto SET {sets} WHERE id = %s RETURNING id", (*cols.values(), pid))
+        gravar_um(conn, f"UPDATE produto SET {sets} WHERE id = %s RETURNING id", (*cols.values(), pid))
     for tam, chave in (("grande", "preco_grande"), ("broto", "preco_broto"), ("unico", "preco_unico")):
         if chave in campos and campos[chave] != fmt(atual[chave]):
             _novo_preco(conn, sessao, pid, tam, campos[chave])
@@ -188,7 +179,7 @@ def listar_adicionais(ativo: Optional[bool] = None, sessao=Depends(requer("carda
 
 @router.post("/adicionais", status_code=201)
 def criar_adicional(d: AdicionalCreate, sessao=Depends(requer("cardapio.editar")), conn=Depends(get_db)):
-    novo = _grava(conn, "INSERT INTO adicional (loja_id, tipo, nome, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+    novo = gravar_um(conn, "INSERT INTO adicional (loja_id, tipo, nome, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s) RETURNING id",
                   (LOJA_ID, d.tipo, d.nome, agora(), sessao["usuario_id"]))
     for tam, valor in (("grande", d.preco_grande), ("broto", d.preco_broto)):
         conn.execute("INSERT INTO preco_adicional (adicional_id, tamanho, valor, vigente_desde, criado_por) VALUES (%s,%s,%s,%s,%s)",
@@ -208,7 +199,7 @@ def alterar_adicional(aid: int, d: AdicionalUpdate, sessao=Depends(requer("carda
     cols = {k: v for k, v in campos.items() if k in ("nome", "ativo")}
     if cols:
         sets = ", ".join(f"{c} = %s" for c in cols)
-        _grava(conn, f"UPDATE adicional SET {sets} WHERE id = %s RETURNING id", (*cols.values(), aid))
+        gravar_um(conn, f"UPDATE adicional SET {sets} WHERE id = %s RETURNING id", (*cols.values(), aid))
     for tam, chave in (("grande", "preco_grande"), ("broto", "preco_broto")):
         if chave in campos and campos[chave] != fmt(atual[chave]):
             conn.execute("INSERT INTO preco_adicional (adicional_id, tamanho, valor, vigente_desde, criado_por) VALUES (%s,%s,%s,%s,%s)",

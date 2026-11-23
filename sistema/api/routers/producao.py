@@ -8,10 +8,10 @@ import psycopg.errors
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, transacao
 from api.routers.vendas import _pedido, mudar_situacao
 from api.schemas import ContagemMassaIn, LoteMassaIn, MontagemErradaIn, MotivoIn, MotivoRef, MotivoUpdate, PerdaMassaIn
-from api.security import PERMISSOES, requer, requer_alguma
+from api.security import permissoes_de, requer, requer_alguma, tem_permissao
 from api.services import estoque, producao as svc
 from api.services.parametros import vigentes
 
@@ -30,8 +30,8 @@ def _out(r: dict) -> dict:
 
 
 def _pizza(conn, pid: int, travar=False) -> dict:
-    p = conn.execute(f"SELECT p.id, p.pedido_id, p.tipo, p.tamanho, p.sabores, p.adicionais, p.observacoes, p.situacao, p.ordem, p.responsavel_id, p.original_id "
-                     f"FROM pizza_producao p WHERE p.id = %s AND p.loja_id = %s" + (" FOR UPDATE" if travar else ""), (pid, LOJA_ID)).fetchone()
+    p = conn.execute("SELECT p.id, p.pedido_id, p.tipo, p.tamanho, p.sabores, p.adicionais, p.observacoes, p.situacao, p.ordem, p.responsavel_id, p.original_id "
+                     "FROM pizza_producao p WHERE p.id = %s AND p.loja_id = %s" + (" FOR UPDATE" if travar else ""), (pid, LOJA_ID)).fetchone()
     if not p:
         raise HTTPException(status_code=404, detail="Pizza não encontrada.")
     return p
@@ -52,7 +52,7 @@ def _exigir(p: dict, *situacoes: str) -> None:
 
 
 def _gerencia(sessao) -> bool:
-    return "producao.gerir" in PERMISSOES.get(sessao["perfil"], set())
+    return tem_permissao(sessao, "producao.gerir")
 
 
 def _motivo(conn, tabela: str, motivo_id: int) -> dict:
@@ -76,7 +76,7 @@ def fila(situacao: Optional[str] = None,
     filtro = situacao or None
     if filtro and filtro not in todas:
         raise HTTPException(status_code=400, detail="Situação inválida.")
-    perms = PERMISSOES.get(sessao["perfil"], set())
+    perms = permissoes_de(sessao)
     if "producao.gerir" in perms:
         permitidas, ve_cliente, ve_forno = set(todas), True, True
     else:
@@ -194,15 +194,11 @@ def retroceder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.montagem"
         nova = prox[0]["ordem"] + 1
     else:
         nova = p["ordem"]
-    try:
+    with transacao(conn):
         conn.execute("UPDATE pizza_producao SET ordem = %s WHERE id = %s", (nova, pid))
         svc.mover(conn, pid, "na lista", sessao["usuario_id"], quando, responsavel=None)
         conn.execute("INSERT INTO retrocesso (pizza_id, motivo_id, usuario_id, criado_em) VALUES (%s,%s,%s,%s)", (pid, m["id"], sessao["usuario_id"], quando))
         auditar(conn, sessao, "retroceder", "pizza_producao", pid, depois={"motivo": m["nome"], "avisa_estoque": m.get("avisa_estoque")})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"id": pid, "situacao": "na lista", "avisa_estoque": bool(m.get("avisa_estoque"))}
 
 
@@ -254,8 +250,11 @@ def perder(pid: int, d: MotivoRef, sessao=Depends(requer("producao.perda")), con
     if ped["situacao"] in ("cancelado", "despachado ou retirado"):
         raise HTTPException(status_code=409, detail=f"Pedido {ped['situacao']}: não há mais o que perder aqui.")
     if p["situacao"] == "em montagem" and p["responsavel_id"] != sessao["usuario_id"] and not _gerencia(sessao) \
-            and "producao.acabamento" not in PERMISSOES.get(sessao["perfil"], set()):
+            and not tem_permissao(sessao, "producao.acabamento"):
         raise HTTPException(status_code=403, detail="Esta pizza está com outro pizzaiolo.")
+    if p["situacao"] != "em montagem" and not (_gerencia(sessao) or tem_permissao(sessao, "producao.forno")
+                                               or tem_permissao(sessao, "producao.acabamento")):
+        raise HTTPException(status_code=403, detail="Depois da montagem, a perda é do acabamento.")  # acesso rígido por função
     m = _motivo(conn, "motivo_perda", d.motivo_id)
     quando = agora()
     svc.mover(conn, pid, "perdida", sessao["usuario_id"], quando)
@@ -298,7 +297,7 @@ def montagem_errada(pid: int, d: MontagemErradaIn, sessao=Depends(requer_alguma(
     se foi o acabamento (ou a gerência) que achou o erro, com a pizza no forno ou fora dele. Massa, montagem e acabamento recebem o aviso."""
     p, ped = _pizza_travada(conn, pid)
     _exigir(p, "em montagem", "no forno", "saiu do forno")
-    perms = PERMISSOES.get(sessao["perfil"], set())
+    perms = permissoes_de(sessao)
     if p["situacao"] == "em montagem":
         _minha(p, sessao)
     elif "producao.acabamento" not in perms and not _gerencia(sessao):
@@ -340,17 +339,13 @@ def sem_ingredientes(pid: int, sessao=Depends(requer("producao.montagem")), conn
     quando = agora()
     conn.execute("SELECT pg_advisory_xact_lock(5, %s)", (LOJA_ID,))
     fim = conn.execute("SELECT COALESCE(max(ordem), 0) + 1 AS o FROM pizza_producao WHERE loja_id = %s", (LOJA_ID,)).fetchone()["o"]
-    try:
+    with transacao(conn):
         conn.execute("UPDATE pizza_producao SET ordem = %s WHERE id = %s", (fim, pid))
         svc.mover(conn, pid, "na lista", sessao["usuario_id"], quando, responsavel=None)
         conn.execute("INSERT INTO retrocesso (pizza_id, motivo_id, usuario_id, criado_em) VALUES (%s,%s,%s,%s)", (pid, m["id"], sessao["usuario_id"], quando))
         conn.execute("INSERT INTO aviso_producao (loja_id, tipo, pizza_id, criado_por, criado_em) SELECT %s,'sem_ingredientes',%s,%s,%s "
                      "WHERE NOT EXISTS (SELECT 1 FROM aviso_producao WHERE pizza_id = %s AND tipo = 'sem_ingredientes' AND resolvido_em IS NULL)", (LOJA_ID, pid, sessao["usuario_id"], quando, pid))
         auditar(conn, sessao, "sem_ingredientes", "pizza_producao", pid, depois={"motivo": m["nome"]})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"id": pid, "situacao": "na lista", "avisa_estoque": True}
 
 
@@ -397,7 +392,7 @@ _ROTULO_AVISO = {"sabor_errado": "Montagem errada no sabor", "formato": "Problem
 @router.get("/avisos")
 def avisos(sessao=Depends(requer_alguma("producao.massa", "producao.montagem", "producao.forno", "producao.acabamento", "producao.gerir")), conn=Depends(get_db)):
     """Avisos abertos das últimas 6 horas, para todos os setores da Produção. Só o acabamento e a gerência veem o cliente."""
-    perms = PERMISSOES.get(sessao["perfil"], set())
+    perms = permissoes_de(sessao)
     ve_cliente = "producao.acabamento" in perms or "producao.gerir" in perms
     desde = agora() - timedelta(hours=6) if "producao.gerir" not in perms else agora() - timedelta(days=3)  # a gerência vê o que ninguém resolveu
     rows = conn.execute(
@@ -461,7 +456,7 @@ def perda_massa(d: PerdaMassaIn, sessao=Depends(requer("producao.perda_massa")),
 # ---------------------------------------------------------------- motivos (listas em tabela)
 @router.get("/motivos")
 def motivos(sessao=Depends(requer_alguma("producao.montagem", "producao.perda", "producao.perda_massa", "producao.refazer", "producao.gerir")), conn=Depends(get_db)):
-    perms = PERMISSOES.get(sessao["perfil"], set())
+    perms = permissoes_de(sessao)
     ve_retro = bool(perms & {"producao.montagem", "producao.gerir"})  # cada função recebe só a lista de motivos que usa
     ve_perda = bool(perms & {"producao.perda", "producao.perda_massa", "producao.refazer", "producao.gerir"})
     return {"retrocesso": conn.execute("SELECT id, nome, avisa_estoque, ativo FROM motivo_retrocesso WHERE loja_id = %s ORDER BY id", (LOJA_ID,)).fetchall() if ve_retro else [],
@@ -493,16 +488,12 @@ def _tabela(tipo: str) -> str:
 @router.post("/motivos/{tipo}", status_code=201)
 def criar_motivo(tipo: str, d: MotivoIn, sessao=Depends(requer("producao.gerir")), conn=Depends(get_db)):
     t = _tabela(tipo)
-    try:
+    with transacao(conn):
         if t == "motivo_retrocesso":
             r = conn.execute("INSERT INTO motivo_retrocesso (loja_id, nome, avisa_estoque) VALUES (%s,%s,%s) RETURNING id, nome, avisa_estoque, ativo", (LOJA_ID, d.nome, d.avisa_estoque)).fetchone()
         else:
             r = conn.execute("INSERT INTO motivo_perda (loja_id, nome) VALUES (%s,%s) RETURNING id, nome, ativo", (LOJA_ID, d.nome)).fetchone()
         auditar(conn, sessao, "criar", t, r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -517,11 +508,7 @@ def alterar_motivo(tipo: str, mid: int, d: MotivoUpdate, sessao=Depends(requer("
     if not conn.execute(f"SELECT 1 FROM {t} WHERE id = %s AND loja_id = %s", (mid, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Motivo não encontrado.")
     sets = ", ".join(f"{c} = %s" for c in campos)  # nomes de coluna vêm só do schema
-    try:
+    with transacao(conn):
         r = conn.execute(f"UPDATE {t} SET {sets} WHERE id = %s RETURNING *", (*campos.values(), mid)).fetchone()
         auditar(conn, sessao, "alterar", t, mid, depois={"campos": sorted(campos)})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r

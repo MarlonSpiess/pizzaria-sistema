@@ -167,3 +167,25 @@ def test_papel_restrito_nao_altera_nem_desliga_a_auditoria(client, admin, conn_t
     finally:
         conn_teste.execute(f"DROP OWNED BY {papel}")
         conn_teste.execute(f"DROP ROLE {papel}")
+
+
+def test_tabela_travada_alem_do_limite_responde_503_e_nao_500(client, conn_teste):
+    """Trava de outra transação passa do lock_timeout: é falta momentânea (tente de novo), não erro interno."""
+    _, h = entrar(client, "administrador")
+    with conn_teste.transaction():
+        conn_teste.execute("LOCK TABLE parametro IN ACCESS EXCLUSIVE MODE")
+        r = client.get("/api/parametros", headers=h)
+    assert r.status_code == 503, r.text
+    assert r.json()["detail"] == "Servidor ocupado. Tente novamente em instantes."
+    assert r.headers.get("retry-after") == "2"
+    assert client.get("/api/parametros", headers=h).status_code == 200  # a conexão voltou ao pool utilizável
+
+
+def test_gravacao_travada_pede_conferencia_e_nao_repeticao_automatica(client, conn_teste):
+    """QA não cego M1: numa gravação o erro pode vir depois do commit; sem Retry-After para ninguém repetir sozinho."""
+    _, h = entrar(client, "administrador")
+    with conn_teste.transaction():
+        conn_teste.execute("LOCK TABLE parametro IN ACCESS EXCLUSIVE MODE")
+        r = client.put("/api/parametros/loja_nome", json={"valor": "Pizzaria"}, headers=h)
+    assert r.status_code == 503 and "retry-after" not in r.headers
+    assert "confira se a operação já foi gravada" in r.json()["detail"]

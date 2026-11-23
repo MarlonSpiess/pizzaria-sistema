@@ -72,6 +72,11 @@ def test_depreciacao_linha_reta_fiscal_e_por_vida_util(client, base):
     # depois que começou, os parâmetros da depreciação não mudam; o resto sim
     assert client.patch(f"/api/imobilizado/bens/{b}", json={"valor_residual": "50,00"}, headers=base["hg"]).status_code == 409
     assert client.patch(f"/api/imobilizado/bens/{b}", json={"responsavel": "Maria"}, headers=base["hg"]).status_code == 200
+    assert client.patch(f"/api/imobilizado/bens/{v}", json={"valor_residual": None}, headers=base["hg"]).status_code == 400  # era 500
+    # mandar o mesmo valor que já está gravado não é mudança (tela que reenvia o formulário inteiro)
+    assert client.patch(f"/api/imobilizado/bens/{v}", json={"valor_residual": "100,00", "metodo": "vida_util", "vida_util_meses": 9,
+                                                          "inicio_uso": str(ini), "responsavel": "Ana"}, headers=base["hg"]).status_code == 200
+    assert client.get(f"/api/imobilizado/bens/{v}", headers=base["hg"]).json()["responsavel"] == "Ana"  # o resto mudou de fato
     # a depreciação aparece nos Custos como custo fixo do mês
     r = client.get("/api/custos/resultado", headers=base["hg"]).json()
     assert D(r["fixos_detalhe"]["depreciacao"]) >= D("200.00")

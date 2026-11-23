@@ -1,16 +1,15 @@
 """Fechamento de caixa: abertura, sangria e suprimento, contagem cega, fechamento com aprovação, entregas e acerto dos entregadores."""
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 
 import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, hoje, traduzir_erro
+from api.database import agora, auditar, get_db, hoje, traduzir_erro, transacao
 from api.schemas import (AcertoIn, CaixaAbrir, ContagemIn, EntregaIn, FecharIn, MaquininhaIn, MaquininhaUpdate, MotivoMovimentoIn,
                          MotivoMovimentoUpdate, MovimentoIn, RegraRecebimentoIn)
-from api.security import PERMISSOES, requer
+from api.security import requer, tem_permissao
 from api.services import caixa as svc
 from api.services import canais
 from api.services.dinheiro import fmt, parse_reais
@@ -23,7 +22,7 @@ MOTIVOS_PADRAO = (("Despesa pequena", "sangria", True), ("Depósito", "sangria",
 
 
 def _aprova(sessao) -> bool:
-    return "caixa.aprovar" in PERMISSOES.get(sessao["perfil"], set())
+    return tem_permissao(sessao, "caixa.aprovar")
 
 
 def _dinheiro_param(par: dict, chave: str) -> Decimal:
@@ -129,14 +128,10 @@ def iniciar_motivos(sessao=Depends(requer("caixa.gerir")), conn=Depends(get_db))
 def criar_motivo(d: MotivoMovimentoIn, sessao=Depends(requer("caixa.gerir")), conn=Depends(get_db)):
     if d.tipo == "suprimento" and d.vira_despesa:
         raise HTTPException(status_code=400, detail="Só a sangria pode virar despesa.")
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO motivo_movimento (loja_id, nome, tipo, vira_despesa) VALUES (%s,%s,%s,%s) RETURNING id, nome, tipo, vira_despesa, ativo",
                          (LOJA_ID, d.nome, d.tipo, d.vira_despesa)).fetchone()
         auditar(conn, sessao, "criar", "motivo_movimento", r["id"], depois={"nome": d.nome, "tipo": d.tipo})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -151,13 +146,9 @@ def alterar_motivo(mid: int, d: MotivoMovimentoUpdate, sessao=Depends(requer("ca
     if campos.get("vira_despesa") and m["tipo"] == "suprimento":
         raise HTTPException(status_code=400, detail="Só a sangria pode virar despesa.")
     sets = ", ".join(f"{c} = %s" for c in campos)  # nomes de coluna vêm só do schema
-    try:
+    with transacao(conn):
         r = conn.execute(f"UPDATE motivo_movimento SET {sets} WHERE id = %s RETURNING id, nome, tipo, vira_despesa, ativo", (*campos.values(), mid)).fetchone()
         auditar(conn, sessao, "alterar", "motivo_movimento", mid, depois=campos)
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -168,13 +159,9 @@ def maquininhas(sessao=Depends(requer("caixa.ver")), conn=Depends(get_db)):
 
 @router.post("/maquininhas", status_code=201)
 def criar_maquininha(d: MaquininhaIn, sessao=Depends(requer("caixa.gerir")), conn=Depends(get_db)):
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO maquininha (loja_id, nome) VALUES (%s,%s) RETURNING id, nome, ativo", (LOJA_ID, d.nome)).fetchone()
         auditar(conn, sessao, "criar", "maquininha", r["id"], depois={"nome": d.nome})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -186,13 +173,9 @@ def alterar_maquininha(mid: int, d: MaquininhaUpdate, sessao=Depends(requer("cai
     if not conn.execute("SELECT 1 FROM maquininha WHERE id = %s AND loja_id = %s", (mid, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Maquininha não encontrada.")
     sets = ", ".join(f"{c} = %s" for c in campos)
-    try:
+    with transacao(conn):
         r = conn.execute(f"UPDATE maquininha SET {sets} WHERE id = %s RETURNING id, nome, ativo", (*campos.values(), mid)).fetchone()
         auditar(conn, sessao, "alterar", "maquininha", mid, depois=campos)
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return r
 
 
@@ -233,7 +216,7 @@ def abrir(d: CaixaAbrir, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
     padrao = par["fundo_troco_padrao"]["valor"]
     if d.fundo_troco is not None:
         fundo = parse_reais(d.fundo_troco)
-        if (padrao is None or fundo != Decimal(padrao)) and "caixa.gerir" not in PERMISSOES.get(sessao["perfil"], set()):
+        if (padrao is None or fundo != Decimal(padrao)) and not tem_permissao(sessao, "caixa.gerir"):
             raise HTTPException(status_code=403, detail="Fundo de troco diferente do padrão: só a gerência define.")
     else:
         fundo = Decimal(padrao) if padrao is not None else svc.ZERO
@@ -242,16 +225,12 @@ def abrir(d: CaixaAbrir, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
     ult = svc.ultimo_caixa(conn, LOJA_ID)
     if ult and ult["situacao"] != "fechado":
         raise HTTPException(status_code=409, detail=f"O caixa de {ult['data'].strftime('%d/%m')} ainda não foi fechado: conte e feche antes de abrir outro.")
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO caixa_dia (loja_id, data, fundo_troco, aberto_por, aberto_em) VALUES (%s,%s,%s,%s,%s) "
                          "ON CONFLICT (loja_id, data) DO NOTHING RETURNING id", (LOJA_ID, quando.date(), fundo, sessao["usuario_id"], quando)).fetchone()
         if not r:
             raise HTTPException(status_code=409, detail="O caixa de hoje já foi aberto e fechado.")
         auditar(conn, sessao, "abrir", "caixa_dia", r["id"], depois={"fundo_troco": fmt(fundo)})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _status(conn, svc.ultimo_caixa(conn, LOJA_ID), sessao)
 
 
@@ -277,20 +256,18 @@ def movimentar(d: MovimentoIn, request: Request, sessao=Depends(requer("caixa.op
         # Limite não definido vale 0 (como nos descontos) e conta o acumulado do dia, para não fatiar a retirada.
         lim = vigentes(conn, LOJA_ID)["sangria_limite_gerente"]["valor"]
         lim = Decimal(lim) if lim is not None else svc.ZERO
+        # Uma sangria sem autorização por vez na loja: duas simultâneas não furam o limite acumulado.
+        conn.execute("SELECT pg_advisory_xact_lock(7201, %s)", (LOJA_ID,))
         if _sangria_sem_autorizacao(conn, svc.faixa(conn, LOJA_ID, c)) + valor > lim:
             if not d.autorizacao:
                 raise HTTPException(status_code=403, detail=f"A soma das sangrias passa de R$ {fmt(lim)}: peça a autorização de um gerente.")
             autorizador = autorizar(conn, request, d.autorizacao, sessao["usuario_id"], perfis=APROVADORES)
             svc.exigir_aberto(conn, LOJA_ID)
-    try:
+    with transacao(conn):
         r = conn.execute("INSERT INTO movimento_caixa (loja_id, data, tipo, valor, motivo_id, motivo_nome, vira_despesa, observacao, comprovante, usuario_id, autorizado_por, criado_em) "
                          "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id", (LOJA_ID, quando.date(), d.tipo, valor, d.motivo_id, m["nome"], m["vira_despesa"],
                                                                                       d.observacao, d.comprovante, sessao["usuario_id"], autorizador, quando)).fetchone()
         auditar(conn, sessao, d.tipo, "movimento_caixa", r["id"], depois={"valor": fmt(valor), "motivo_id": d.motivo_id, "autorizado_por": autorizador})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"id": r["id"], "tipo": d.tipo, "valor": fmt(valor)}
 
 
@@ -308,17 +285,13 @@ def contar(d: ContagemIn, sessao=Depends(requer("caixa.operar")), conn=Depends(g
     if pend:
         raise HTTPException(status_code=409, detail=f"Acerte antes os entregadores: há {len(pend)} entrega(s) sem acerto.")
     esperado = svc.esperado(conn, LOJA_ID, fx, c["fundo_troco"])
-    try:
+    with transacao(conn):
         for x in d.contagens:
             contado = parse_reais(x.valor)
             conn.execute("INSERT INTO contagem_caixa (caixa_id, forma, contado, esperado, diferenca, usuario_id, criado_em) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                          (c["id"], x.forma, contado, esperado[x.forma], contado - esperado[x.forma], sessao["usuario_id"], quando))
         conn.execute("UPDATE caixa_dia SET situacao = 'contado', contado_por = %s, contado_em = %s WHERE id = %s", (sessao["usuario_id"], quando, c["id"]))
         auditar(conn, sessao, "contar", "caixa_dia", c["id"])
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _status(conn, svc.ultimo_caixa(conn, LOJA_ID), sessao)
 
 
@@ -346,14 +319,10 @@ def fechar(d: FecharIn, request: Request, sessao=Depends(requer("caixa.operar"))
                 raise HTTPException(status_code=409, detail="O caixa já foi fechado.")
         else:
             raise HTTPException(status_code=403, detail="Diferença acima da tolerância: um gerente que não fez a contagem precisa aprovar o fechamento.")
-    try:
+    with transacao(conn):
         conn.execute("UPDATE caixa_dia SET situacao = 'fechado', fechado_por = %s, fechado_em = %s, aprovado_por = %s, justificativa = %s WHERE id = %s",
                      (sessao["usuario_id"], quando, aprovador, d.justificativa, c["id"]))
         auditar(conn, sessao, "fechar", "caixa_dia", c["id"], depois={"aprovado_por": aprovador, "justificativa": d.justificativa})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return _status(conn, svc.ultimo_caixa(conn, LOJA_ID), sessao)
 
 
@@ -420,7 +389,7 @@ def _atribuir(conn, sessao, pedido_id: int, d: EntregaIn, origem: str):
         raise HTTPException(status_code=404, detail="Entregador não encontrado ou inativo.")
     padrao = _dinheiro_param(vigentes(conn, LOJA_ID), "valor_entrega_padrao")
     valor = parse_reais(d.valor_entrega) if d.valor_entrega is not None else padrao
-    if valor != padrao and "caixa.gerir" not in PERMISSOES.get(sessao["perfil"], set()):
+    if valor != padrao and not tem_permissao(sessao, "caixa.gerir"):
         raise HTTPException(status_code=403, detail="Valor de entrega diferente do padrão: só a gerência define.")
     try:
         conn.execute("INSERT INTO entrega (pedido_id, loja_id, data, entregador_id, valor_entrega, atribuido_por, atribuido_em) VALUES (%s,%s,%s,%s,%s,%s,%s)",
@@ -459,10 +428,10 @@ def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
     else:
         padrao = _dinheiro_param(vigentes(conn, LOJA_ID), "diaria_entregador_padrao")
         diaria = parse_reais(d.diaria) if d.diaria is not None else padrao
-        if diaria != padrao and "caixa.gerir" not in PERMISSOES.get(sessao["perfil"], set()):
+        if diaria != padrao and not tem_permissao(sessao, "caixa.gerir"):
             raise HTTPException(status_code=403, detail="Diária diferente do padrão: só a gerência define.")
     devido = valor_entregas + diaria
-    try:
+    with transacao(conn):
         a = conn.execute("INSERT INTO acerto_entregador (loja_id, data, entregador_id, pedidos, dinheiro_recebido, valor_entregas, diaria, total_devido, saldo_gaveta, "
                          "usuario_id, criado_em) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                          (LOJA_ID, quando.date(), d.entregador_id, len(ids), recebido, valor_entregas, diaria, devido, recebido - devido,
@@ -470,10 +439,6 @@ def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
         conn.execute("UPDATE entrega SET acerto_id = %s WHERE pedido_id = ANY(%s)", (a["id"], ids))
         canais.finalizar_entregas_acertadas(conn, ids)  # pedido de canal externo: avisa "finalizado" (decisão de Marlon)
         auditar(conn, sessao, "acertar", "acerto_entregador", a["id"], depois={"pedidos": len(ids), "total_devido": fmt(devido), "saldo_gaveta": fmt(recebido - devido)})
-        conn.commit()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
     return {"id": a["id"], "pedidos": len(ids), "dinheiro_recebido": fmt(recebido), "valor_entregas": fmt(valor_entregas), "diaria": fmt(diaria),
             "total_devido": fmt(devido), "saldo_gaveta": fmt(recebido - devido), "diaria_ja_paga_hoje": bool(ja)}
 
@@ -481,4 +446,7 @@ def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
 # ---------------------------------------------------------------- relatório de uma data (por último: o caminho aceita qualquer data)
 @router.get("/{data}/relatorio")
 def relatorio(data: date, sessao=Depends(requer("caixa.ver")), conn=Depends(get_db)):
-    return _status(conn, svc.caixa_do_dia(conn, LOJA_ID, data), sessao)
+    c = svc.caixa_do_dia(conn, LOJA_ID, data)
+    if not c:  # sem isto, o relatório de um dia sem caixa mostrava o dia de hoje
+        raise HTTPException(status_code=404, detail="Não houve caixa nesta data.")
+    return _status(conn, c, sessao)

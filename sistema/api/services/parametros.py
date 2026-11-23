@@ -5,7 +5,7 @@ Limites iniciais ficam vazios até Marlon definir (decisão de 16/10/2026).
 """
 import json
 import re
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from fastapi import HTTPException
 
@@ -59,15 +59,54 @@ def descrever() -> list[dict]:
 
 
 def _dec(texto: str, minimo: Decimal, maximo: Decimal | None = None) -> Decimal:
-    if not _NUMERO.match(texto):  # só dígitos ASCII, com ponto ou vírgula decimal
+    if not _NUMERO.fullmatch(texto):  # só dígitos ASCII, com ponto ou vírgula decimal (fullmatch: "$" aceitaria "5\n")
         raise ValueError("Número inválido.")
-    try:
-        v = Decimal(texto.replace(",", "."))
-    except InvalidOperation:
-        raise ValueError("Número inválido.")
+    v = Decimal(texto.replace(",", "."))  # a expressão acima garante um número que o Decimal aceita
     if not v.is_finite() or v < minimo or (maximo is not None and v > maximo):
         raise ValueError("Valor fora da faixa permitida.")
     return v
+
+
+def _formas(valor) -> str:
+    if not isinstance(valor, list) or not all(isinstance(x, str) for x in valor):
+        raise ValueError("Informe a lista de formas de pagamento.")
+    if any(x not in FORMAS_PAGAMENTO for x in valor) or len(set(valor)) != len(valor):
+        raise ValueError("Forma de pagamento inválida ou repetida.")
+    return json.dumps(sorted(valor, key=FORMAS_PAGAMENTO.index))
+
+
+def _texto(valor: str) -> str:
+    if len(valor) > 120:
+        raise ValueError("Até 120 caracteres.")
+    return valor.strip()
+
+
+def _um_de(opcoes: tuple, mensagem: str):
+    def validar(valor: str) -> str:
+        if valor not in opcoes:
+            raise ValueError(mensagem)
+        return valor
+    return validar
+
+
+def _inteiro_pos(valor: str) -> str:
+    d = _dec(valor, Decimal(1), Decimal(1000))
+    if d != d.to_integral_value():
+        raise ValueError("Informe um número inteiro.")
+    return str(int(d))
+
+
+# Uma regra por tipo do catálogo. Todas recebem texto, menos "formas", que recebe a lista.
+_REGRAS = {
+    "texto": _texto,
+    "regime": _um_de(REGIMES, "Regime inválido."),
+    "pct": lambda v: str(_dec(v, Decimal(0), Decimal(100)).quantize(Decimal("0.01"))),
+    "dinheiro": lambda v: str(_dec(v, Decimal(0), Decimal("999999.99")).quantize(Decimal("0.01"))),
+    "sim_nao": _um_de(("sim", "nao"), "Informe sim ou nao."),
+    "tamanho_massa": _um_de(("grande", "broto"), "Informe grande ou broto."),
+    "decimal_pos": lambda v: format(_dec(v, Decimal("0.1"), Decimal(1000)).normalize(), "f"),
+    "inteiro_pos": _inteiro_pos,
+}
 
 
 def normalizar(chave: str, valor) -> str | None:
@@ -79,43 +118,12 @@ def normalizar(chave: str, valor) -> str | None:
     tipo = CATALOGO[chave][0]
     try:
         if tipo == "formas":
-            if not isinstance(valor, list) or not all(isinstance(x, str) for x in valor):
-                raise ValueError("Informe a lista de formas de pagamento.")
-            if any(x not in FORMAS_PAGAMENTO for x in valor) or len(set(valor)) != len(valor):
-                raise ValueError("Forma de pagamento inválida ou repetida.")
-            return json.dumps(sorted(valor, key=FORMAS_PAGAMENTO.index))
+            return _formas(valor)
         if not isinstance(valor, str):
             raise ValueError("Valor deve ser texto ou número em texto.")
-        if tipo == "texto":
-            if len(valor) > 120:
-                raise ValueError("Até 120 caracteres.")
-            return valor.strip()
-        if tipo == "regime":
-            if valor not in REGIMES:
-                raise ValueError("Regime inválido.")
-            return valor
-        if tipo == "pct":
-            return str(_dec(valor, Decimal(0), Decimal(100)).quantize(Decimal("0.01")))
-        if tipo == "dinheiro":
-            return str(_dec(valor, Decimal(0), Decimal("999999.99")).quantize(Decimal("0.01")))
-        if tipo == "sim_nao":
-            if valor not in ("sim", "nao"):
-                raise ValueError("Informe sim ou nao.")
-            return valor
-        if tipo == "tamanho_massa":
-            if valor not in ("grande", "broto"):
-                raise ValueError("Informe grande ou broto.")
-            return valor
-        if tipo == "decimal_pos":
-            return format(_dec(valor, Decimal("0.1"), Decimal(1000)).normalize(), "f")
-        if tipo == "inteiro_pos":
-            d = _dec(valor, Decimal(1), Decimal(1000))
-            if d != d.to_integral_value():
-                raise ValueError("Informe um número inteiro.")
-            return str(int(d))
+        return _REGRAS[tipo](valor)  # todo tipo do catálogo tem regra (teste de unidade garante)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    raise HTTPException(status_code=400, detail="Tipo de parâmetro não suportado.")
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 def vigentes(conn, loja_id: int) -> dict[str, dict]:

@@ -1,25 +1,16 @@
 """Clientes e entregadores. Nada é apagado: só inativado."""
 from typing import Optional
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, gravar_um
 from api.schemas import _telefone, ClienteCreate, ClienteUpdate, EntregadorCreate, EntregadorUpdate
 from api.security import requer
 
 router = APIRouter(tags=["pessoas"])
 _C = "id, nome, telefone, endereco, ativo"
 _E = "id, nome, telefone, ativo"
-
-
-def _grava(conn, comando, params):
-    try:
-        return conn.execute(comando, params).fetchone()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
 
 
 def _like(q: str) -> str:
@@ -52,7 +43,7 @@ def cliente_por_telefone(telefone: str, sessao=Depends(requer("clientes.ver")), 
 
 @router.post("/clientes", status_code=201)
 def criar_cliente(d: ClienteCreate, sessao=Depends(requer("clientes.editar")), conn=Depends(get_db)):
-    novo = _grava(conn, f"INSERT INTO cliente (loja_id, nome, telefone, endereco, criado_em, criado_por) "
+    novo = gravar_um(conn, f"INSERT INTO cliente (loja_id, nome, telefone, endereco, criado_em, criado_por) "
                         f"VALUES (%s,%s,%s,%s,%s,%s) RETURNING {_C}", (LOJA_ID, d.nome, d.telefone, d.endereco, agora(), sessao["usuario_id"]))
     auditar(conn, sessao, "criar", "cliente", novo["id"], depois={"nome": novo["nome"]})  # sem telefone nem endereço na auditoria
     conn.commit()
@@ -67,7 +58,7 @@ def alterar_cliente(cid: int, d: ClienteUpdate, sessao=Depends(requer("clientes.
     if not conn.execute("SELECT 1 FROM cliente WHERE id = %s AND loja_id = %s", (cid, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Cliente não encontrado.")
     sets = ", ".join(f"{c} = %s" for c in campos)  # nomes de coluna vêm só do schema
-    novo = _grava(conn, f"UPDATE cliente SET {sets} WHERE id = %s RETURNING {_C}", (*campos.values(), cid))
+    novo = gravar_um(conn, f"UPDATE cliente SET {sets} WHERE id = %s RETURNING {_C}", (*campos.values(), cid))
     auditar(conn, sessao, "alterar", "cliente", cid, depois={"campos": sorted(campos), "nome": novo["nome"]})
     conn.commit()
     return novo
@@ -83,7 +74,7 @@ def listar_entregadores(ativo: Optional[bool] = None, sessao=Depends(requer("ent
 
 @router.post("/entregadores", status_code=201)
 def criar_entregador(d: EntregadorCreate, sessao=Depends(requer("entregadores.editar")), conn=Depends(get_db)):
-    novo = _grava(conn, f"INSERT INTO entregador (loja_id, nome, telefone, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s) RETURNING {_E}",
+    novo = gravar_um(conn, f"INSERT INTO entregador (loja_id, nome, telefone, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s) RETURNING {_E}",
                   (LOJA_ID, d.nome, d.telefone, agora(), sessao["usuario_id"]))
     auditar(conn, sessao, "criar", "entregador", novo["id"], depois={"nome": novo["nome"]})
     conn.commit()
@@ -98,7 +89,7 @@ def alterar_entregador(eid: int, d: EntregadorUpdate, sessao=Depends(requer("ent
     if not conn.execute("SELECT 1 FROM entregador WHERE id = %s AND loja_id = %s", (eid, LOJA_ID)).fetchone():
         raise HTTPException(status_code=404, detail="Entregador não encontrado.")
     sets = ", ".join(f"{c} = %s" for c in campos)
-    novo = _grava(conn, f"UPDATE entregador SET {sets} WHERE id = %s RETURNING {_E}", (*campos.values(), eid))
+    novo = gravar_um(conn, f"UPDATE entregador SET {sets} WHERE id = %s RETURNING {_E}", (*campos.values(), eid))
     auditar(conn, sessao, "alterar", "entregador", eid, depois={"campos": sorted(campos), "nome": novo["nome"]})
     conn.commit()
     return novo

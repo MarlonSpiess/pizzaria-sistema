@@ -1,11 +1,10 @@
 """Itens, fichas técnicas (versões só de inserção) e etapas de produção. Cadastro apenas: sem baixa de estoque nem custo."""
 from typing import Optional
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import LOJA_ID
-from api.database import agora, auditar, get_db, traduzir_erro
+from api.database import agora, auditar, get_db, gravar_um
 from api.schemas import EtapaCreate, EtapasIn, EtapaUpdate, FichaIn, ItemCreate, ItemUpdate, TIPOS_PRODUTO
 from api.security import requer
 from api.services import parametros as svc_parametros
@@ -15,14 +14,6 @@ router = APIRouter(tags=["receitas"])
 
 _I = "id, nome, classe, unidade, ativo"
 _E = "id, nome, funcao, ativo"
-
-
-def _grava(conn, comando: str, params):
-    try:
-        return conn.execute(comando, params).fetchone()
-    except psycopg.Error as e:
-        conn.rollback()
-        raise traduzir_erro(e) from e
 
 
 # ---------------------------------------------------------------- itens
@@ -39,7 +30,7 @@ def listar_itens(classe: Optional[str] = None, ativo: Optional[bool] = None,
 
 @router.post("/itens", status_code=201)
 def criar_item(d: ItemCreate, sessao=Depends(requer("ficha.editar")), conn=Depends(get_db)):
-    novo = _grava(conn, f"INSERT INTO item (loja_id, nome, classe, unidade, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s,%s) "
+    novo = gravar_um(conn, f"INSERT INTO item (loja_id, nome, classe, unidade, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s,%s) "
                         f"RETURNING {_I}", (LOJA_ID, d.nome, d.classe, d.unidade, agora(), sessao["usuario_id"]))
     auditar(conn, sessao, "criar", "item", novo["id"], depois=novo)
     conn.commit()
@@ -55,7 +46,7 @@ def alterar_item(iid: int, d: ItemUpdate, sessao=Depends(requer("ficha.editar"))
     if not antes:
         raise HTTPException(status_code=404, detail="Item não encontrado.")
     sets = ", ".join(f"{c} = %s" for c in campos)  # nomes de coluna vêm só do schema
-    novo = _grava(conn, f"UPDATE item SET {sets} WHERE id = %s RETURNING {_I}", (*campos.values(), iid))
+    novo = gravar_um(conn, f"UPDATE item SET {sets} WHERE id = %s RETURNING {_I}", (*campos.values(), iid))
     auditar(conn, sessao, "alterar", "item", iid, antes={k: antes[k] for k in campos}, depois={k: novo[k] for k in campos})
     conn.commit()
     return novo
@@ -140,10 +131,10 @@ def _salvar(conn, sessao, tipo, dono_id, tamanho, d: FichaIn):
     perda_padrao = svc_parametros.vigentes(conn, LOJA_ID)["perda_padrao_pct"]["valor"] or "10"
     nomes = ", ".join(colunas)
     marcas = ", ".join(["%s"] * len(colunas))
-    v = _grava(conn, f"INSERT INTO ficha_versao (loja_id, {nomes}, criado_em, criado_por) VALUES (%s, {marcas}, %s, %s) RETURNING id",
+    v = gravar_um(conn, f"INSERT INTO ficha_versao (loja_id, {nomes}, criado_em, criado_por) VALUES (%s, {marcas}, %s, %s) RETURNING id",
                (LOJA_ID, *colunas.values(), agora(), sessao["usuario_id"]))
     for x in d.linhas:
-        _grava(conn, "INSERT INTO ficha_linha (versao_id, item_id, quantidade, perda_pct, fase) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+        gravar_um(conn, "INSERT INTO ficha_linha (versao_id, item_id, quantidade, perda_pct, fase) VALUES (%s,%s,%s,%s,%s) RETURNING id",
                (v["id"], x.item_id, x.quantidade, x.perda_pct if x.perda_pct is not None else perda_padrao, x.fase))
     auditar(conn, sessao, "salvar_ficha", "ficha", rotulo, depois={"versao_id": v["id"], "linhas": len(d.linhas)})
     conn.commit()
@@ -205,7 +196,7 @@ def listar_etapas(ativo: Optional[bool] = None, sessao=Depends(requer("ficha.ver
 
 @router.post("/etapas", status_code=201)
 def criar_etapa(d: EtapaCreate, sessao=Depends(requer("ficha.editar")), conn=Depends(get_db)):
-    nova = _grava(conn, f"INSERT INTO etapa (loja_id, nome, funcao, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s) RETURNING {_E}",
+    nova = gravar_um(conn, f"INSERT INTO etapa (loja_id, nome, funcao, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s) RETURNING {_E}",
                   (LOJA_ID, d.nome, d.funcao, agora(), sessao["usuario_id"]))
     auditar(conn, sessao, "criar", "etapa", nova["id"], depois=nova)
     conn.commit()
@@ -221,7 +212,7 @@ def alterar_etapa(eid: int, d: EtapaUpdate, sessao=Depends(requer("ficha.editar"
     if not antes:
         raise HTTPException(status_code=404, detail="Etapa não encontrada.")
     sets = ", ".join(f"{c} = %s" for c in campos)
-    novo = _grava(conn, f"UPDATE etapa SET {sets} WHERE id = %s RETURNING {_E}", (*campos.values(), eid))
+    novo = gravar_um(conn, f"UPDATE etapa SET {sets} WHERE id = %s RETURNING {_E}", (*campos.values(), eid))
     auditar(conn, sessao, "alterar", "etapa", eid, antes={k: antes[k] for k in campos}, depois={k: novo[k] for k in campos})
     conn.commit()
     return novo
@@ -232,11 +223,11 @@ def iniciar_etapas_padrao(sessao=Depends(requer("ficha.editar")), conn=Depends(g
     """Cria as cinco etapas de Marlon e o modelo de pizza e calzone, só quando a loja ainda não tem etapa."""
     if conn.execute("SELECT 1 FROM etapa WHERE loja_id = %s LIMIT 1", (LOJA_ID,)).fetchone():
         raise HTTPException(status_code=409, detail="A loja já tem etapas cadastradas.")
-    ids = [_grava(conn, "INSERT INTO etapa (loja_id, nome, funcao, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+    ids = [gravar_um(conn, "INSERT INTO etapa (loja_id, nome, funcao, criado_em, criado_por) VALUES (%s,%s,%s,%s,%s) RETURNING id",
                   (LOJA_ID, n, f, agora(), sessao["usuario_id"]))["id"] for n, f in _ETAPAS_PADRAO]
     for tipo in ("pizza", "calzone"):
         for ordem, eid in enumerate(ids, 1):
-            _grava(conn, "INSERT INTO etapa_modelo (tipo, etapa_id, ordem) VALUES (%s,%s,%s) RETURNING tipo", (tipo, eid, ordem))
+            gravar_um(conn, "INSERT INTO etapa_modelo (tipo, etapa_id, ordem) VALUES (%s,%s,%s) RETURNING tipo", (tipo, eid, ordem))
     auditar(conn, sessao, "criar", "etapa", "padrao", depois={"etapas": len(ids)})
     conn.commit()
     return conn.execute(f"SELECT {_E} FROM etapa WHERE loja_id = %s ORDER BY id", (LOJA_ID,)).fetchall()
@@ -273,7 +264,7 @@ def salvar_modelo(tipo: str, d: EtapasIn, sessao=Depends(requer("ficha.editar"))
     _validar_etapas(conn, d, [r["etapa_id"] for r in conn.execute("SELECT etapa_id FROM etapa_modelo WHERE tipo = %s", (tipo,)).fetchall()])
     conn.execute("DELETE FROM etapa_modelo WHERE tipo = %s AND etapa_id IN (SELECT id FROM etapa WHERE loja_id = %s)", (tipo, LOJA_ID))
     for ordem, x in enumerate(d.etapas, 1):
-        _grava(conn, "INSERT INTO etapa_modelo (tipo, etapa_id, ordem, tempo_min) VALUES (%s,%s,%s,%s) RETURNING tipo", (tipo, x.etapa_id, ordem, x.tempo_min))
+        gravar_um(conn, "INSERT INTO etapa_modelo (tipo, etapa_id, ordem, tempo_min) VALUES (%s,%s,%s,%s) RETURNING tipo", (tipo, x.etapa_id, ordem, x.tempo_min))
     auditar(conn, sessao, "salvar_modelo", "etapa_modelo", tipo, depois={"etapas": [x.etapa_id for x in d.etapas]})
     conn.commit()
     return ler_modelo(tipo, sessao, conn)
@@ -304,7 +295,7 @@ def salvar_etapas_do_produto(pid: int, d: EtapasIn, sessao=Depends(requer("ficha
         "SELECT etapa_id FROM produto_etapa WHERE produto_id = %s UNION SELECT etapa_id FROM etapa_modelo WHERE tipo = %s", (pid, tipo)).fetchall()])
     conn.execute("DELETE FROM produto_etapa WHERE produto_id = %s", (pid,))
     for ordem, x in enumerate(d.etapas, 1):
-        _grava(conn, "INSERT INTO produto_etapa (produto_id, etapa_id, ordem, tempo_min) VALUES (%s,%s,%s,%s) RETURNING produto_id", (pid, x.etapa_id, ordem, x.tempo_min))
+        gravar_um(conn, "INSERT INTO produto_etapa (produto_id, etapa_id, ordem, tempo_min) VALUES (%s,%s,%s,%s) RETURNING produto_id", (pid, x.etapa_id, ordem, x.tempo_min))
     auditar(conn, sessao, "salvar_etapas", "produto", pid, depois={"etapas": [x.etapa_id for x in d.etapas]})
     conn.commit()
     return etapas_do_produto(pid, sessao, conn)
