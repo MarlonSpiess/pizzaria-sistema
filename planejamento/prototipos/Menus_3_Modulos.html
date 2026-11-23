@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menus dos 3 módulos</title>
+<style>
+:root{
+  --bg:#17120f;--bg2:#1f1915;--panel:#2a221c;--panel2:#33291f;
+  --line:#44372b;--txt:#f3ebe0;--txt2:#cdbfae;--txt3:#9a8b79;
+  --brand:#d9a441;--accent:#e0573a;--ok:#4cc27a;--info:#6aa8ff;--alerta:#ffb020;
+  --on-brand:#2b1d06;--shadow:0 10px 30px rgba(0,0,0,.35);--rail-bg:#120e0b;
+  --switch-track:#44372b;--switch-knob:#f3ebe0;
+}
+[data-theme="light"]{
+  --bg:#faf6ef;--bg2:#f1e7d8;--panel:#ffffff;--panel2:#f6efe4;
+  --line:#e9dfd0;--txt:#2b2420;--txt2:#5e534a;--txt3:#6f6357;
+  --brand:#b5361f;--accent:#d9a441;--ok:#2f7a48;--info:#2a62b8;--alerta:#8a5a00;
+  --on-brand:#ffffff;--shadow:0 8px 24px rgba(80,50,20,.08);--rail-bg:#2b2420;
+  --switch-track:#b5361f;--switch-knob:#ffffff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.45;display:flex;flex-direction:column}
+button{font-family:inherit}
+.faixa-proto{background:var(--accent);color:#1a0f08;text-align:center;font-size:12px;font-weight:700;padding:3px 8px;letter-spacing:.4px}
+#quadro{display:flex;flex:1;min-height:0}
+.trilho{order:-1;width:88px;flex-shrink:0;background:var(--rail-bg);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:4px;overflow-y:auto}
+.areas{display:flex;flex-direction:column;gap:4px;width:76px;padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid #ffffff1a}
+.area{background:#ffffff0d;border:1px solid transparent;color:#b8a996;border-radius:12px;padding:6px 0;cursor:pointer;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.area span{display:block;font-size:18px}
+.area.ativo{border-color:#d9a441;color:#ffd98c;background:#d9a44122}
+.r-item{width:72px;background:none;border:0;color:#b8a996;border-radius:14px;padding:8px 0;cursor:pointer;font-size:11px;font-weight:600}
+.r-item span{display:block;font-size:22px;margin-bottom:2px}
+@media (hover:hover){.r-item:hover{background:#ffffff12;color:#fff}}
+.r-item.ativo{background:#d9a44133;color:#ffd98c}
+.r-item:focus-visible,.area:focus-visible{outline:2px solid #ffd98c;outline-offset:2px}
+.aba:focus-visible,.tema:focus-visible,.avatar:focus-visible,.menu-avatar button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.area-principal{flex:1;min-width:0;overflow-y:auto}
+.miolo{max-width:1180px;margin:0 auto;padding:20px 24px 40px}
+.cab{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.cab h1{font-size:24px;font-weight:800;letter-spacing:-.3px}
+.cab .sub{color:var(--txt3);font-size:14px}
+.cab-dir{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cab-dir label{font-size:13px;color:var(--txt3)}
+select{padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:14px;font-family:inherit}
+.tema{display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:6px 10px;color:var(--txt3)}
+.tema-trilho{width:38px;height:21px;background:var(--switch-track);border-radius:11px;position:relative}
+.tema-bola{position:absolute;top:3px;left:3px;width:15px;height:15px;background:var(--switch-knob);border-radius:50%;transition:.2s}
+[data-theme="light"] .tema-bola{left:20px}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-weight:800;border:0;cursor:pointer}
+.menu-avatar{position:relative}
+.menu-avatar ul{display:none;position:absolute;right:0;top:46px;background:var(--panel);border:1px solid var(--line);border-radius:14px;list-style:none;min-width:180px;box-shadow:var(--shadow);z-index:20;padding:6px}
+.menu-avatar.aberto ul{display:block}
+.menu-avatar li button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--txt);padding:9px 12px;border-radius:10px;font-size:14px;cursor:pointer}
+.menu-avatar li button:hover{background:var(--panel2)}
+.abas{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.aba{background:var(--panel);border:1px solid var(--line);color:var(--txt2);border-radius:24px;padding:9px 14px;font-weight:600;cursor:pointer;font-size:14px}
+.aba.ativo{background:var(--txt);color:var(--bg);border-color:var(--txt)}
+.cartao{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.cartao h2{font-size:17px;margin-bottom:8px}
+.pill{display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px;margin-right:6px;color:var(--c);background:color-mix(in srgb,var(--c) 18%,transparent)}
+.cartao p{color:var(--txt2);margin-top:8px}
+.cartao small{color:var(--txt3)}
+.vazio{text-align:center;color:var(--txt3);padding:40px 8px}
+@media (max-width:760px){
+  #quadro{flex-direction:column}
+  .trilho{order:0;width:100%;flex-direction:row;justify-content:flex-start;padding:4px;overflow-x:auto;flex-shrink:0}
+  .areas{flex-direction:row;width:auto;border-bottom:0;border-right:1px solid #ffffff1a;padding:0 6px 0 0;margin:0 6px 0 0}
+  .area{width:auto;min-width:52px;padding:6px;flex-shrink:0}
+  .cab-dir{margin-left:0;width:100%}
+  .menu-avatar{margin-left:auto}
+  .r-item{width:64px;flex-shrink:0;padding:6px 0;font-size:10px}.r-item span{font-size:19px}
+  .miolo{padding:14px}
+  .cab h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div class="faixa-proto">PROTÓTIPO DE MENUS (LAYOUT C). DADOS FICTÍCIOS, NADA É GRAVADO.</div>
+<div id="quadro">
+  <main class="area-principal"><div class="miolo">
+    <div class="cab">
+      <div><h1 id="titulo"></h1><div class="sub" id="subtitulo"></div></div>
+      <div class="cab-dir">
+        <label for="perfil">Simular perfil</label>
+        <select id="perfil"></select>
+        <button class="tema" id="tema" aria-label="Tema claro" aria-pressed="false"><span aria-hidden="true">🌙</span><span class="tema-trilho"><span class="tema-bola"></span></span><span aria-hidden="true">☀️</span></button>
+        <div class="menu-avatar" id="menu-avatar">
+          <button class="avatar" id="avatar" aria-haspopup="true" aria-expanded="false" aria-label="Menu do usuário">UT</button>
+          <ul><li><button type="button"><span aria-hidden="true">🗓️</span> Meus dados</button></li><li><button type="button"><span aria-hidden="true">🔒</span> Trocar senha (novo)</button></li><li><button type="button"><span aria-hidden="true">🚪</span> Sair</button></li></ul>
+        </div>
+      </div>
+    </div>
+    <div class="abas" id="abas" role="group" aria-label="Submenus"></div>
+    <div id="corpo"></div>
+  </div></main>
+  <nav class="trilho" id="trilho" aria-label="Menu"></nav>
+</div>
+<script>
+"use strict";
+// Perfis que já existem na tabela usuario (migração 001).
+const GER = ["administrador", "proprietario", "gerente", "subgerente"];
+const PERFIS = [...GER, "atendente", "massa", "pizzaiolo", "acabamento"];
+const ENTRADA = { atendente: "vendas", massa: "producao", pizzaiolo: "producao", acabamento: "producao" };
+const lerUltima = (p) => { try { return localStorage.getItem("pz-area-" + p); } catch (e) { return null; } };
+const gravarUltima = (p, a) => { try { localStorage.setItem("pz-area-" + p, a); } catch (e) { /* sem armazenamento */ } };
+
+// Situação: E = existe hoje; A = aprovado em documento, falta construir; N = novo nesta proposta.
+// Cada submenu: [nome, situação, perfis ou null para herdar os do menu].
+const ADM = ["administrador", "proprietario"];
+const MODULOS = [
+  { id: "producao", nome: "Produção", curto: "Produção", ic: "🍕", menus: [
+    { nome: "Massa", ic: "🥣", perfis: [...GER, "massa"], subs: [["Massa e necessidade do dia", "E"]] },
+    { nome: "Montagem", ic: "👨‍🍳", perfis: [...GER, "pizzaiolo"], subs: [["Fila de montagem", "E"]] },
+    { nome: "Acabamento", ic: "📦", perfis: [...GER, "acabamento"], subs: [["Saiu do forno", "E"], ["Acabamento e etiqueta", "E"], ["Despacho", "N"]] },
+    { nome: "Andamento", ic: "⏱️", perfis: GER, subs: [["Andamento", "E"]] },
+    { nome: "Perdas", ic: "♻️", perfis: GER, subs: [["Perdas e refações", "N"]] },
+    { nome: "Configurar", ic: "⚙️", perfis: GER, subs: [["Motivos", "E"], ["Etapas de produção", "E"]] },
+  ] },
+  { id: "vendas", nome: "Vendas", curto: "Vendas", ic: "🧾", menus: [
+    { nome: "Painel", ic: "📊", perfis: [...GER, "atendente"], subs: [["Painel do turno", "N"]] },
+    { nome: "Novo pedido", ic: "➕", perfis: [...GER, "atendente"], subs: [["Novo pedido", "E"]] },
+    { nome: "Pedidos", ic: "🧾", perfis: [...GER, "atendente"], subs: [["Pedidos do dia", "E"], ["Quadro por situação", "N"]] },
+    { nome: "Entregas", ic: "🛵", perfis: [...GER, "atendente"], subs: [["Entregas de hoje", "E"], ["Acerto do entregador", "E"]] },
+    { nome: "Retiradas", ic: "🏪", perfis: [...GER, "atendente"], subs: [["Prontas para retirar", "N"]] },
+    { nome: "Caixa", ic: "💰", perfis: [...GER, "atendente"], subs: [["Caixa do dia", "E"]] },
+    { nome: "Canais", ic: "🔌", perfis: GER, subs: [["Fila de entrada", "A"], ["Erros de integração", "A"], ["Anota Ai", "A", ["administrador"]], ["iFood (futuro)", "A", ["administrador"]], ["Mapa de produtos", "A", ["administrador"]]] },
+    { nome: "Clientes", ic: "👥", perfis: [...GER, "atendente"], subs: [["Clientes", "E"]] },
+    { nome: "Configurar", ic: "⚙️", perfis: [...GER, "atendente"], subs: [["Entregadores", "E"], ["Motivos e maquininhas", "E"]] },
+  ] },
+  { id: "admin", nome: "Administrativo", curto: "Admin", ic: "🏢", menus: [
+    { nome: "Painel", ic: "📊", perfis: GER, subs: [["Painel do dia", "E"], ["DRE", "E"], ["Lucratividade", "E"], ["Produção", "E"]] },
+    { nome: "Cardápio", ic: "🍕", perfis: [...GER, "atendente"], subs: [["Sabores de pizza", "E"], ["Preços por categoria", "E"], ["Bordas e adicionais", "E"], ["Calzones, bebidas e outros", "E"], ["Simulador de preço", "E"]] },
+    { nome: "Fichas", ic: "📋", perfis: GER, subs: [["Fichas técnicas", "E"], ["Itens", "E"], ["O que falta", "E"]] },
+    { nome: "Estoque", ic: "📦", perfis: GER, subs: [["Saldos", "E"], ["Lançar movimento", "E"], ["Inventário", "E"], ["Alertas", "E"], ["Locais", "E"]] },
+    { nome: "Compras", ic: "🛒", perfis: GER, subs: [["Lista de compras", "E"], ["Pedidos", "E"], ["Recebimento", "E"], ["Fornecedores", "E"]] },
+    { nome: "Financeiro", ic: "🏦", perfis: GER, subs: [["Fluxo de caixa", "E"], ["A pagar", "E"], ["A receber", "E"], ["Lançar", "E"], ["Conciliação", "E"], ["Cadastros", "E"]] },
+    { nome: "Custos", ic: "📈", perfis: GER, subs: [["Custo dos produtos", "E"], ["CMV", "E"], ["Resultado do mês", "E"], ["Fator de correção", "E"]] },
+    { nome: "Imobilizado", ic: "🏭", perfis: GER, subs: [["Alertas", "E"], ["Bens", "E"], ["Ordens de serviço", "E"], ["Plano de manutenção", "E"], ["Inventário", "E"], ["Categorias", "E"]] },
+    { nome: "RH", ic: "🪪", perfis: GER, subs: [["Equipe", "E"], ["Escala", "E"], ["Ponto e banco de horas", "E"], ["Ausências e documentos", "E"], ["Folha gerencial", "E", ADM], ["Cadastros", "E"]] },
+    { nome: "Sistema", ic: "🔑", perfis: GER, subs: [["Usuários", "E", ADM], ["Parâmetros", "E"], ["Auditoria", "E"], ["Backup", "E"]] },
+  ] },
+];
+const SIT = { E: ["Existe hoje", "var(--ok)"], A: ["Aprovado, a construir", "var(--info)"], N: ["Novo nesta proposta", "var(--alerta)"] };
+
+const estado = { perfil: "gerente", area: null, menu: 0, sub: 0 };
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs, ...filhos) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const f of filhos) n.append(f);
+  return n;
+};
+
+const subsVisiveis = (m) => m.subs.filter(([, , p]) => (p || m.perfis).includes(estado.perfil));
+const menusVisiveis = (mod) => mod.menus.filter((m) => m.perfis.includes(estado.perfil) && subsVisiveis(m).length);
+const areasVisiveis = () => MODULOS.filter((mod) => menusVisiveis(mod).length);
+
+function desenhar() {
+  const areas = areasVisiveis();
+  if (!areas.length) {
+    $("trilho").replaceChildren(); $("abas").replaceChildren(); $("titulo").textContent = "Sem acesso"; $("subtitulo").textContent = ""; estado.area = null;
+    $("corpo").replaceChildren(el("div", { class: "vazio" }, "Nenhum menu para este perfil."));
+    return;
+  }
+  if (!areas.some((a) => a.id === estado.area)) {
+    const preferida = ENTRADA[estado.perfil] || lerUltima(estado.perfil);
+    estado.area = (areas.find((a) => a.id === preferida) || areas[0]).id;
+    estado.menu = 0; estado.sub = 0;
+  }
+  const mod = areas.find((a) => a.id === estado.area);
+  const menus = menusVisiveis(mod);
+  if (estado.menu >= menus.length) estado.menu = 0;
+  const menu = menus[estado.menu];
+  const subs = subsVisiveis(menu);
+  if (estado.sub >= subs.length) estado.sub = 0;
+
+  const trilho = $("trilho");
+  trilho.replaceChildren();
+  if (areas.length > 1) {
+    trilho.append(el("div", { class: "areas", role: "group", "aria-label": "Área" }, ...areas.map((a) =>
+      el("button", { class: "area" + (a.id === estado.area ? " ativo" : ""), "aria-pressed": String(a.id === estado.area),
+        onclick: () => { estado.area = a.id; estado.menu = 0; estado.sub = 0; gravarUltima(estado.perfil, a.id); desenhar(); $("trilho").querySelector(".area.ativo").focus(); } },
+        el("span", { "aria-hidden": "true" }, a.ic), a.curto))));
+  }
+  menus.forEach((m, i) => trilho.append(el("button", {
+    class: "r-item" + (i === estado.menu ? " ativo" : ""), "aria-current": i === estado.menu ? "page" : "false",
+    onclick: () => { estado.menu = i; estado.sub = 0; desenhar(); $("trilho").querySelector(".r-item.ativo").focus(); } },
+    el("span", { "aria-hidden": "true" }, m.ic), m.nome)));
+
+  $("titulo").textContent = menu.nome;
+  $("subtitulo").textContent = mod.nome + " · perfil " + estado.perfil;
+  $("abas").replaceChildren(...subs.map(([nome], i) => el("button", {
+    class: "aba" + (i === estado.sub ? " ativo" : ""), "aria-pressed": String(i === estado.sub),
+    onclick: () => { estado.sub = i; desenhar(); $("abas").children[i].focus(); } }, nome)));
+
+  const [nomeSub, sit] = subs[estado.sub];
+  const [rotSit, cor] = SIT[sit];
+  const pill = el("span", { class: "pill" }, rotSit);
+  pill.style.setProperty("--c", cor);
+  $("corpo").replaceChildren(el("div", { class: "cartao" },
+    el("h2", {}, mod.ic + " " + mod.nome + " › " + menu.nome + " › " + nomeSub), pill,
+    el("p", {}, "Aqui entra a tela \"" + nomeSub + "\". O desenho das telas é a Etapa 2."),
+    el("small", {}, "Áreas deste perfil: " + areas.map((a) => a.nome).join(", ") + ".")));
+}
+
+$("perfil").append(...PERFIS.map((p) => el("option", { value: p }, p)));
+$("perfil").value = estado.perfil;
+$("perfil").addEventListener("change", (e) => { estado.perfil = e.target.value; estado.area = null; desenhar(); });
+$("tema").addEventListener("click", () => {
+  const raiz = document.documentElement;
+  if (raiz.getAttribute("data-theme") === "light") raiz.removeAttribute("data-theme"); else raiz.setAttribute("data-theme", "light");
+  $("tema").setAttribute("aria-pressed", String(raiz.getAttribute("data-theme") === "light"));
+});
+$("avatar").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const caixa = $("menu-avatar"); const aberto = caixa.classList.toggle("aberto");
+  $("avatar").setAttribute("aria-expanded", String(aberto));
+});
+const fecharAvatar = () => { $("menu-avatar").classList.remove("aberto"); $("avatar").setAttribute("aria-expanded", "false"); };
+document.addEventListener("click", fecharAvatar);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("menu-avatar").classList.contains("aberto")) { fecharAvatar(); $("avatar").focus(); } });
+desenhar();
+</script>
+</body>
+</html>

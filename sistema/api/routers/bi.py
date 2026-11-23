@@ -75,7 +75,11 @@ def _alertas(conn, sessao) -> list[dict]:
     if on("bi_alerta_estoque"):
         a = estoque_r.alertas(sessao, conn)
         if a["repor"]:
-            saida.append({"tipo": "estoque", "gravidade": "media", "texto": f"{len(a['repor'])} item(ns) abaixo do mínimo."})
+            graves = [i for i in a["repor"] if i["situacao"] in ("negativo", "zerado")]
+            if graves:
+                saida.append({"tipo": "estoque", "gravidade": "alta", "texto": f"{len(graves)} ingrediente(s) zerado(s) ou negativo(s): trate no estoque e, se preciso, feche a venda dos sabores."})
+            if len(a["repor"]) > len(graves):
+                saida.append({"tipo": "estoque", "gravidade": "media", "texto": f"{len(a['repor']) - len(graves)} item(ns) para repor ou abaixo do mínimo."})
         venc = [v for v in a["validade"] if v["vencido"]]
         if venc:
             saida.append({"tipo": "validade", "gravidade": "alta", "texto": f"{len(venc)} lote(s) vencido(s) com saldo."})
@@ -210,7 +214,12 @@ def producao(mes: Optional[str] = None, sessao=Depends(requer("bi.ver")), conn=D
     retro = conn.execute("SELECT m.nome, COUNT(*) AS n FROM retrocesso r JOIN motivo_retrocesso m ON m.id = r.motivo_id WHERE r.criado_em >= %s AND r.criado_em < %s GROUP BY m.nome ORDER BY n DESC", (ini, fim)).fetchall()
     perdas = conn.execute("SELECT m.nome, sum(p.quantidade) AS n FROM perda p JOIN motivo_perda m ON m.id = p.motivo_id WHERE p.loja_id = %s AND p.criado_em >= %s AND p.criado_em < %s GROUP BY m.nome ORDER BY n DESC", (LOJA_ID, ini, fim)).fetchall()
     tot = conn.execute("SELECT COUNT(*) FILTER (WHERE situacao = 'acabada') AS feitas, COUNT(*) FILTER (WHERE original_id IS NOT NULL) AS refacoes FROM pizza_producao WHERE loja_id = %s AND criado_em >= %s AND criado_em < %s", (LOJA_ID, ini, fim)).fetchone()
+    av = conn.execute("SELECT COUNT(*) AS n, COUNT(d.pizza_id) FILTER (WHERE d.destino = 'vendida' AND vp.situacao <> 'cancelado') AS vendidas, "
+                      "COUNT(d.pizza_id) FILTER (WHERE d.destino = 'perda' OR vp.situacao = 'cancelado') AS descartadas "
+                      "FROM pizza_producao p LEFT JOIN pizza_avulsa_destino d ON d.pizza_id = p.id LEFT JOIN pedido vp ON vp.id = d.pedido_id WHERE p.loja_id = %s AND p.situacao = 'avulsa' AND p.criado_em >= %s AND p.criado_em < %s",
+                      (LOJA_ID, ini, fim)).fetchone()
     return {"mes": m, "pizzas_acabadas": tot["feitas"], "refacoes": tot["refacoes"],
+            "avulsas": {"geradas": av["n"], "vendidas": av["vendidas"], "descartadas": av["descartadas"], "abertas": av["n"] - av["vendidas"] - av["descartadas"]},
             "tempo_por_etapa": [{"etapa": e["situacao"], "ocorrencias": e["n"], "minutos_medios": round(float(e["minutos"] or 0), 1)} for e in etapas],
             "retrocessos_por_motivo": [{"motivo": r["nome"], "quantidade": r["n"]} for r in retro], "perdas_por_motivo": [{"motivo": r["nome"], "quantidade": int(r["n"])} for r in perdas]}
 

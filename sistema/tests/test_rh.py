@@ -111,7 +111,7 @@ def test_escala_ausencia_escalados_e_meus_dados(client, base):
     assert client.put("/api/rh/turnos", json={**t, "funcionario_id": b2}, headers=base["gerente"]).status_code == 200
     assert client.put("/api/rh/turnos", json={**t, "funcionario_id": a, "fim": "16:00"}, headers=base["gerente"]).status_code == 400
     assert client.put("/api/rh/turnos", json={**t, "funcionario_id": a, "inicio": "25:00"}, headers=base["gerente"]).status_code == 422
-    assert client.get(f"/api/rh/escalados?data={dia}&funcao=pizzaiolo", headers=base["pizzaiolo"]).json()["quantidade"] == 2
+    assert client.get(f"/api/rh/escalados?data={dia}&funcao=pizzaiolo", headers=base["gerente"]).json()["quantidade"] == 2
     # férias de um deles tiram o turno da escala e impedem novo turno
     assert client.post("/api/rh/ausencias", json={"funcionario_id": b2, "tipo": "ferias", "inicio": str(dia), "fim": str(dia + timedelta(days=10))}, headers=base["gerente"]).status_code == 201
     assert client.post("/api/rh/ausencias", json={"funcionario_id": b2, "tipo": "ferias", "inicio": str(dia), "fim": str(dia + timedelta(days=2))}, headers=base["gerente"]).status_code == 409

@@ -31,7 +31,7 @@ async function api(metodo, caminho, corpo) {
 
 function sair(chamarApi = true) {
   if (chamarApi && estado.token) api("POST", "/auth/logout").catch(() => {});
-  estado.token = null; estado.eu = null; estado.rascunho = null;
+  estado.token = null; estado.eu = null; estado.rascunho = null; estado.modoPedidos = null;
   try { sessionStorage.removeItem("pz-token"); } catch (e) { /* ok */ }
   desenhar();
 }
@@ -49,7 +49,7 @@ function telaLogin(msg) {
       const r = await api("POST", "/auth/login", { usuario: u.value, senha: s.value });
       estado.token = r.token; estado.eu = r;
       try { sessionStorage.setItem("pz-token", r.token); } catch (e) { /* ok */ }
-      estado.aba = "painel"; desenhar();
+      estado.aba = abaInicial(); desenhar();
     } catch (e) { erro.replaceChildren(aviso("erro", e.message)); }
   } },
   h("h2", {}, "Entrar"), msg ? aviso("ok", msg) : null, erro,
@@ -76,27 +76,46 @@ function telaTrocaSenha() {
     h("button", { class: "sec", onclick: () => sair() }, "Sair")));
 }
 
+// Cada aba pertence a uma área (um login, 3 áreas; decisão de Marlon, 03/11/2026): producao, vendas, admin.
+// Área "conta" fica fora do trilho (Meus dados abre pelo nome no topo). O servidor confere a permissão de cada chamada; isto só esconde.
+const GERENCIA_PERFIS = ["administrador", "proprietario", "gerente", "subgerente"];
+const AREAS = [["producao", "Produção", "🍕"], ["vendas", "Vendas", "🧾"], ["admin", "Admin", "🏢"]];
 const ABAS = [
-  ["painel", "Painel", null, "Visão geral", "📊"],
-  ["vendas", "Vendas", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Operação", "🧾"],
-  ["producao", "Produção", ["administrador", "proprietario", "gerente", "subgerente", "massa", "pizzaiolo", "acabamento", "atendente"], "Operação", "👨‍🍳"],
-  ["caixa", "Caixa", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Operação", "💰"],
-  ["estoque", "Estoque", ["administrador", "proprietario", "gerente", "subgerente"], "Suprimentos", "📦"],
-  ["compras", "Compras", ["administrador", "proprietario", "gerente", "subgerente"], "Suprimentos", "🛒"],
-  ["contas", "Contas", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "🏦"],
-  ["bi", "BI", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "📊"],
-  ["custos", "Custos", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "📈"],
-  ["imobilizado", "Imobilizado", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "🏭"],
-  ["rh", "RH", ["administrador", "proprietario", "gerente", "subgerente"], "Financeiro", "👥"],
-  ["meusdados", "Meus dados", null, "Visão geral", "🗓️"],
-  ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "🍕"],
-  ["fichas", "Fichas e etapas", ["administrador", "proprietario", "gerente", "subgerente"], "Cadastros", "📋"],
-  ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "👥"],
-  ["entregadores", "Entregadores", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "Cadastros", "🛵"],
-  ["usuarios", "Usuários", ["administrador", "proprietario"], "Sistema", "🔑"],
-  ["parametros", "Parâmetros", ["administrador", "proprietario", "gerente", "subgerente"], "Sistema", "⚙️"],
-  ["auditoria", "Auditoria", ["administrador", "proprietario", "gerente", "subgerente"], "Sistema", "🧾"],
+  // [id, nome, perfis (null = todos), grupo (não usado no trilho), ícone, área]
+  ["producao", "Produção", [...GERENCIA_PERFIS, "massa", "pizzaiolo", "acabamento"], "", "👨‍🍳", "producao"],
+  ["vendas", "Pedidos", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "🧾", "vendas"],
+  ["caixa", "Caixa e entregas", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "💰", "vendas"],
+  ["canais", "Canais", GERENCIA_PERFIS, "", "🔌", "vendas"],
+  ["clientes", "Clientes", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "👥", "vendas"],
+  ["entregadores", "Entregadores", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "🛵", "vendas"],
+  ["painel", "Painel", GERENCIA_PERFIS, "", "📊", "admin"],
+  ["cardapio", "Cardápio", ["administrador", "proprietario", "gerente", "subgerente", "atendente"], "", "🍕", "admin"],
+  ["fichas", "Fichas e etapas", GERENCIA_PERFIS, "", "📋", "admin"],
+  ["estoque", "Estoque", GERENCIA_PERFIS, "", "📦", "admin"],
+  ["compras", "Compras", GERENCIA_PERFIS, "", "🛒", "admin"],
+  ["contas", "Contas", GERENCIA_PERFIS, "", "🏦", "admin"],
+  ["bi", "BI", GERENCIA_PERFIS, "", "📈", "admin"],
+  ["custos", "Custos", GERENCIA_PERFIS, "", "🧮", "admin"],
+  ["imobilizado", "Imobilizado", GERENCIA_PERFIS, "", "🏭", "admin"],
+  ["rh", "RH", GERENCIA_PERFIS, "", "🪪", "admin"],
+  ["usuarios", "Usuários", ["administrador", "proprietario"], "", "🔑", "admin"],
+  ["parametros", "Parâmetros", GERENCIA_PERFIS, "", "⚙️", "admin"],
+  ["auditoria", "Auditoria", GERENCIA_PERFIS, "", "🧾", "admin"],
+  ["meusdados", "Meus dados", null, "", "🗓️", "conta"],
 ];
+const ENTRADA_AREA = { atendente: "vendas", massa: "producao", pizzaiolo: "producao", acabamento: "producao" };
+const abasDoPerfil = () => ABAS.filter(([, , perfis]) => !perfis || perfis.includes(estado.eu.perfil));
+const areasDoPerfil = () => AREAS.filter(([id]) => abasDoPerfil().some((a) => a[5] === id));
+function areaDaAba(id) { const a = ABAS.find((x) => x[0] === id); return a ? a[5] : null; }
+function abaInicial() {
+  const areas = areasDoPerfil();
+  let ultima = null;
+  try { ultima = localStorage.getItem("pz-area-" + estado.eu.perfil); } catch (e) { /* sem armazenamento */ }
+  const id = ENTRADA_AREA[estado.eu.perfil] || ultima || "admin";
+  const area = (areas.find(([a]) => a === id) || areas[0] || [])[0];
+  const aba = abasDoPerfil().find((a) => a[5] === area);
+  return aba ? aba[0] : "meusdados";
+}
 
 function alternarTema() {
   const dia = document.documentElement.getAttribute("data-theme") === "light";
@@ -105,20 +124,32 @@ function alternarTema() {
 }
 
 function moldura(conteudo) {
-  const abas = ABAS.filter(([, , perfis]) => !perfis || perfis.includes(estado.eu.perfil));
+  const todas = abasDoPerfil();
+  const areaAtual = areaDaAba(estado.aba);
+  const areas = areasDoPerfil();
   const itens = [];
-  let grupo = null;
-  for (const [id, nome, , g, icone] of abas) {
-    if (g !== grupo) { itens.push(h("div", { class: "menu-sec" }, g)); grupo = g; }
-    itens.push(h("button", { class: "menu-item" + (id === estado.aba ? " ativo" : ""), title: nome, onclick: () => { estado.aba = id; desenhar(); } },
-      h("span", { class: "ic" }, icone), h("span", { class: "rot" }, nome)));
+  if (areas.length > 1) {
+    itens.push(h("div", { class: "areas", role: "group", "aria-label": "Área" }, areas.map(([id, nome, ic]) =>
+      h("button", { class: "area" + (id === areaAtual ? " ativo" : ""), title: nome, "aria-pressed": String(id === areaAtual), onclick: () => {
+        try { localStorage.setItem("pz-area-" + estado.eu.perfil, id); } catch (e) { /* sem armazenamento */ }
+        estado.aba = todas.find((a) => a[5] === id)[0]; desenhar();
+      } }, h("span", { "aria-hidden": "true" }, ic), nome))));
+  }
+  if (areaAtual === "conta" && areas.length === 1) {  // quem tem uma área só precisa de um caminho de volta de Meus dados
+    itens.push(h("button", { class: "menu-item", onclick: () => { estado.aba = abaInicial(); desenhar(); } },
+      h("span", { class: "ic", "aria-hidden": "true" }, "↩"), h("span", { class: "rot" }, "Voltar")));
+  }
+  for (const [id, nome, , , icone, area] of todas) {
+    if (area !== areaAtual || area === "conta") continue;
+    itens.push(h("button", { class: "menu-item" + (id === estado.aba ? " ativo" : ""), title: nome, "aria-current": id === estado.aba ? "page" : "false", onclick: () => { estado.aba = id; desenhar(); } },
+      h("span", { class: "ic", "aria-hidden": "true" }, icone), h("span", { class: "rot" }, nome)));
   }
   const menu = h("aside", { id: "menu" },
     h("div", { class: "marca" }, h("img", { src: "/static/logo.svg", alt: "Pizza" }),
       h("div", { class: "txt" }, h("div", { class: "t1" }, "Sistema da Pizzaria"), h("div", { class: "t2" }, "Gestão integrada"))),
     h("nav", { class: "menu" }, itens));
   const fundo = h("div", { id: "fundo-menu", onclick: () => { menu.classList.remove("aberto"); fundo.classList.remove("aberto"); } });
-  const titulo = (abas.find(([id]) => id === estado.aba) || abas[0])[1];
+  const titulo = (todas.find(([id]) => id === estado.aba) || todas[0])[1];
   const topo = h("div", { class: "topo" },
     h("button", { class: "sanduiche", title: "Menu", onclick: () => {
       if (window.matchMedia("(max-width:760px)").matches) { const a = menu.classList.toggle("aberto"); fundo.classList.toggle("aberto", a); }
@@ -128,7 +159,7 @@ function moldura(conteudo) {
     h("div", { class: "topo-dir" },
       h("button", { class: "tema", title: "Alternar noite e dia", onclick: alternarTema },
         h("span", {}, "🌙"), h("span", { class: "tema-trilho" }, h("span", { class: "tema-bola" })), h("span", {}, "☀️")),
-      h("div", { class: "chip" }, "👤 ", h("b", {}, estado.eu.nome), h("span", { class: "nome-completo" }, " (" + estado.eu.perfil + ")")),
+      h("button", { class: "chip", title: "Meus dados", onclick: () => { estado.aba = "meusdados"; desenhar(); } }, "👤 ", h("b", {}, estado.eu.nome), h("span", { class: "nome-completo" }, " (" + estado.eu.perfil + ")")),
       h("button", { class: "sec", onclick: () => sair() }, "Sair")));
   raiz.replaceChildren(h("div", { id: "quadro" }, menu, fundo,
     h("div", { id: "principal" }, topo, h("main", { class: "conteudo" }, h("div", { class: "conteudo-miolo" }, conteudo)))));
@@ -138,7 +169,7 @@ async function abaPainel() {
   const alvo = h("div"); alvo.append(h("p", {}, "Carregando..."));
   moldura(alvo);
   const blocos = [h("div", { class: "cartao" }, h("h2", {}, "Bem-vindo, " + estado.eu.nome),
-    h("p", {}, "Este é o primeiro incremento do sistema: acesso, usuários, parâmetros e auditoria. Pedidos, produção e caixa entram nas próximas fatias."))];
+    h("p", {}, "Use as áreas no alto do menu: Produção, Vendas e Admin. Cada pessoa vê só as áreas e telas do seu perfil."))];
   if (["administrador", "proprietario", "gerente", "subgerente"].includes(estado.eu.perfil)) {
     try {
       const b = await api("GET", "/sistema/backup");
@@ -221,7 +252,13 @@ async function abaParametros() {
     } }, "Salvar");
     return h("tr", {}, h("td", {}, p.descricao, h("div", { class: "pequeno" }, p.definido ? "alterado " + fmtData(p.vigente_desde) : "valor padrão")), h("td", {}, campo), h("td", {}, salvar));
   });
-  alvo.replaceChildren(msg, h("div", { class: "cartao tabela" }, h("h2", {}, "Parâmetros da loja"),
+  let canaisP = [];
+  try { canaisP = await api("GET", "/canais"); } catch (e) { /* sem permissão de Vendas: sem o cartão */ }
+  const cartaoAceite = canaisP.length ? h("div", { class: "cartao" }, h("h2", {}, "Aceite automático de pedidos dos canais"),
+    h("p", { class: "pequeno" }, "Ligado: o sistema aceita sozinho o pedido quando TODOS os critérios forem atendidos (canal ativo, loja aberta, caixa de hoje aberto, todos os itens no mapa de produtos e nenhum sabor com venda fechada). Desligado: os pedidos são aceitos um a um pelo balconista. ATENÇÃO: nem o aceite automático nem o um a um funcionam ainda; dependem da integração com a API do Anota Ai."),
+    canaisP.map((c) => h("div", { class: "acoes-linha" }, h("b", {}, c.nome), " · ", c.aceitar_sozinho ? "aceita automaticamente" : "aceite um a um", " ",
+      podeEditar ? h("button", { class: "sec", onclick: async (ev) => { ev.target.disabled = true; try { await api("PATCH", "/canais/" + c.id + "/aceitar-sozinho", { ativo: !c.aceitar_sozinho }); abaParametros(); } catch (e) { msg.replaceChildren(aviso("erro", e.message)); ev.target.disabled = false; } } }, c.aceitar_sozinho ? "Desligar" : "Ligar") : null))) : null;
+  alvo.replaceChildren(msg, ...(cartaoAceite ? [cartaoAceite] : []), h("div", { class: "cartao tabela" }, h("h2", {}, "Parâmetros da loja"),
     podeEditar ? null : h("p", { class: "pequeno" }, "Só o administrador e o proprietário alteram parâmetros."),
     h("table", {}, h("tbody", {}, linhas))));
 }
@@ -442,6 +479,50 @@ async function abaClientes() {
   q.oninput = () => { clearTimeout(espera); espera = setTimeout(listar, 300); };
   alvo.replaceChildren(msg, form, h("div", { class: "cartao" }, q), tabela);
   await listar();
+}
+
+let relogioCanais = null;
+async function abaCanais() {
+  const alvo = h("div"); moldura(alvo);
+  const msg = h("div");
+  const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
+  let canais;
+  try { canais = await api("GET", "/canais"); } catch (e) { alvo.replaceChildren(aviso("erro", e.message)); return; }
+  if (!canais.length) { alvo.replaceChildren(aviso("erro", "Nenhum canal cadastrado.")); return; }
+  if (!estado.canalId || !canais.some((c) => c.id === estado.canalId)) estado.canalId = canais[0].id;
+  const atual = canais.find((c) => c.id === estado.canalId);
+  const nav0 = () => h("div", { class: "subnav" }, canais.map((c) => h("button", { onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome)));
+  const podeConfigurar = ["administrador", "proprietario"].includes(estado.eu.perfil);
+  let loja = { loja_aberta: false };
+  try { loja = await api("GET", "/canais/loja"); } catch (e) { alvo.replaceChildren(aviso("erro", e.message)); return; }
+  let fila = [], mapa = [];
+  try { [fila, mapa] = await Promise.all([api("GET", "/canais/" + atual.id + "/fila"), api("GET", "/canais/" + atual.id + "/produtos")]); } catch (e) { alvo.replaceChildren(nav0(), aviso("erro", e.message)); return; }
+  const nav = h("div", { class: "subnav" }, canais.map((c) => h("button", { class: c.id === atual.id ? "ativo" : "", onclick: () => { estado.canalId = c.id; abaCanais(); } }, c.nome + (c.pendentes ? " (" + c.pendentes + ")" : ""))));
+  const lojaCartao = h("div", { class: "cartao" }, h("h2", {}, "Loja: " + (loja.loja_aberta ? "ABERTA para pedidos" : "fechada")),
+    h("p", { class: "pequeno" }, "Chave manual da gerência. Ligue quando já puder receber pedidos e desligue ao fechar; ela não muda sozinha." + (loja.desde ? " Última troca: " + new Date(loja.desde).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) + "." : "")),
+    h("button", { class: loja.loja_aberta ? "sec" : "principal", onclick: async (ev) => { ev.target.disabled = true; try { await api("PATCH", "/canais/loja", { ativo: !loja.loja_aberta }); abaCanais(); } catch (e) { falha(e); ev.target.disabled = false; } } }, loja.loja_aberta ? "Fechar a loja" : "Abrir a loja"));
+  const estadoCartao = h("div", { class: "cartao" }, h("h2", {}, atual.nome), h("p", { class: "pequeno" }, "Integração ainda não conectada: falta o token do canal. Aqui ficam só a estrutura, a fila de entrada e o mapa de produtos."),
+    !podeConfigurar ? null : h("button", { class: "sec", onclick: async () => { try { await api("PATCH", "/canais/" + atual.id + "/ativo", { ativo: !atual.ativo }); abaCanais(); } catch (e) { falha(e); } } }, atual.ativo ? "Desativar canal" : "Ativar canal"),
+    h("p", {}, atual.ativo ? "Canal ativo." : "Canal desativado."),
+    h("p", {}, "Aceitar sozinho: " + (atual.aceitar_sozinho ? "LIGADO (regra: loja aberta, caixa de hoje aberto e todos os itens no mapa de produtos). Vale quando a integração for conectada; hoje nada é aceito automaticamente." : "desligado. A gerência aceita cada pedido explicitamente (o botão Aceitar chega com a integração).")),
+    !podeConfigurar ? null : h("button", { class: "sec", onclick: async (ev) => { ev.target.disabled = true; try { await api("PATCH", "/canais/" + atual.id + "/aceitar-sozinho", { ativo: !atual.aceitar_sozinho }); abaCanais(); } catch (e) { falha(e); } } }, atual.aceitar_sozinho ? "Desligar aceitar sozinho" : "Ligar aceitar sozinho"));
+  const filaCartao = h("div", { class: "cartao" }, h("h2", {}, "Fila de entrada"), fila.length ? tabela(["Pedido no canal", "Situação", "Recebido", ""], fila.map((e) => h("tr", {},
+    h("td", {}, e.id_externo), h("td", {}, ({ pendente: "na fila", importando: "importando…", importada: "importada", bloqueada: "BLOQUEADA, aguarda a gerência", recusada: "recusada" }[e.situacao] || e.situacao) + (e.motivo ? ": " + e.motivo : "")), h("td", {}, new Date(e.recebido_em).toLocaleString("pt-BR"), ["pendente", "importando", "bloqueada"].includes(e.situacao) ? (() => { const t = new Date(e.recebido_em).getTime(), min = Number.isFinite(t) ? Math.max(0, Math.floor((Date.now() - t) / 60000)) : null;
+      if (min === null) return "";
+      return h("span", { class: "pequeno", style: min >= 10 ? "color:var(--alerta)" : "" }, " · há " + min + " min" + (min >= 15 ? " (o Anota Ai já deve ter cancelado)" : " (o Anota Ai cancela sozinho aos 15)")); })() : ""),
+    h("td", {}, e.situacao === "bloqueada" ? h("button", { class: "sec", onclick: async (ev) => { ev.target.disabled = true; try { await api("POST", "/canais/fila/" + e.id + "/reprocessar"); abaCanais(); } catch (x) { falha(x); } } }, "Tentar de novo") : null, " ", ["pendente", "bloqueada"].includes(e.situacao) ? h("button", { class: "sec", onclick: async (ev) => { const m = prompt("Motivo da recusa"); if (!m) return; ev.target.disabled = true; try { await api("POST", "/canais/fila/" + e.id + "/recusar", { motivo: m }); abaCanais(); } catch (x) { falha(x); } } }, "Recusar") : "")))) : h("p", {}, "Nenhum pedido recebido."));
+  const mapaCartao = h("div", { class: "cartao" }, h("h2", {}, "Mapa de produtos"), h("p", { class: "pequeno" }, "ID Externo de cada produto no canal. Sem ele o produto não é exportado."),
+    tabela(["Produto", "ID Externo", ""], mapa.map((m) => { const i = h("input", { value: m.id_externo || "", placeholder: "ID no canal" });
+      if (!podeConfigurar) { i.disabled = true; return h("tr", {}, h("td", {}, m.nome), h("td", {}, m.id_externo || "sem ID"), h("td", {})); }
+      return h("tr", {}, h("td", {}, m.nome), h("td", {}, i), h("td", {}, h("button", { class: "sec", onclick: async () => { try { await api("PUT", "/canais/" + atual.id + "/produtos", { produto_id: m.produto_id, id_externo: i.value }); msg.replaceChildren(aviso("ok", "Mapeado.")); } catch (x) { falha(x); } } }, "Salvar"))); })));
+  alvo.replaceChildren(nav, msg, lojaCartao, estadoCartao, filaCartao, mapaCartao);
+  clearInterval(relogioCanais);
+  relogioCanais = setInterval(() => {  // o "há N min" acompanha o relógio, sem atropelar quem digita
+    if (estado.aba !== "canais" || !estado.token) { clearInterval(relogioCanais); return; }
+    const a = document.activeElement;
+    if (a && (a.tagName === "INPUT" || a.tagName === "SELECT")) return;
+    abaCanais();
+  }, 30000);
 }
 
 async function abaEntregadores() {
@@ -666,8 +747,8 @@ async function abaVendas() {
 
   // ---- novo pedido: o servidor calcula preço, limite e troco; a tela só mostra o que ele devolve
   async function novoPedido() {
-    const [produtos, adicionais, param] = await Promise.all([api("GET", "/produtos?ativo=true"), api("GET", "/adicionais?ativo=true"), api("GET", "/parametros")]);
-    const formas = ((param.find ? param.find((x) => x.chave === "formas_pagamento_aceitas") : null) || {}).valor || ["dinheiro", "pix", "credito", "debito"];
+    const [produtos, adicionais, param, avulsasDisp] = await Promise.all([api("GET", "/produtos?ativo=true"), api("GET", "/adicionais?ativo=true"), api("GET", "/parametros/formas-pagamento"), api("GET", "/pedidos/avulsas-disponiveis").catch((e) => { setTimeout(() => falha(e), 0); return []; })]);
+    const formas = param.formas;
     const r = estado.rascunho || (estado.rascunho = { chave: novaChave(), tipo: "retirada", cliente: null, itens: [], ajuste: null, pagamentos: [], taxa: "", taxaMotivo: "", obs: "", urgente: false });
     const corpoCalculo = () => ({ tipo: r.tipo, itens: r.itens.map((i) => i.dados), ajuste: r.ajuste, taxa_entrega: r.tipo === "entrega" && r.taxa.trim() ? r.taxa.trim() : null });
     let calc = null;
@@ -704,9 +785,11 @@ async function abaVendas() {
     const blocoPizza = h("div", {}), blocoOutro = h("div", {});
     const preencher = () => {
       const pizzas = produtos.filter((p) => p.tipo === "pizza");
-      sabor1.replaceChildren(...pizzas.map((p) => h("option", { value: p.id }, nomeProd(p))));
-      sabor2.replaceChildren(h("option", { value: "" }, "Sem segundo sabor"), ...pizzas.map((p) => h("option", { value: p.id }, nomeProd(p))));
-      outro.replaceChildren(...produtos.filter((p) => p.tipo === tipo.value).map((p) => h("option", { value: p.id }, p.nome + " (" + brl(p.preco_unico) + ")")));
+      const opt = (p, texto) => h("option", p.venda_fechada ? { value: p.id, disabled: "" } : { value: p.id }, texto + (p.venda_fechada ? " · VENDA FECHADA (falta " + p.motivo_fechada + ")" : ""));
+      sabor1.replaceChildren(...pizzas.map((p) => opt(p, nomeProd(p))));
+      sabor2.replaceChildren(h("option", { value: "" }, "Sem segundo sabor"), ...pizzas.map((p) => opt(p, nomeProd(p))));
+      outro.replaceChildren(...produtos.filter((p) => p.tipo === tipo.value).map((p) => opt(p, p.nome + " (" + brl(p.preco_unico) + ")")));
+      for (const s of [sabor1, outro]) { const o = [...s.options].find((x) => !x.disabled); if (o && s.selectedOptions[0] && s.selectedOptions[0].disabled) s.value = o.value; }
       borda.replaceChildren(h("option", { value: "" }, "Sem borda"), ...adicionais.filter((a) => a.tipo === "borda").map((a) => h("option", { value: a.id }, a.nome)));
       const pizza = tipo.value === "pizza";
       blocoPizza.hidden = !pizza; blocoOutro.hidden = pizza;
@@ -724,12 +807,20 @@ async function abaVendas() {
         dados = { tipo: "pizza", produto_id: Number(sabor1.value), tamanho: tam.value, quantidade: q, observacoes: obsItem.value.trim() || null,
           sabor2_id: sabor2.value ? Number(sabor2.value) : null, adicional_ids: caixasAd.filter(([c]) => c.checked).map(([c]) => Number(c.value)).concat(borda.value ? [Number(borda.value)] : []) };
       } else dados = { tipo: tipo.value, produto_id: Number(outro.value), quantidade: q, observacoes: obsItem.value.trim() || null };
+      if (!dados.produto_id) { falha(new Error("Nenhum sabor ou produto disponível: todos estão com venda fechada.")); return; }
       r.itens.push({ dados }); redesenhar();
     };
+    const usadas = new Set(r.itens.map((i) => i.dados.avulsa_id).filter(Boolean));
+    const livres = avulsasDisp.filter((x) => !usadas.has(x.id));
+    const cartaoAvulsas = livres.length ? h("div", { class: "cartao" }, h("h2", {}, "Pizzas avulsas prontas"),
+      h("p", { class: "pequeno" }, "Sobraram da montagem errada e levam o tamanho, os sabores, a borda, os adicionais e as observações do pedido de origem, mais as do acabamento. A venda é um pedido de balcão, com o preço do cardápio (e desconto, se couber)."),
+      livres.map((x) => h("div", { class: "acoes-linha" }, (x.tipo === "pizza" ? (x.tamanho === "grande" ? "Grande · " : "Broto · ") : "Calzone · ") + x.sabores + (x.adicionais ? " + " + x.adicionais : "") + (x.observacoes ? " · Obs.: " + x.observacoes : "") + (x.observacao_acabamento ? " · Acabamento: " + x.observacao_acabamento : ""), " ",
+        h("button", { class: "sec", onclick: () => { r.itens.push({ dados: { tipo: x.tipo, produto_id: x.produto_id, tamanho: x.tamanho === "unico" ? null : x.tamanho, quantidade: 1, avulsa_id: x.id } }); redesenhar(); } }, "Adicionar ao pedido")))) : null;
     const cartaoItem = h("div", { class: "cartao" }, h("h2", {}, "2. Itens"), campo("Tipo", tipo), blocoPizza, blocoOutro,
       h("div", { class: "linha" }, campo("Quantidade", qtd), campo("Observação do item", obsItem)), h("button", { class: "principal", onclick: adicionar }, "Adicionar ao pedido"));
 
     // resumo
+    if (calc && calc.aviso_venda_fechada) msg.replaceChildren(aviso("erro", calc.aviso_venda_fechada));
     const linhasResumo = calc ? calc.itens.map((i, ix) => h("tr", {}, h("td", {}, i.quantidade + "x " + i.descricao + (i.adicionais.length ? " + " + i.adicionais.map((a) => a.nome).join(", ") : "")),
       h("td", {}, brl(i.total)), h("td", {}, h("button", { class: "sec", onclick: () => { r.itens.splice(ix, 1); redesenhar(); } }, "Remover")))) : [];
     const ajTipo = h("select", {}, [["", "Sem ajuste"], ["desconto", "Desconto"], ["acrescimo", "Acréscimo"]].map(([v, n]) => h("option", { value: v }, n)));
@@ -742,7 +833,10 @@ async function abaVendas() {
     const total = calc ? Number(calc.total) : 0;
     const pago = r.pagamentos.reduce((a, p) => a + Number(String(p.valor).replace(",", ".")), 0);
     const cartaoResumo = h("div", { class: "cartao" }, h("h2", {}, "3. Resumo"),
-      calc ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, linhasResumo))) : h("p", { class: "pequeno" }, "Nenhum item ainda."),
+      calc ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, linhasResumo)))
+        : r.itens.length ? h("div", { class: "tabela" }, h("table", {}, h("tbody", {}, r.itens.map((i, ix) => h("tr", {}, h("td", {}, i.dados.quantidade + "x item " + (ix + 1) + (i.dados.avulsa_id ? " (avulsa)" : "")),
+          h("td", {}, h("button", { class: "sec", onclick: () => { r.itens.splice(ix, 1); redesenhar(); } }, "Remover")))))))
+        : h("p", { class: "pequeno" }, "Nenhum item ainda."),
       h("h3", {}, "Desconto ou acréscimo"), h("div", { class: "linha" }, campo("Tipo", ajTipo), campo("Valor (R$)", ajValor), campo("Motivo", ajMotivo)),
       h("button", { class: "sec", onclick: aplicarAjuste }, "Aplicar ajuste"),
       r.tipo === "entrega" ? h("div", { class: "linha" }, campo("Taxa de entrega (padrão " + (calc ? brl(calc.taxa_entrega_padrao) : "") + ")", taxa), campo("Motivo da taxa", taxaMotivo)) : null,
@@ -770,13 +864,13 @@ async function abaVendas() {
       try {
         const criado = await api("POST", "/pedidos", { ...corpoCalculo(), cliente_id: r.cliente ? r.cliente.id : null, taxa_motivo: r.taxaMotivo.trim() || null,
           pagamentos: r.pagamentos.map((p) => ({ forma: p.forma, valor: p.valor })), urgente: r.urgente, observacoes: r.obs.trim() || null, autorizacao: aut.valor(), chave: r.chave });
-        estado.rascunho = null; estado.subv = "dia";
+        estado.rascunho = null; estado.modoPedidos = null; estado.subv = "dia";
         await desenharSub(); msg.replaceChildren(aviso("ok", "Pedido " + criado.id_dia + " registrado. Total " + brl(criado.total) + (Number(criado.troco) > 0 ? ". Troco " + brl(criado.troco) + "." : ".")));
       } catch (e) { confirmar.disabled = false; falha(e); }
     } }, "Confirmar pedido");
     const cartaoFim = h("div", { class: "cartao" }, campo("Observações", obs), h("label", { class: "inline" }, urg, " Pedido urgente"), h("div", {}, confirmar, " ",
-      h("button", { class: "sec", onclick: () => { estado.rascunho = null; redesenhar(); } }, "Limpar")));
-    return h("div", {}, cartaoCliente, h("div", { class: "grade" }, cartaoItem, h("div", {}, cartaoResumo, cartaoPag, cartaoFim)));
+      h("button", { class: "sec", onclick: () => { estado.rascunho = null; estado.modoPedidos = null; redesenhar(); } }, "Limpar")));
+    return h("div", {}, cartaoCliente, h("div", { class: "grade" }, h("div", {}, ...[cartaoAvulsas, cartaoItem].filter(Boolean)), h("div", {}, cartaoResumo, cartaoPag, cartaoFim)));
   }
 
   // ---- pedidos do dia
@@ -784,7 +878,8 @@ async function abaVendas() {
     const lista = await api("GET", "/pedidos");
     const gerente = ehGerencia();
     const painel = h("div", {});
-    const linhas = lista.map((p) => {
+    const horaEntrega = (p) => p.entrega_calculada && ["recebido", "em producao", "acabado"].includes(p.situacao) ? new Date(p.entrega_calculada).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
+    const acoesDe = (p) => {
       const acoes = [];
       const passo = async (nova) => { msg.replaceChildren(); try { await api("POST", "/pedidos/" + p.id + "/situacao", { situacao: nova }); desenharSub(); } catch (e) { falha(e); } };
       const prox = proxSit[p.situacao];
@@ -792,15 +887,26 @@ async function abaVendas() {
       if (p.situacao === "recebido") acoes.push(h("button", { class: "sec", onclick: async () => { try { await api("POST", "/pedidos/" + p.id + "/urgente", { urgente: !p.urgente }); desenharSub(); } catch (e) { falha(e); } } }, p.urgente ? "Tirar urgência" : "Urgente"));
       if (p.situacao !== "cancelado" && p.situacao !== "despachado ou retirado") acoes.push(h("button", { class: "sec", onclick: () => formCancelar(p) }, "Cancelar"));
       acoes.push(h("button", { class: "sec", onclick: () => detalhe(p) }, "Ver"));
+      return acoes;
+    };
+    const linhasLista = () => lista.map((p) => {
+      const acoes = acoesDe(p);
       return h("tr", { class: p.situacao === "cancelado" ? "inativo" : "" }, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), h("td", {}, p.tipo), h("td", {}, p.cliente_nome || "Balcão"),
-        h("td", {}, brl(p.total)), h("td", {}, rotuloSit[p.situacao]), h("td", {}, acoes.flatMap((a) => [a, " "])));
+        h("td", {}, brl(p.total)), h("td", {}, rotuloSit[p.situacao]), h("td", {}, horaEntrega(p)), h("td", {}, acoes.flatMap((a) => [a, " "])));
     });
+    const colunas = Object.keys(rotuloSit);
+    const desenharQuadro = () => h("div", { class: "quadro" }, colunas.map((sit) => {
+      const ps = lista.filter((p) => p.situacao === sit).sort((a, b) => (Number(b.urgente) - Number(a.urgente)) || (a.id_dia - b.id_dia));
+      return h("div", { class: "cartao coluna" }, h("h2", {}, rotuloSit[sit] + " (" + ps.length + ")"),
+        ps.length ? ps.map((p) => h("div", { class: "cartao-pedido" }, h("strong", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")), " ", p.tipo, h("div", { class: "pequeno" }, (p.cliente_nome || "Balcão") + " · " + brl(p.total) + (horaEntrega(p) ? " · entrega " + horaEntrega(p) : "")), h("div", { class: "acoes-pedido" }, acoesDe(p)))) : h("p", { class: "pequeno" }, "Vazio"));
+    }));
     function formCancelar(p) {
       const motivo = h("input", { placeholder: "Motivo obrigatório" }), aut = entradaAutorizacao();
       painel.replaceChildren(h("div", { class: "cartao" }, h("h2", {}, "Cancelar pedido #" + p.id_dia), campo("Motivo", motivo), gerente ? null : h("div", {}, h("p", { class: "pequeno" }, "Pedido pago: um gerente confirma com login e senha."), aut.caixa),
         h("button", { class: "principal", onclick: async () => {
           try { await api("POST", "/pedidos/" + p.id + "/cancelar", { motivo: motivo.value, autorizacao: aut.valor() }); desenharSub(); } catch (e) { falha(e); }
         } }, "Confirmar cancelamento"), " ", h("button", { class: "sec", onclick: () => painel.replaceChildren() }, "Voltar")));
+      painel.scrollIntoView({ block: "nearest" });
     }
     async function detalhe(p) {
       try {
@@ -811,10 +917,14 @@ async function abaVendas() {
           d.ajustes.length ? h("p", { class: "pequeno" }, d.ajustes.map((a) => a.tipo + " " + brl(a.valor) + ": " + a.motivo + (a.autorizado ? " (autorizado)" : "")).join("; ")) : null,
           h("p", { class: "pequeno" }, "Histórico: " + d.eventos.map((e) => rotuloSit[e.situacao] || e.situacao).join(" → ")),
           h("button", { class: "sec", onclick: () => painel.replaceChildren() }, "Fechar")));
+        painel.scrollIntoView({ block: "nearest" });
       } catch (e) { falha(e); }
     }
-    return h("div", {}, painel, h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos de hoje (" + lista.length + ")"),
-      lista.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Id", "Tipo", "Cliente", "Total", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nenhum pedido hoje.")));
+    const modo = estado.modoPedidos || "quadro";
+    const alterna = h("div", { class: "modo-vista" }, h("span", { class: "pequeno" }, "Ver como:"), [["quadro", "Quadro"], ["lista", "Lista"]].map(([id, nome]) => h("button", { class: id === modo ? "ativo" : "", onclick: () => { estado.modoPedidos = id; msg.replaceChildren(); desenharSub(); } }, nome)));
+    if (modo === "quadro") return h("div", {}, painel, alterna, desenharQuadro());
+    return h("div", {}, painel, alterna, h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos de hoje (" + lista.length + ")"),
+      lista.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Id", "Tipo", "Cliente", "Total", "Situação", "Entrega", ""].map((t) => h("th", {}, t)))), h("tbody", {}, linhasLista())) : h("p", {}, "Nenhum pedido hoje.")));
   }
   await desenharSub();
 }
@@ -824,9 +934,10 @@ const GER = ["administrador", "proprietario", "gerente", "subgerente"];
 const SUBS_PRODUCAO = [
   ["massa", "Massa", [...GER, "massa"]],
   ["montagem", "Montagem", [...GER, "pizzaiolo"]],
-  ["forno", "Forno", [...GER, "pizzaiolo", "acabamento"]],
+  ["forno", "Forno", [...GER, "acabamento"]],
   ["acabamento", "Acabamento", [...GER, "acabamento"]],
-  ["andamento", "Andamento", [...GER, "atendente", "massa", "pizzaiolo", "acabamento"]],
+  ["despacho", "Despacho", [...GER, "acabamento"]],
+  ["andamento", "Andamento", GER],
   ["motivos", "Motivos", GER],
 ];
 let relogioProducao = null, etiquetaAberta = null, desenhandoProducao = false;
@@ -836,6 +947,7 @@ async function abaProducao() {
   const alvo = h("div"); moldura(alvo);
   const msg = h("div");
   const subs = SUBS_PRODUCAO.filter(([, , perfis]) => perfis.includes(estado.eu.perfil));
+  if (!subs.length) { alvo.replaceChildren(aviso("erro", "Sem telas de Produção para o seu perfil.")); return; }
   if (!subs.some(([id]) => id === estado.subp)) estado.subp = subs[0][0];
   const falha = (e) => msg.replaceChildren(aviso("erro", e.message));
   const ok = (t) => msg.replaceChildren(aviso("ok", t));
@@ -853,6 +965,9 @@ async function abaProducao() {
   };
   const linhaPizza = (p) => p.tipo === "pizza" ? (p.tamanho === "grande" ? "Grande" : "Broto") + " · " + p.sabores : "Calzone · " + p.sabores;
   const grande = (t) => h("div", { class: "resultado" }, h("div", { class: "total" }, t));
+  const botoesErro = (p) => [["sabor", "Montagem errada no sabor"], ["formato", "Problemas no formato/esteira"]].map(([tipo, nome]) => h("button", { class: "sec",
+    onclick: () => { if (!window.confirm(nome + "? Esta pizza vira avulsa e a pizza do pedido volta ao topo da lista.")) return; const obs = window.prompt("Observações sobre a pizza (opcional, até 120 caracteres; vão junto na venda avulsa):", "");
+      if (obs === null) return; if (obs.trim().length > 120) { falha(new Error("A observação passa de 120 caracteres.")); return; } acao("POST", "/producao/pizzas/" + p.id + "/montagem-errada", { tipo, observacao: obs.trim() || null }, "Pizza errada virou avulsa. A certa voltou ao topo da lista."); } }, nome));
 
   async function desenharSub() {
     if (desenhandoProducao) return;  // atualizações não se sobrepõem
@@ -862,10 +977,13 @@ async function abaProducao() {
   async function desenharSubInterno() {
     const nav = h("div", { class: "subnav" }, subs.map(([id, nome]) => h("button", { class: id === estado.subp ? "ativo" : "", onclick: () => { estado.subp = id; etiquetaAberta = null; msg.replaceChildren(); desenharSub(); } }, nome)),
       h("button", { class: "sec", onclick: () => desenharSub() }, "Atualizar"));
-    let corpo;
-    try { corpo = await ({ massa: subMassa, montagem: subMontagem, forno: subForno, acabamento: subAcabamento, andamento: subAndamento, motivos: subMotivos }[estado.subp])(); }
+    let corpo, avisosProd = [];
+    try { avisosProd = await api("GET", "/producao/avisos"); } catch (e) { /* sem permissão ou fora do ar: segue sem avisos */ }
+    const faixaAvisos = avisosProd.length ? h("div", { class: "cartao" }, h("h2", {}, "Avisos da Produção"), avisosProd.map((a) => h("p", {}, "⚠ ", h("b", {}, a.rotulo), " · pedido #" + a.id_dia + " · " + (a.tipo_pizza === "pizza" ? (a.tamanho === "grande" ? "Grande " : "Broto ") : "Calzone ") + a.sabores,
+      a.por ? " (" + a.por + ")" : "", " ", GERENCIA_PERFIS.includes(estado.eu.perfil) ? h("button", { class: "sec", onclick: async () => { try { await api("POST", "/producao/avisos/" + a.id + "/resolver"); desenharSub(); } catch (e) { falha(e); } } }, "Resolvido") : null))) : null;
+    try { corpo = await ({ massa: subMassa, montagem: subMontagem, forno: subForno, acabamento: subAcabamento, despacho: subDespacho, andamento: subAndamento, motivos: subMotivos }[estado.subp])(); }
     catch (e) { corpo = aviso("erro", e.message); }
-    alvo.replaceChildren(nav, msg, corpo);
+    alvo.replaceChildren(...[nav, msg, faixaAvisos].filter(Boolean), h("div", { class: "prod prod-" + estado.subp }, corpo));
   }
 
   async function subMassa() {
@@ -893,8 +1011,10 @@ async function abaProducao() {
     if (minha) {
       topo = h("div", { class: "cartao" }, h("h2", {}, "Pizza atual"), grande(linhaPizza(minha)),
         h("p", {}, "Pedido #" + minha.id_dia + (minha.urgente ? " · URGENTE" : "")), minha.adicionais ? h("p", {}, "Adicionais: " + minha.adicionais) : null, minha.observacoes ? h("p", {}, "Obs.: " + minha.observacoes) : null,
-        h("div", { class: "acoes-linha" }, h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/" + minha.id + "/produzida", undefined, "Pizza foi ao forno.") }, "Produzida (vai ao forno)"), " ",
-          seletorMotivo(mot.retrocesso, "Retroceder (motivo obrigatório)", (id) => acao("POST", "/producao/pizzas/" + minha.id + "/retroceder", { motivo_id: id }, "Pizza voltou uma posição.")), " ",
+        h("div", { class: "acoes-linha" }, h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/" + minha.id + "/produzida", undefined, "Pizza foi ao forno.") }, "Finalizada a montagem (vai ao forno)"), " ",
+          h("button", { class: "sec", onclick: () => { if (!window.confirm("Montagem errada no sabor? Esta pizza vira avulsa e você recomeça a pizza do pedido.")) return; const obs = window.prompt("Observações sobre a pizza errada (opcional):", ""); if (obs === null) return; acao("POST", "/producao/pizzas/" + minha.id + "/montagem-errada", { tipo: "sabor", observacao: obs.trim() || null }, "Pizza errada virou avulsa. Refaça a pizza do pedido."); } }, "Montagem errada no sabor"), " ",
+          h("button", { class: "sec", onclick: () => { if (!window.confirm("Problema no formato/esteira? Esta pizza vira avulsa e você recomeça a pizza do pedido.")) return; const obs = window.prompt("Observações sobre a pizza com problema (opcional):", ""); if (obs === null) return; acao("POST", "/producao/pizzas/" + minha.id + "/montagem-errada", { tipo: "formato", observacao: obs.trim() || null }, "Pizza com problema virou avulsa. Refaça a pizza do pedido."); } }, "Problemas no formato/esteira"), " ",
+          h("button", { class: "sec", onclick: () => { if (window.confirm("Sem ingredientes? A pizza vai para o fim da lista e a gerência é avisada.")) acao("POST", "/producao/pizzas/" + minha.id + "/sem-ingredientes", undefined, "Pizza foi para o fim da lista. A gerência foi avisada."); } }, "Sem ingredientes"), " ",
           seletorMotivo(mot.perda, "Perdeu a pizza (motivo)", (id) => acao("POST", "/producao/pizzas/" + minha.id + "/perder", { motivo_id: id }, "Perda registrada."), "Registrar a perda desta pizza?")));
     } else {
       topo = h("div", { class: "cartao" }, h("h2", {}, "Montagem"), h("p", {}, espera.length ? espera.length + " pizza(s) na lista." : "Nenhuma pizza na lista."),
@@ -912,23 +1032,45 @@ async function abaProducao() {
       fo.tempo_min ? h("p", { class: "pequeno" }, "Tempo de forno: " + fo.tempo_min + " min por pizza.") : null,
       fo.acima_capacidade ? aviso("erro", "Acima da capacidade do forno. O sistema só avisa.") : null),
       h("div", { class: "cartao tabela" }, h("h2", {}, "No forno"), no.length ? h("table", {}, h("tbody", {}, no.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia), h("td", {}, linhaPizza(p)),
-        h("td", {}, h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/" + p.id + "/saiu-do-forno") }, "Saiu do forno")))))) : h("p", { class: "pequeno" }, "Forno vazio.")));
+        h("td", {}, h("button", { class: "principal", onclick: () => acao("POST", "/producao/pizzas/" + p.id + "/saiu-do-forno") }, "Saiu do forno"), " ", botoesErro(p))))) ) : h("p", { class: "pequeno" }, "Forno vazio.")));
   }
 
   async function subAcabamento() {
-    const [f, peds, mot] = await Promise.all([api("GET", "/producao/fila"), api("GET", "/producao/pedidos"), api("GET", "/producao/motivos")]);
+    const [f, peds, mot, perdidas, avulsas] = await Promise.all([api("GET", "/producao/fila"), api("GET", "/producao/pedidos"), api("GET", "/producao/motivos"), api("GET", "/producao/perdidas").catch(() => []), api("GET", "/producao/avulsas").catch(() => [])]);
     const prontas = f.pizzas.filter((p) => p.situacao === "saiu do forno");
     const box = h("div", {});
     const etiqueta = (e) => box.replaceChildren(h("div", { class: "cartao etiqueta" }, h("h2", {}, "Etiqueta"), grande(e.cliente + " · Id " + e.id_dia), h("p", {}, e.sabores + " (" + e.tamanho + ")"),
       h("button", { class: "sec", onclick: () => window.print() }, "Imprimir"), " ", h("button", { class: "sec", onclick: () => { etiquetaAberta = null; box.replaceChildren(); } }, "Fechar")));
     if (etiquetaAberta) etiqueta(etiquetaAberta);  // sobrevive à atualização da lista até ser fechada
-    return h("div", {}, box, h("div", { class: "cartao tabela" }, h("h2", {}, "Saíram do forno"), prontas.length ? h("table", {}, h("tbody", {}, prontas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
+    const cartaoPerdidas = perdidas.length ? h("div", { class: "cartao tabela" }, h("h2", {}, "Pizzas perdidas para refazer"),
+      h("p", { class: "pequeno" }, "Enquanto a pizza perdida não for refeita, o pedido não pode ser marcado como acabado. A nova entra no começo da fila. A perda já foi registrada; o motivo escolhido aqui fica no registro da refação."),
+      h("table", {}, h("tbody", {}, perdidas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
+        h("td", {}, seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."), "Refazer esta pizza? A nova entra no começo da fila."))))))) : null;
+    const cartaoAvulsas = avulsas.length ? h("div", { class: "cartao tabela" }, h("h2", {}, "Pizzas avulsas (montagem errada)"),
+      h("p", { class: "pequeno" }, "O balcão vende a avulsa como pedido (em Vendas); vendida, ela não vira perda e some desta lista. Sem venda, descarte com o motivo e ela entra nas perdas."),
+      h("table", {}, h("tbody", {}, avulsas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia), h("td", {}, linhaPizza(p), p.adicionais ? h("div", { class: "pequeno" }, "Adicionais: " + p.adicionais) : null, p.observacoes ? h("div", { class: "pequeno" }, "Obs.: " + p.observacoes) : null, p.observacao_acabamento ? h("div", { class: "pequeno" }, "Acabamento: " + p.observacao_acabamento) : null),
+        h("td", {}, seletorMotivo(mot.perda, "Descartar (motivo)", (id) => acao("POST", "/producao/avulsas/" + p.id + "/descartar", { motivo_id: id }, "Avulsa descartada: registrada como perda."), "Descartar esta pizza avulsa? Ela vira perda."))))))) : null;
+    return h("div", {}, box, cartaoAvulsas, cartaoPerdidas, h("div", { class: "cartao tabela" }, h("h2", {}, "Saíram do forno"), prontas.length ? h("table", {}, h("tbody", {}, prontas.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + " " + (p.cliente || "Balcão")), h("td", {}, linhaPizza(p)),
       h("td", {}, h("button", { class: "principal", onclick: async () => { const r = await acao("POST", "/producao/pizzas/" + p.id + "/acabada"); if (r) { etiquetaAberta = r.etiqueta; await desenharSub(); } } }, "Acabada e etiqueta"), " ",
-        seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."), "Refazer esta pizza? A atual vira perda.")))))) : h("p", { class: "pequeno" }, "Nenhuma pizza esperando acabamento.")),
+        seletorMotivo(mot.perda, "Refazer (motivo)", (id) => acao("POST", "/producao/pizzas/" + p.id + "/refazer", { motivo_id: id }, "Pizza será refeita."), "Refazer esta pizza? A atual vira perda."), " ", botoesErro(p)))))) : h("p", { class: "pequeno" }, "Nenhuma pizza esperando acabamento.")),
       h("div", { class: "cartao tabela" }, h("h2", {}, "Pedidos em aberto"), peds.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Pedido", "Cliente", "Pizzas", "Situação", ""].map((t) => h("th", {}, t)))), h("tbody", {}, peds.map((p) => h("tr", {}, h("td", {}, "#" + p.id_dia + (p.urgente ? " ⚡" : "")),
         h("td", {}, p.cliente || "Balcão"), h("td", {}, p.acabadas + " de " + p.pizzas), h("td", {}, rotuloSit[p.situacao]),
         h("td", {}, p.situacao !== "acabado" && p.acabadas === p.pizzas ? h("button", { class: "principal", onclick: () => acao("POST", "/producao/pedidos/" + p.id + "/acabado", undefined, "Pedido acabado.") }, "Marcar pedido acabado") : null))))) : h("p", { class: "pequeno" }, "Nenhum pedido em aberto.")),
       h("p", { class: "pequeno" }, "Bebida e acompanhamento não entram nesta lista."));
+  }
+
+  async function subDespacho() {
+    const [d, entregadores] = await Promise.all([api("GET", "/caixa/despacho"), api("GET", "/caixa/despacho/entregadores")]);
+    if (!d.caixa_aberto) return h("div", {}, aviso("alerta", "O caixa do dia não está aberto. A recepção abre o caixa antes de despachar."));
+    if (!entregadores.length) return h("div", {}, aviso("alerta", "Nenhum entregador ativo. A recepção ou a gerência cadastra."));
+    const linhas = d.pedidos.map((e) => {
+      const sel = h("select", { "aria-label": "Entregador do pedido " + e.id_dia }, entregadores.map((x) => h("option", { value: x.id }, x.nome)));
+      return h("tr", {}, h("td", {}, "#" + e.id_dia), h("td", {}, rotuloSit[e.situacao] || e.situacao),
+        h("td", {}, e.entregador ? e.entregador : h("div", { class: "acoes-linha" }, sel,
+          h("button", { class: "principal", onclick: () => acao("POST", "/caixa/despacho/" + e.pedido_id, { entregador_id: Number(sel.value) }, "Entregador atribuído.") }, "Despachar"))));
+    });
+    return h("div", {}, h("div", { class: "cartao tabela" }, h("h2", {}, "Entregas de hoje"),
+      d.pedidos.length ? h("table", {}, h("thead", {}, h("tr", {}, ["Pedido", "Situação", "Entregador"].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)) : h("p", {}, "Nenhuma entrega hoje.")));
   }
 
   async function subAndamento() {
@@ -1174,7 +1316,29 @@ async function abaEstoque() {
 
   async function subAlertas() {
     const a = await api("GET", "/estoque/alertas");
-    return h("div", {}, h("div", { class: "cartao" }, h("h2", {}, "Repor"), a.repor.length ? tabela(["Item", "Saldo", "Situação"], a.repor.map((i) => h("tr", {}, h("td", {}, i.nome), h("td", {}, num(i.saldo) + " " + i.unidade), h("td", {}, i.situacao)))) : h("p", {}, "Nada abaixo do mínimo.")),
+    const fechar = async (i, em_falta) => {  // integração com o fechamento de vendas por ingrediente (só a gerência)
+      try {
+        const r = await api("GET", "/vendas-fechadas/ingredientes/" + i.id + "/sabores");
+        const nomes = r.sabores.map((x) => x.nome).join(", ") || "nenhum sabor";
+        if (!window.confirm((em_falta ? "Fechar a venda de: " : "Reabrir a venda de: ") + nomes + ". Ingrediente: " + i.nome + ".")) return;
+        await api("PUT", "/vendas-fechadas/ingredientes/" + i.id + "/falta", { em_falta });
+        acao("GET", "/estoque/alertas", undefined, em_falta ? "Venda fechada para " + nomes + "." : "Venda reaberta.");
+      } catch (e) { falha(e); }
+    };
+    let fechadas = { sabores_fechados: [], ingredientes_em_falta: [] };
+    try { fechadas = await api("GET", "/vendas-fechadas"); } catch (e) { /* sem vendas.gerir: sem o cartão */ }
+    const cartaoFechadas = fechadas.ingredientes_em_falta.length ? h("div", { class: "cartao" }, h("h2", {}, "Vendas fechadas agora"),
+      h("p", { class: "pequeno" }, "Sabores com venda fechada por falta de ingrediente. Reabra quando o ingrediente voltar."),
+      tabela(["Ingrediente em falta", "Sabores", ""], fechadas.ingredientes_em_falta.map((e) => h("tr", {}, h("td", {}, e.nome),
+        h("td", { class: "pequeno" }, fechadas.sabores_fechados.filter((s) => s.motivo.split(", ").includes(e.nome)).map((s) => s.nome).join(", ")),
+        h("td", {}, h("button", { class: "sec", onclick: () => fechar({ id: e.item_id, nome: e.nome }, false) }, "Reabrir vendas")))))) : null;
+    const rotuloEst = { negativo: "NEGATIVO", zerado: "ZERADO", repor: "repor", "abaixo do mínimo": "abaixo do mínimo" };
+    return h("div", {}, cartaoFechadas, h("div", { class: "cartao" }, h("h2", {}, "Ingredientes: negativo, zerado, para repor"),
+      h("p", { class: "pequeno" }, "Negativo e zerado pedem tratativa física e, se for o caso, ajuste de estoque. \"Baixo\" usa o estoque mínimo de cada item. O estoque pode ficar negativo."),
+      a.repor.length ? tabela(["Item", "Saldo", "Situação", ""], a.repor.map((i) => h("tr", {}, h("td", {}, i.nome), h("td", {}, num(i.saldo) + " " + i.unidade),
+        h("td", { style: ["negativo", "zerado"].includes(i.situacao) ? "color:var(--crit);font-weight:700" : "" }, rotuloEst[i.situacao] || i.situacao, i.venda_fechada ? " · venda fechada" : ""),
+        h("td", {}, i.venda_fechada ? h("button", { class: "sec", onclick: () => fechar(i, false) }, "Reabrir vendas")
+          : h("button", { class: "sec", onclick: () => fechar(i, true) }, "Fechar vendas dos sabores" + (i.sabores_afetados != null ? " (" + i.sabores_afetados + ")" : "")))))) : h("p", {}, "Nada abaixo do mínimo.")),
       h("div", { class: "cartao" }, h("h2", {}, "Validade (até " + a.dias_alerta + " dias)"), a.validade.length ? tabela(["Item", "Lote", "Validade", "Saldo", ""], a.validade.map((l) => h("tr", {}, h("td", {}, l.item), h("td", {}, l.codigo), h("td", {}, l.validade), h("td", {}, num(l.saldo)), h("td", {}, l.vencido ? "VENCIDO" : "")))) : h("p", {}, "Nenhum lote perto de vencer.")),
       h("div", { class: "cartao" }, h("h2", {}, "Faltas apontadas pela Produção"), h("p", {}, a.faltas_producao_24h + " retrocesso(s) por falta de insumo nas últimas 24 horas.")),
       h("div", { class: "cartao" }, h("h2", {}, "Baixas que não saíram"), a.pendencias.length ? tabela(["Tipo", "Produto", "Vezes"], a.pendencias.map((p) => h("tr", {}, h("td", {}, p.tipo === "sem_ficha" ? "Produto sem ficha técnica" : "Erro na baixa"), h("td", {}, p.produto || ""), h("td", {}, p.vezes)))) : h("p", {}, "Tudo baixando pela ficha técnica.")));
@@ -1804,7 +1968,8 @@ async function desenhar() {
     try { estado.eu = await api("GET", "/auth/me"); } catch (e) { return telaLogin(); }
   }
   if (estado.eu.deve_trocar_senha) return telaTrocaSenha();
-  const abas = { painel: abaPainel, vendas: abaVendas, producao: abaProducao, caixa: abaCaixa, estoque: abaEstoque, compras: abaCompras, contas: abaContas, custos: abaCustos, bi: abaBi, imobilizado: abaImobilizado, rh: abaRh, meusdados: abaMeusDados, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
+  if (!abasDoPerfil().some(([id]) => id === estado.aba)) estado.aba = abaInicial();
+  const abas = { painel: abaPainel, vendas: abaVendas, producao: abaProducao, caixa: abaCaixa, estoque: abaEstoque, compras: abaCompras, contas: abaContas, custos: abaCustos, bi: abaBi, imobilizado: abaImobilizado, rh: abaRh, meusdados: abaMeusDados, cardapio: abaCardapio, fichas: abaFichas, clientes: abaClientes, entregadores: abaEntregadores, canais: abaCanais, usuarios: abaUsuarios, parametros: abaParametros, auditoria: abaAuditoria };
   await (abas[estado.aba] || abaPainel)();
 }
 

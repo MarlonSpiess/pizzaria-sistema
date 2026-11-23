@@ -12,6 +12,7 @@ from api.schemas import (AcertoIn, CaixaAbrir, ContagemIn, EntregaIn, FecharIn, 
                          MotivoMovimentoUpdate, MovimentoIn, RegraRecebimentoIn)
 from api.security import PERMISSOES, requer
 from api.services import caixa as svc
+from api.services import canais
 from api.services.dinheiro import fmt, parse_reais
 from api.services.parametros import vigentes
 from api.services.vendas import autorizar
@@ -371,6 +372,40 @@ def entregas(sessao=Depends(requer("caixa.ver")), conn=Depends(get_db)):
 
 @router.post("/entregas/{pedido_id}", status_code=201)
 def atribuir_entrega(pedido_id: int, d: EntregaIn, sessao=Depends(requer("caixa.operar")), conn=Depends(get_db)):
+    return _atribuir(conn, sessao, pedido_id, d, "caixa")
+
+
+# Despacho feito pelo acabamento: só pedido, situação e entregador (sem valores) e só a lista mínima de entregadores.
+@router.get("/despacho")
+def despacho(sessao=Depends(requer("entregas.despachar")), conn=Depends(get_db)):
+    c = _em_uso(conn)
+    if not c or c["situacao"] != "aberto":
+        return {"caixa_aberto": False, "pedidos": []}
+    fx = svc.faixa(conn, LOJA_ID, c)
+    pedidos = conn.execute(
+        "SELECT ped.id AS pedido_id, ped.id_dia, ped.situacao, ent.nome AS entregador "
+        "FROM pedido ped LEFT JOIN entrega e ON e.pedido_id = ped.id LEFT JOIN entregador ent ON ent.id = e.entregador_id "
+        "WHERE ped.loja_id = %s AND ped.data >= %s AND ped.data < %s AND ped.tipo = 'entrega' AND ped.situacao <> 'cancelado' ORDER BY ped.data, ped.id_dia",
+        (LOJA_ID, fx[0], fx[1])).fetchall()
+    return {"caixa_aberto": True, "pedidos": pedidos}
+
+
+@router.get("/despacho/entregadores")
+def despacho_entregadores(sessao=Depends(requer("entregas.despachar")), conn=Depends(get_db)):
+    return conn.execute("SELECT id, nome FROM entregador WHERE loja_id = %s AND ativo ORDER BY nome", (LOJA_ID,)).fetchall()
+
+
+@router.post("/despacho/{pedido_id}", status_code=201)
+def despachar(pedido_id: int, d: EntregaIn, sessao=Depends(requer("entregas.despachar")), conn=Depends(get_db)):
+    if d.valor_entrega is not None:
+        raise HTTPException(status_code=403, detail="O valor da entrega é definido pela recepção ou pela gerência.")
+    r = _atribuir(conn, sessao, pedido_id, d, "despacho")
+    if isinstance(r, dict):
+        r.pop("valor_entrega", None)  # o acabamento não vê valores
+    return r
+
+
+def _atribuir(conn, sessao, pedido_id: int, d: EntregaIn, origem: str):
     quando = agora()
     c = svc.exigir_aberto(conn, LOJA_ID)
     p = conn.execute("SELECT id, data, tipo, situacao FROM pedido WHERE id = %s AND loja_id = %s FOR SHARE", (pedido_id, LOJA_ID)).fetchone()
@@ -390,7 +425,7 @@ def atribuir_entrega(pedido_id: int, d: EntregaIn, sessao=Depends(requer("caixa.
     try:
         conn.execute("INSERT INTO entrega (pedido_id, loja_id, data, entregador_id, valor_entrega, atribuido_por, atribuido_em) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                      (pedido_id, LOJA_ID, p["data"], d.entregador_id, valor, sessao["usuario_id"], quando))
-        auditar(conn, sessao, "atribuir", "entrega", pedido_id, depois={"entregador_id": d.entregador_id, "valor": fmt(valor)})
+        auditar(conn, sessao, "atribuir", "entrega", pedido_id, depois={"entregador_id": d.entregador_id, "valor": fmt(valor), "origem": origem})
         conn.commit()
     except psycopg.errors.UniqueViolation:
         conn.rollback()
@@ -433,6 +468,7 @@ def acertar(d: AcertoIn, sessao=Depends(requer("caixa.operar")), conn=Depends(ge
                          (LOJA_ID, quando.date(), d.entregador_id, len(ids), recebido, valor_entregas, diaria, devido, recebido - devido,
                           sessao["usuario_id"], quando)).fetchone()
         conn.execute("UPDATE entrega SET acerto_id = %s WHERE pedido_id = ANY(%s)", (a["id"], ids))
+        canais.finalizar_entregas_acertadas(conn, ids)  # pedido de canal externo: avisa "finalizado" (decisão de Marlon)
         auditar(conn, sessao, "acertar", "acerto_entregador", a["id"], depois={"pedidos": len(ids), "total_devido": fmt(devido), "saldo_gaveta": fmt(recebido - devido)})
         conn.commit()
     except psycopg.Error as e:

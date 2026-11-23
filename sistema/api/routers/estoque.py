@@ -12,6 +12,7 @@ from api.schemas import (ContagemInventarioIn, FecharInventarioIn, InventarioIn,
 from api.security import requer
 from api.services import estoque as svc
 from api.services.dinheiro import fmt
+from api.services.ingredientes import contagem_sabores, ingredientes_em_falta
 from api.services.parametros import vigentes
 
 router = APIRouter(prefix="/estoque", tags=["estoque"])
@@ -82,8 +83,10 @@ def alterar_local(lid: int, d: LocalUpdate, sessao=Depends(requer("estoque.gerir
 
 # ---------------------------------------------------------------- itens, saldos e parâmetros
 def _situacao(saldo: Decimal, c: dict) -> str:
-    if saldo <= 0:
-        return "sem estoque"
+    if saldo < 0:
+        return "negativo"  # o estoque pode ficar negativo (decisão de Marlon, 04/11/2026): a baixa não é bloqueada, o alerta chama a tratativa
+    if saldo == 0:
+        return "zerado"
     if c["ponto_pedido"] is not None and saldo <= c["ponto_pedido"]:
         return "repor"
     if c["estoque_minimo"] is not None and saldo <= c["estoque_minimo"]:
@@ -213,8 +216,8 @@ def movimentar(d: MovimentoEstoqueIn, sessao=Depends(requer("estoque.mover")), c
                 conn.execute("INSERT INTO movimento_estoque (loja_id, data, item_id, local_id, lote_id, tipo, quantidade, custo_unit, motivo, usuario_id, criado_em) "
                              "VALUES (%s,%s,%s,%s,%s,'transferencia_entrada',%s,NULL,%s,%s,%s)",
                              (LOJA_ID, quando.date(), d.item_id, d.destino_id, m["lote_id"], m["q"], d.motivo, sessao["usuario_id"], quando))
-        else:
-            movs = svc.saida(conn, LOJA_ID, d.item_id, qtd, d.tipo, sessao["usuario_id"], quando, d.motivo, local_id=d.local_id, lote_id=d.lote_id)
+        else:  # perda e consumo interno não são barrados por falta de saldo: o saldo pode ficar negativo e o alerta avisa
+            movs = svc.saida(conn, LOJA_ID, d.item_id, qtd, d.tipo, sessao["usuario_id"], quando, d.motivo, local_id=d.local_id, lote_id=d.lote_id, permitir_negativo=True)
         auditar(conn, sessao, d.tipo, "movimento_estoque", movs[0], depois={"item_id": d.item_id, "quantidade": d.quantidade, "motivo": d.motivo})
         conn.commit()
     except psycopg.Error as e:
@@ -238,6 +241,14 @@ def alertas(sessao=Depends(requer("estoque.ver")), conn=Depends(get_db)):
                          "JOIN item i ON i.id = m.item_id WHERE m.loja_id = %s AND l.validade IS NOT NULL AND l.validade <= %s "
                          "GROUP BY i.id, i.nome, l.codigo, l.validade HAVING sum(m.quantidade) > 0 ORDER BY l.validade", (LOJA_ID, limite)).fetchall()
     abaixo = itens(None, None, True, None, sessao, conn)
+    em_falta = {e["item_id"] for e in ingredientes_em_falta(conn)}
+    peso = {"negativo": 0, "zerado": 1, "repor": 2, "abaixo do mínimo": 3}
+    abaixo = sorted(abaixo, key=lambda i: (peso.get(i["situacao"], 9), i["nome"]))
+    zerados = [i["id"] for i in abaixo if i["situacao"] in ("negativo", "zerado")]
+    cont = contagem_sabores(conn, zerados)
+    for i in abaixo:  # integração com o fechamento de vendas por ingrediente
+        i["venda_fechada"] = i["id"] in em_falta
+        i["sabores_afetados"] = cont.get(i["id"], 0) if i["id"] in zerados else None
     faltas = conn.execute("SELECT count(*) AS n FROM retrocesso r JOIN motivo_retrocesso m ON m.id = r.motivo_id WHERE m.avisa_estoque AND r.criado_em > %s",
                           (agora() - timedelta(hours=24),)).fetchone()["n"]
     pend = conn.execute("SELECT e.tipo, e.produto_id, p.nome AS produto, count(*) AS vezes, max(e.criado_em) AS ultima FROM pendencia_estoque e LEFT JOIN produto p ON p.id = e.produto_id "

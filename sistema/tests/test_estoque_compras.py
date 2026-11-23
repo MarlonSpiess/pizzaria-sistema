@@ -78,7 +78,9 @@ def test_custo_medio_movel_peps_perda_e_transferencia(client, hs):
     assert client.post("/api/estoque/movimentos", json={"tipo": "perda", "item_id": it["id"], "quantidade": "4", "motivo": "Caiu no chão"}, headers=h).status_code == 201
     lotes = {x["codigo"]: D(x["saldo"]) for x in client.get(f"/api/estoque/itens/{it['id']}", headers=h).json()["lotes"]}
     assert lotes == {"A": D(6), "B": D(10)}
-    assert client.post("/api/estoque/movimentos", json={"tipo": "perda", "item_id": it["id"], "quantidade": "50", "motivo": "x"}, headers=h).status_code == 400  # sem saldo
+    # transferência sem saldo continua bloqueada (perda/consumo podem deixar o saldo negativo)
+    _l = client.get("/api/estoque/locais", headers=h).json()
+    assert client.post("/api/estoque/movimentos", json={"tipo": "transferencia", "item_id": it["id"], "quantidade": "500", "local_id": _l[0]["id"], "destino_id": _l[1]["id"]}, headers=h).status_code == 400
     assert client.post("/api/estoque/movimentos", json={"tipo": "perda", "item_id": it["id"], "quantidade": "1"}, headers=h).status_code == 400  # sem motivo
     assert client.post("/api/estoque/movimentos", json={"tipo": "entrada_inicial", "item_id": it["id"], "quantidade": "1", "custo_unit": "1", "motivo": "x"}, headers=hs["atendente"]).status_code == 403
     # consumo interno guarda o custo do momento (vai para Custos)

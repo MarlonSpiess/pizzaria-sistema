@@ -14,6 +14,12 @@ def listar(sessao=Depends(requer("parametros.ver")), conn=Depends(get_db)):
     return list(svc.vigentes(conn, LOJA_ID).values())
 
 
+@router.get("/formas-pagamento")
+def formas_pagamento(sessao=Depends(requer("vendas.criar")), conn=Depends(get_db)):
+    """Só o que a tela de novo pedido precisa; o atendente não lê os demais parâmetros."""
+    return {"formas": svc.vigentes(conn, LOJA_ID)["formas_pagamento_aceitas"]["valor"]}
+
+
 @router.put("/{chave}")
 def definir(chave: str, dados: ParametroIn, sessao=Depends(requer("parametros.editar")), conn=Depends(get_db)):
     texto = svc.normalizar(chave, dados.valor)

@@ -118,7 +118,46 @@ def test_limites_do_atendente(client, cardapio):
     assert client.post(f"/api/caixa/entregas/{ped['id']}", json={"entregador_id": ent["id"], "valor_entrega": "9999,00"}, headers=ha).status_code == 403
     assert client.post("/api/caixa/acertos", json={"entregador_id": ent["id"], "diaria": "5000,00"}, headers=ha).status_code in (403, 409)
     assert client.post(f"/api/caixa/entregas/{ped['id']}", json={"entregador_id": ent["id"], "valor_entrega": "7,00"}, headers=hg).status_code == 201  # gerência pode
+    aud_c = client.get("/api/auditoria?entidade=entrega&limite=100", headers=hg).json()["data"]
+    assert next(a for a in aud_c if str(a["entidade_id"]) == str(ped["id"]) and a["acao"] == "atribuir")["depois"]["origem"] == "caixa"
     client.post(f"/api/pedidos/{ped['id']}/cancelar", json={"motivo": "Teste de limites"}, headers=hg)  # sai da lista de acertos pendentes
+
+
+def test_despacho_do_acabamento_sem_valores_e_sem_o_resto_do_caixa(client, cardapio):
+    _, ha = entrar(client, "atendente")
+    _, hg = entrar(client, "gerente")
+    _, hac = entrar(client, "acabamento")
+    _, hp = entrar(client, "pizzaiolo")
+    assert client.post("/api/caixa/abrir", json={"fundo_troco": "100,00"}, headers=ha).status_code in (201, 409)
+    cli = client.post("/api/clientes", json={"nome": "Despacho", "telefone": "5559" + novo_login("")[-4:].rjust(4, "0"), "endereco": "Rua D, 4"}, headers=ha).json()
+    ped = _pedido(client, ha, [_pizza_item(cardapio)], [{"forma": "pix", "valor": "41,00"}], tipo="entrega", cliente_id=cli["id"]).json()
+    ent = client.post("/api/entregadores", json={"nome": novo_login("Moto"), "telefone": "5550001111"}, headers=hg).json()
+    # lê só o necessário: sem total do pedido e sem telefone do entregador
+    d = client.get("/api/caixa/despacho", headers=hac).json()
+    assert d["caixa_aberto"] is True
+    mine = next(p for p in d["pedidos"] if p["pedido_id"] == ped["id"])
+    assert set(mine) == {"pedido_id", "id_dia", "situacao", "entregador"}
+    lista = client.get("/api/caixa/despacho/entregadores", headers=hac).json()
+    assert any(e["id"] == ent["id"] for e in lista) and all(set(e) == {"id", "nome"} for e in lista)
+    # não pode definir valor da entrega
+    assert client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"], "valor_entrega": "1,00"}, headers=hac).status_code == 403
+    ok = client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"]}, headers=hac)
+    assert ok.status_code == 201 and "valor_entrega" not in (ok.json() or {})
+    assert client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"]}, headers=hac).status_code == 409
+    aud = client.get("/api/auditoria?entidade=entrega&limite=50", headers=hg).json()["data"]
+    linha = next(a for a in aud if str(a["entidade_id"]) == str(ped["id"]) and a["acao"] == "atribuir")
+    assert linha["usuario"] and linha["depois"]["origem"] == "despacho"
+    assert client.get("/api/auditoria", headers=hac).status_code == 403  # o acabamento não lê a auditoria (ela guarda o valor da entrega)
+    # e continua sem o resto do Caixa
+    assert client.get("/api/caixa/entregas", headers=hac).status_code == 403
+    assert client.get("/api/caixa/hoje", headers=hac).status_code == 403
+    assert client.get("/api/entregadores", headers=hac).status_code == 403
+    assert client.post(f"/api/caixa/entregas/{ped['id']}", json={"entregador_id": ent["id"]}, headers=hac).status_code == 403
+    # quem não é do despacho não entra
+    for h in (hp, entrar(client, "massa")[1]):
+        assert client.get("/api/caixa/despacho", headers=h).status_code == 403
+        assert client.post(f"/api/caixa/despacho/{ped['id']}", json={"entregador_id": ent["id"]}, headers=h).status_code == 403
+    client.post(f"/api/pedidos/{ped['id']}/cancelar", json={"motivo": "Teste de despacho"}, headers=hg)  # sai da lista de acertos pendentes
 
 
 def test_dia_completo_contagem_cega_entregador_estorno_e_fechamento(client, cardapio, conn_teste):
@@ -162,8 +201,14 @@ def test_dia_completo_contagem_cega_entregador_estorno_e_fechamento(client, card
     assert client.post("/api/caixa/contagem", json=todas(), headers=ha).status_code == 409  # entrega sem acerto
     assert client.post("/api/caixa/acertos", json={"entregador_id": ent["id"]}, headers=ha).status_code == 409  # ainda não entregue
     _pronto_e_entregue(client, conn_teste, c["id"], hg)
+    conn_teste.execute("INSERT INTO canal_venda (loja_id, codigo, nome) VALUES (1, 'anotaai', 'Anota Ai') ON CONFLICT DO NOTHING")
+    conn_teste.execute("SET session_replication_role = replica")  # o gatilho de imutabilidade do pedido impede esta troca; só no teste
+    conn_teste.execute("UPDATE pedido SET canal = 'anotaai', id_canal = %s WHERE id = %s", (f"CX{c['id']}", c["id"]))
+    conn_teste.execute("SET session_replication_role = DEFAULT")
     ac = client.post("/api/caixa/acertos", json={"entregador_id": ent["id"]}, headers=ha)
     assert ac.status_code == 201, ac.text
+    avisos = conn_teste.execute("SELECT evento FROM aviso_canal WHERE pedido_id = %s", (c["id"],)).fetchall()
+    assert sorted(a[0] for a in avisos) == ["finalizado", "pronto"]  # entrega de canal externo: finaliza no acerto (o "pronto" nasce junto se faltar)
     ac = ac.json()
     assert (ac["dinheiro_recebido"], ac["valor_entregas"], ac["diaria"], ac["total_devido"], ac["saldo_gaveta"]) == ("41.00", "5.00", "30.00", "35.00", "6.00")
     assert client.post("/api/caixa/acertos", json={"entregador_id": ent["id"]}, headers=ha).status_code == 409  # nada a acertar
@@ -200,7 +245,8 @@ def test_dia_completo_contagem_cega_entregador_estorno_e_fechamento(client, card
     assert r.status_code == 200 and r.json()["caixa"]["situacao"] == "fechado" and r.json()["caixa"]["aprovado_por"] is not None
     assert client.post("/api/caixa/fechar", json={"justificativa": "x"}, headers=hg).status_code == 409
     rel = client.get("/api/caixa/hoje", headers=ha).json()
-    assert sorted(e["valor"] for e in rel["estornos"]) == ["35.00", "41.00"] and {e["forma"] for e in rel["estornos"]} == {"pix"}
+    valores = [e["valor"] for e in rel["estornos"]]  # outros testes do módulo também cancelam pedidos de 41,00 (limites, despacho)
+    assert valores.count("35.00") == 1 and set(valores) == {"35.00", "41.00"} and {e["forma"] for e in rel["estornos"]} == {"pix"}
     assert {m["tipo"] for m in rel["movimentos"]} == {"sangria", "suprimento"}
     assert [x["id_dia"] for x in rel["pedidos_sem_cf"]].count(a["id_dia"]) == 1
     assert client.patch(f"/api/pedidos/{a['id']}/cf", json={"numero_cf": "12345"}, headers=ha).json()["numero_cf"] == "12345"

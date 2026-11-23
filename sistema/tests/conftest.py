@@ -14,6 +14,10 @@ os.environ.setdefault("DB_PORT", os.getenv("TEST_DB_PORT", "5432"))
 os.environ.setdefault("DB_USER", os.getenv("TEST_DB_USER", "postgres"))
 os.environ["LOGIN_MAX_FALHAS"] = "5"
 os.environ["DOCS_ENABLED"] = "0"
+# date.today() dos testes precisa ser a data de Brasília, a mesma do servidor (o container roda em UTC).
+os.environ["TZ"] = "America/Sao_Paulo"
+if hasattr(__import__("time"), "tzset"):
+    __import__("time").tzset()
 
 if not os.environ["DB_NAME"].endswith("_teste"):
     raise SystemExit("Recusado: os testes só rodam em banco cujo nome termina em _teste.")
