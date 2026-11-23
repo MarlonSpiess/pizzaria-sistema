@@ -103,7 +103,7 @@ Regras para escrever uma migração nova:
 
 `--dry-run` mostra o que seria aplicado sem alterar nada.
 
-### 3.2 Migrações existentes (até a 024)
+### 3.2 Migrações existentes (até a 025)
 
 | Nº | Arquivo | Fatia | Tabelas criadas ou alteradas |
 |---|---|---|---|
@@ -131,8 +131,9 @@ Regras para escrever uma migração nova:
 | 022 | `022_checklists.sql` | Checklists | checklist_modelo, checklist_versao (uma vigente por modelo), checklist_item, checklist_execucao (uma por modelo, dia e turno), checklist_resposta (só inserção, com gatilho), checklist_pendencia |
 | 023 | `023_pedido_controle.sql` | Checklists | pedido_controle (só inserção): leitura_de_volta, conferencia_final e causa_atraso por pedido |
 | 024 | `024_pedido_volta_para_producao.sql` | Produção | Gatilho `pedido_so_situacao`: além de avançar um passo, aceita só o retorno de `acabado` para `em producao` (pizza perdida ou refeita em pedido acabado; decisão de Marlon de 23/11/2026). Não cria tabela. Escrita como 022 no PR #5 e renumerada para 024 porque a 022 e a 023 já estavam em uso na pasta da loja |
+| 025 | `025_chave_reenvio.sql` | Caixa, Contas, Produção | Coluna opcional `chave` e índice único parcial `(loja_id, chave)` em movimento_caixa, titulo (só na 1ª parcela), lote_massa e perda, no padrão do `uq_pedido_chave` da 004 (decisão de Marlon de 23/11/2026, item C11). Não cria tabela |
 
-São 110 tabelas (103 até a migração 021 e 7 das migrações 022 e 023; a 024 só troca um gatilho). O sabor com venda fechada **não é guardado**: é calculado a partir dos ingredientes em falta e da ficha técnica mais recente (incluindo preparos, até 5 níveis), para nunca ficar fora de sincronia.
+São 110 tabelas (103 até a migração 021 e 7 das migrações 022 e 023; a 024 só troca um gatilho e a 025 só acrescenta colunas e índices). O sabor com venda fechada **não é guardado**: é calculado a partir dos ingredientes em falta e da ficha técnica mais recente (incluindo preparos, até 5 níveis), para nunca ficar fora de sincronia.
 
 ### 3.3 Máquinas de estado principais
 
@@ -359,8 +360,9 @@ Proposta de 16/11/2026 (melhoria M4), implementada e **ainda sem aprovação do 
 
 ## 8. Testes e qualidade
 
-- Suíte pytest em `sistema/tests/` (com banco) e `sistema/tests_unidade/` (sem banco, segundos), incluindo `test_checklists.py`, `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso. Última execução completa: 23/11/2026, depois da integração dos Checklists com os PRs #2 a #5, 374 testes verdes (QA em `sistema/docs/qa_integracao_checklists.md`).
+- Suíte pytest em `sistema/tests/` (com banco) e `sistema/tests_unidade/` (sem banco, segundos), incluindo `test_checklists.py`, `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso. Última execução completa: 23/11/2026, depois da chave contra reenvio (migração 025), 378 testes verdes (QA da integração dos Checklists em `sistema/docs/qa_integracao_checklists.md`).
 - Exige PostgreSQL local; o banco de teste precisa terminar em `_teste` e é recriado a cada execução. Variáveis `TEST_DB_PASS`, `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_NAME`.
+- Chave contra reenvio: `POST /pedidos`, `/caixa/movimentos`, `/contas/titulos`, `/producao/massa/lote` e `/producao/massa/perda` aceitam `chave` opcional (8 a 64 letras, números ou hífen), gerada pela tela a cada formulário. O reenvio com a mesma chave (duplo clique, rede lenta) devolve 200 com o que já foi gravado; nas quatro gravações da 025, a mesma chave com outros dados ou de outra pessoa dá 409.
 - Rodar: `python -m pytest -q` (cerca de 11 minutos com 4 núcleos).
 - **Regra permanente do projeto (03/11/2026):** todo código passa por dois revisores, um cego (sem contexto) e outro conferindo contra o código e os documentos aprovados. Os relatórios de QA cego de cada fatia estão em `sistema/docs/`.
 

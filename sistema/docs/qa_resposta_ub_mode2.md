@@ -26,7 +26,9 @@ Suíte completa depois das correções e das 5 decisões: 342 passed e 1 falha (
 
 ## Decisões de regra de negócio (para Marlon, uma a uma)
 
-1. **C9 a C15** (por leitura): pedido agendado (C9), contagem cega contornável (C10, = A10), chave contra reenvio em sangria, título e massa (C11), gerência zera taxa de entrega fora do limite (C12), frete fora do custo médio (C14, = 2AB M13), folha sem proporcionalidade no mês (C15).
+1. **C9 a C15** (por leitura): pedido agendado (C9), contagem cega contornável (C10, = A10), gerência zera taxa de entrega fora do limite (C12), frete fora do custo médio (C14, = 2AB M13), folha sem proporcionalidade no mês (C15).
+
+**C11 decidido e feito (23/11/2026).** Marlon aprovou "como no pedido de venda": migração 025 (`chave` com índice único parcial em movimento_caixa, titulo, lote_massa e perda), reenvio devolve o já gravado com 200, mesma chave com outros dados ou de outra pessoa dá 409, e as telas de caixa, contas e massa mandam a chave. Testes em `test_caixa.py`, `test_contas.py` e `test_producao.py`, com corrida real na sangria e no título.
 
 ## Fica para a próxima rodada (técnico)
 

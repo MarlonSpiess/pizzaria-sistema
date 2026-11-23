@@ -1,5 +1,6 @@
 import os
 import threading
+import uuid
 from decimal import Decimal
 
 import psycopg
@@ -8,6 +9,8 @@ from psycopg.rows import dict_row
 
 from tests.conftest import BASE, criar_usuario_direto, entrar, novo_login
 from tests.test_vendas import _pedido, _pizza_item, _pizzas_prontas, cardapio  # noqa: F401  (fixture reaproveitada)
+
+_UID = uuid.uuid4().hex[:12]  # chaves de reenvio únicas por execução (o banco de teste pode ser reaproveitado)
 
 PARAMS = {"fundo_troco_padrao": "100,00", "tolerancia_diferenca_caixa": "1,00", "sangria_limite_gerente": "50,00",
           "valor_entrega_padrao": "5,00", "diaria_entregador_padrao": "30,00", "taxa_entrega_padrao": "6,00"}
@@ -109,8 +112,19 @@ def test_limites_do_atendente(client, cardapio):
     _, hg = entrar(client, "gerente")
     mot = {m["nome"]: m["id"] for m in client.get("/api/caixa/motivos", headers=ha).json()}
     dep = {"tipo": "sangria", "motivo_id": mot["Depósito"]}
-    assert client.post("/api/caixa/movimentos", json={**dep, "valor": "30,00"}, headers=ha).status_code == 201
+    # Duplo clique com a mesma chave, ao mesmo tempo: o segundo espera a trava do limite, acha o primeiro e devolve o mesmo
+    # (se contasse duas vezes, passaria do limite e daria 403).
+    corpo, res = {**dep, "valor": "30,00", "chave": "sangria-reenvio-01-" + _UID}, []
+    ts = [threading.Thread(target=lambda: res.append(client.post("/api/caixa/movimentos", json=corpo, headers=ha))) for _ in range(2)]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert sorted(r.status_code for r in res) == [200, 201] and res[0].json() == res[1].json()
+    rep = client.post("/api/caixa/movimentos", json=corpo, headers=ha)
+    assert rep.status_code == 200 and rep.json() == res[0].json()  # reenvio depois: devolve o mesmo, não grava nem esbarra no limite
+    assert client.post("/api/caixa/movimentos", json={**corpo, "valor": "31,00"}, headers=ha).status_code == 409  # mesma chave, outro valor: não finge que gravou
+    assert client.post("/api/caixa/movimentos", json=corpo, headers=hg).status_code == 409  # chave de outra pessoa
     assert client.post("/api/caixa/movimentos", json={**dep, "valor": "30,00"}, headers=ha).status_code == 403  # a soma do dia passa do limite
+    assert client.post("/api/caixa/movimentos", json={**dep, "valor": "1,00", "chave": "curta"}, headers=ha).status_code == 422
     assert client.post("/api/caixa/movimentos", json={"tipo": "suprimento", "valor": "30,00", "motivo_id": mot["Reforço de troco"]}, headers=ha).status_code == 201
     cli = client.post("/api/clientes", json={"nome": "Limite Entrega", "telefone": "5558" + novo_login("")[-4:].rjust(4, "0"), "endereco": "Rua C, 3"}, headers=ha).json()
     ped = _pedido(client, ha, [_pizza_item(cardapio)], [{"forma": "pix", "valor": "41,00"}], tipo="entrega", cliente_id=cli["id"]).json()

@@ -1013,9 +1013,10 @@ async function abaProducao() {
     const [m, mot] = await Promise.all([api("GET", "/producao/massa"), api("GET", "/producao/motivos")]);
     const linhas = ["grande", "broto"].map((t) => h("tr", {}, h("td", {}, t === "grande" ? "Grande" : "Broto"), h("td", {}, String(m[t].necessidade)), h("td", {}, String(m[t].saldo)), h("td", {}, String(m[t].falta))));
     const tam = h("select", {}, [["grande", "Grande"], ["broto", "Broto"]].map(([v, n]) => h("option", { value: v }, n))), qtd = h("input", { inputmode: "numeric", value: "" });
+    const chave = novaChave();  // uma por desenho da tela: o duplo clique não lança duas vezes; depois de gravar, a tela redesenha com outra
     const vai = (caminho, texto, extra) => async () => {
       const n = parseInt(qtd.value, 10); if (!(n >= 0)) { falha(new Error("Informe a quantidade.")); return; }
-      await acao("POST", caminho, { tamanho: tam.value, quantidade: n, ...(extra || {}) }, texto);
+      await acao("POST", caminho, { tamanho: tam.value, quantidade: n, chave, ...(extra || {}) }, texto);
     };
     return h("div", {}, h("div", { class: "cartao tabela" }, h("h2", {}, "Massa aberta"),
       h("table", {}, h("thead", {}, h("tr", {}, ["Tamanho", "Pizzas esperando", "Saldo de massa aberta", "Falta fazer"].map((t) => h("th", {}, t)))), h("tbody", {}, linhas)),
@@ -1166,11 +1167,11 @@ async function abaCaixa() {
       const motivo = h("select", {}), valor = h("input", { inputmode: "decimal", placeholder: "0,00" }), obs = h("input", { placeholder: "opcional" });
       const preencher = () => motivo.replaceChildren(...motivos.filter((m) => m.tipo === tipo.value && m.ativo).map((m) => h("option", { value: m.id }, m.nome)));
       tipo.onchange = preencher; preencher();
-      const aut = entradaAutorizacao();
+      const aut = entradaAutorizacao(), chave = novaChave();  // reenvio (duplo clique) devolve o mesmo lançamento
       blocos.push(h("div", { class: "cartao" }, h("h2", {}, "Sangria e suprimento"),
         motivos.length ? h("div", {}, h("div", { class: "linha" }, campo("Tipo", tipo), campo("Motivo", motivo), campo("Valor (R$)", valor), campo("Observação", obs)),
           h("p", { class: "pequeno" }, "Acima do limite do parâmetro, um gerente autoriza aqui:"), aut.caixa,
-          h("div", { class: "acoes-linha" }, h("button", { class: "sec", onclick: () => acao("POST", "/caixa/movimentos", { tipo: tipo.value, motivo_id: Number(motivo.value), valor: valor.value, observacao: obs.value.trim() || null, autorizacao: aut.valor() }, "Lançamento registrado.") }, "Lançar")))
+          h("div", { class: "acoes-linha" }, h("button", { class: "sec", onclick: () => acao("POST", "/caixa/movimentos", { tipo: tipo.value, motivo_id: Number(motivo.value), valor: valor.value, observacao: obs.value.trim() || null, autorizacao: aut.valor(), chave }, "Lançamento registrado.") }, "Lançar")))
           : h("p", {}, "Cadastre os motivos na aba Motivos e maquininhas."),
         s.movimentos.length ? linhaTabela(["Tipo", "Motivo", "Valor"], s.movimentos.map((m) => h("tr", {}, h("td", {}, m.tipo), h("td", {}, m.motivo), h("td", {}, brl(m.valor))))) : null));
       const campos = s.formas.map((f) => [f, h("input", { inputmode: "decimal", placeholder: "0,00" })]);
@@ -1553,12 +1554,13 @@ async function abaContas() {
     const desc = h("input", { placeholder: "Descrição" }), valor = h("input", { inputmode: "decimal", placeholder: "Valor total" }), venc = h("input", { type: "date", value: hoje() }), parc = h("input", { inputmode: "numeric", value: "1" });
     const tipo = h("select", {}, h("option", { value: "" }, "Tipo de despesa"), ...tipos.filter((t) => t.ativo).map((t) => h("option", { value: t.id }, t.nome)));
     const fo = h("select", {}, h("option", { value: "" }, "Fornecedor (opcional)"), ...forn.map((f) => h("option", { value: f.id }, f.nome))), canal = h("input", { placeholder: "Canal (a receber)" }), comp = h("input", { placeholder: "Comprovante" });
+    const chave = novaChave();  // reenvio (duplo clique) devolve o mesmo título
     return h("div", { class: "cartao" }, h("h2", {}, "Lançar título"), h("p", { class: "pequeno" }, "Notas de compra, despesas do caixa, acertos de entregador, vendas em cartão e Pix e despesas recorrentes entram sozinhas. Aqui vai o que não tem origem em outra área."),
       !tipos.length ? h("p", {}, "Crie os tipos de despesa na aba Cadastros.") : "",
       h("div", { class: "linha" }, campo("Tipo", sent), campo("Descrição", desc), campo("Valor (R$)", valor), campo("1º vencimento", venc), campo("Parcelas", parc)),
       h("div", { class: "linha" }, campo("Despesa", tipo), campo("Fornecedor", fo), campo("Canal", canal), campo("Comprovante", comp)),
       h("div", { class: "acoes-linha" }, h("button", { class: "principal", onclick: () => acao("POST", "/contas/titulos", { sentido: sent.value, descricao: desc.value, valor: valor.value.trim(), vencimento: venc.value, parcelas: parseInt(parc.value, 10) || 1,
-        tipo_despesa_id: tipo.value ? Number(tipo.value) : null, fornecedor_id: fo.value ? Number(fo.value) : null, canal: canal.value.trim() || null, comprovante: comp.value.trim() || null }, "Título lançado.") }, "Lançar")));
+        tipo_despesa_id: tipo.value ? Number(tipo.value) : null, fornecedor_id: fo.value ? Number(fo.value) : null, canal: canal.value.trim() || null, comprovante: comp.value.trim() || null, chave }, "Título lançado.") }, "Lançar")));
   }
 
   async function subConciliar() {
