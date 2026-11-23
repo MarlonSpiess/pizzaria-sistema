@@ -1,0 +1,107 @@
+{
+  "voz": "pt-BR-AntonioNeural",
+  "velocidade": "+4%",
+  "cenas": [
+    {
+      "id": "c01_abertura",
+      "texto": "Sexta-feira, oito da noite. O balcão enche, o telefone toca, o aplicativo não para de apitar. Numa pizzaria, cada minuto vale dinheiro. E cada erro também."
+    },
+    {
+      "id": "c02_problema",
+      "texto": "Em muitas pizzarias, a operação ainda depende de memória, papel e planilha. Ninguém sabe, na hora, quanto custou cada pizza, quanto sobrou no estoque, ou por que o caixa não bateu."
+    },
+    {
+      "id": "c03_solucao",
+      "texto": "Por isso nasceu o Sistema Integrado da Pizzaria. Um servidor dentro da loja. Um login por pessoa. Três áreas: Produção, Vendas e Administrativo. E cada pessoa vê exatamente o que precisa para o seu trabalho. Nem mais, nem menos."
+    },
+    {
+      "id": "c04_pedido",
+      "texto": "Tudo começa no balcão. O atendente monta o pedido: uma grande, meio Margherita, meio Quatro Queijos, com borda de Catupiry. O sistema aplica a regra da casa sozinho: na pizza de dois sabores, metade do preço de cada um. Pagamento no Pix, pedido marcado como urgente, confirmado, e ele já recebe o número do dia."
+    },
+    {
+      "id": "c05_pizzaiolo",
+      "texto": "No mesmo instante, o pedido chega ao tablet do pizzaiolo. Ele não procura nada. Toca em pegar a próxima pizza, e o sistema entrega a próxima da fila, com o urgente na frente, com sabores e borda. Montou? Um toque, e a pizza segue para o forno."
+    },
+    {
+      "id": "c06_acabamento",
+      "texto": "No acabamento, a tela mostra a ocupação do forno e avisa se passar da capacidade. A pizza sai do forno, é acabada, e o sistema gera a etiqueta com o número do pedido. Repare: a tela do acabamento não mostra o valor do pedido. Quem não precisa ver dinheiro, não vê."
+    },
+    {
+      "id": "c07_massa",
+      "texto": "A massa trabalha um passo à frente. A tela mostra quantas pizzas estão esperando e o saldo de massa aberta, por tamanho. Precisa de mais? Lança o lote, e pronto."
+    },
+    {
+      "id": "c08_acesso",
+      "texto": "E esse controle não é só visual. Cada permissão é conferida no servidor, em cada chamada. São oito perfis e cinquenta e cinco permissões. O pizzaiolo enxerga a montagem. A gerente enxerga a operação inteira."
+    },
+    {
+      "id": "c09_caixa",
+      "texto": "Pedido pronto, o despacho escolhe o entregador, e só despacha com o caixa do dia aberto. No fim da noite, a contagem é cega: o caixa informa o que tem na gaveta, no Pix e nas maquininhas, e só depois o sistema revela o esperado. Diferença acima da tolerância exige justificativa e a aprovação de um gerente que não fez a contagem."
+    },
+    {
+      "id": "c10_estoque",
+      "texto": "Cada pizza produzida baixa o estoque pela ficha técnica, ingrediente por ingrediente. A calabresa ficou abaixo do mínimo? O alerta aparece. Com um toque, a gerente fecha a venda de todos os sabores que levam calabresa, e no balcão eles ficam bloqueados na hora. Ninguém vende o que a cozinha não consegue entregar."
+    },
+    {
+      "id": "c11_custos",
+      "texto": "Com a ficha técnica e o custo médio de compra, o sistema calcula o custo e a margem de cada produto, em cada tamanho. É aqui que se descobre quais sabores dão lucro de verdade."
+    },
+    {
+      "id": "c12_checklists",
+      "texto": "A rotina também está no sistema. Os checklists de início do dia, acompanhamento e fechamento guiam a equipe item por item, com limite de temperatura da câmara fria e do freezer. Item fora do padrão pede ação corretiva, e a gerência acompanha a aderência."
+    },
+    {
+      "id": "c13_bi",
+      "texto": "E tudo isso vira informação. O painel do dia mostra vendas, ticket médio, tempo médio, perdas, diferença de caixa e o custo da mercadoria vendida no mês. Passou da meta? O alerta aparece sozinho. E ainda tem DRE, lucratividade e produção."
+    },
+    {
+      "id": "c14_numeros",
+      "texto": "Os números do projeto, contados direto do código: vinte e quatro versões do banco de dados, cento e dez tabelas, duzentas e setenta rotas de API e trezentos e setenta e quatro testes automatizados, todos passando. E cada entrega de código passa por dois revisores independentes."
+    },
+    {
+      "id": "c15_roadmap",
+      "texto": "Os próximos passos: a integração com o Anota Ai por API, já desenhada no sistema e aguardando o acesso oficial, com aceite automático dos pedidos. Depois, o iFood. Um computador na loja para o piloto. E a nuvem, quando fizer sentido."
+    },
+    {
+      "id": "c16_fechamento",
+      "texto": "O sistema já funciona e já foi testado em tablet. O que falta é uma decisão: aprovar o piloto na pizzaria. Sistema Integrado da Pizzaria. Cada pizza, cada real, sob controle."
+    }
+  ],
+  "versao_completa": [
+    "c01_abertura",
+    "c02_problema",
+    "c03_solucao",
+    "c04_pedido",
+    "c05_pizzaiolo",
+    "c06_acabamento",
+    "c07_massa",
+    "c08_acesso",
+    "c09_caixa",
+    "c10_estoque",
+    "c11_custos",
+    "c12_checklists",
+    "c13_bi",
+    "c14_numeros",
+    "c15_roadmap",
+    "c16_fechamento"
+  ],
+  "versao_curta": [
+    "c01_abertura",
+    "c03_solucao",
+    "c04_pedido",
+    "c05_pizzaiolo",
+    "c10_estoque",
+    "c13_bi",
+    "c14_numeros",
+    "c16_fechamento"
+  ],
+  "numeros": {
+    "migracoes": 24,
+    "tabelas": 110,
+    "rotas": 270,
+    "testes": 374,
+    "perfis": 8,
+    "permissoes": 55,
+    "_origem": "contagem.py (fonte_v3) sobre o código do PR #6 e pytest --collect-only; conferir antes de gravar"
+  }
+}
