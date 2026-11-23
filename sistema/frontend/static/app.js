@@ -107,7 +107,9 @@ const ABAS = [
   ["meusdados", "Meus dados", null, "", "🗓️", "conta"],
 ];
 const ENTRADA_AREA = { atendente: "vendas", massa: "producao", pizzaiolo: "producao", acabamento: "producao" };
-const abasDoPerfil = () => ABAS.filter(([, , perfis]) => !perfis || perfis.includes(estado.eu.perfil));
+// Checklists das funções só aparecem quando o parâmetro libera (piloto em papel, decisão de Marlon de 23/11/2026); o servidor também confere.
+const abasDoPerfil = () => ABAS.filter(([id, , perfis]) => (!perfis || perfis.includes(estado.eu.perfil))
+  && (!["checklist_funcao", "checklist_vendas"].includes(id) || estado.eu.checklists_funcoes));
 const areasDoPerfil = () => AREAS.filter(([id]) => abasDoPerfil().some((a) => a[5] === id));
 function areaDaAba(id) { const a = ABAS.find((x) => x[0] === id); return a ? a[5] : null; }
 function abaInicial() {

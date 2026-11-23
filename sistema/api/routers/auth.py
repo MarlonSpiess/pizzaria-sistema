@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from api.database import auditar, get_db
+from api.config import LOJA_ID
 from api.schemas import LoginIn, TrocarSenhaIn
+from api.services import checklists
 from api.security import (SENHA_DUMMY_HASH, criar_sessao, exigir_login_liberado, get_current_session, hash_senha,
                           invalidar_sessao, invalidar_sessoes_usuario, ip_cliente, limpar_falhas_login,
                           registrar_falha_login, verificar_senha)
@@ -27,7 +29,7 @@ def login(dados: LoginIn, request: Request, conn=Depends(get_db)):
     auditar(conn, {"usuario_id": u["id"], "usuario": u["usuario"]}, "login", "sessao", u["id"])
     conn.commit()
     return {"token": token, "usuario": u["usuario"], "nome": u["nome"], "perfil": u["perfil"],
-            "deve_trocar_senha": u["deve_trocar_senha"]}
+            "deve_trocar_senha": u["deve_trocar_senha"], "checklists_funcoes": checklists.funcoes_ligadas(conn, LOJA_ID)}
 
 
 @router.post("/logout")
@@ -39,9 +41,10 @@ def logout(sessao=Depends(get_current_session), conn=Depends(get_db)):
 
 
 @router.get("/me")
-def me(sessao=Depends(get_current_session)):
+def me(sessao=Depends(get_current_session), conn=Depends(get_db)):
     return {"usuario": sessao["usuario"], "nome": sessao["nome"], "perfil": sessao["perfil"],
-            "deve_trocar_senha": sessao["deve_trocar_senha"]}
+            "deve_trocar_senha": sessao["deve_trocar_senha"],
+            "checklists_funcoes": checklists.funcoes_ligadas(conn, LOJA_ID)}  # a tela esconde a aba das funções durante o piloto
 
 
 @router.post("/trocar-senha")

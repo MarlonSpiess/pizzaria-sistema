@@ -56,6 +56,24 @@ def hs3(client, hs):  # noqa: F811
     return {**hs, "subgerente": entrar(client, "subgerente")[1], "admin": entrar(client, "administrador")[1]}
 
 
+@pytest.fixture(autouse=True)
+def _funcoes_ligadas(client, hs3):
+    """Os testes do módulo exercitam as funções: liga o parâmetro e devolve ao padrão (piloto: só a gerência)."""
+    client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": "sim"}, headers=hs3["admin"])
+    yield
+    client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": None}, headers=hs3["admin"])
+
+
+def test_piloto_so_a_gerencia_ve_os_checklists(client, hs3):
+    """Decisão de Marlon (23/11/2026): até o piloto em papel, só a gerência vê as abas; o servidor recusa as funções."""
+    assert client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": "nao"}, headers=hs3["admin"]).status_code == 200
+    for p in ("atendente", "massa", "pizzaiolo", "acabamento"):
+        assert client.get("/api/checklists/hoje", headers=hs3[p]).status_code == 403, p
+        assert client.get("/api/auth/me", headers=hs3[p]).json()["checklists_funcoes"] is False
+    assert client.get("/api/checklists/hoje", headers=hs3["gerente"]).status_code == 200
+    assert client.put("/api/parametros/checklist_funcoes_ligado", json={"valor": "sim"}, headers=hs3["gerente"]).status_code == 403  # só administrador e proprietário
+
+
 def test_permissoes_por_funcao(client, hs3):
     for p in ("atendente", "massa", "pizzaiolo", "acabamento", "gerente", "subgerente", "admin"):
         assert client.get("/api/checklists/hoje", headers=hs3[p]).status_code == 200, p
