@@ -358,7 +358,7 @@ Proposta de 16/11/2026 (melhoria M4), implementada e **ainda sem aprovação do 
 
 ## 8. Testes e qualidade
 
-- Suíte pytest em `sistema/tests/` (com banco) e `sistema/tests_unidade/` (sem banco, segundos), incluindo `test_checklists.py`, `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso. Última execução completa: 23/11/2026, depois da integração dos Checklists com os PRs #2 a #5, 370 testes verdes (QA em `sistema/docs/qa_integracao_checklists.md`).
+- Suíte pytest em `sistema/tests/` (com banco) e `sistema/tests_unidade/` (sem banco, segundos), incluindo `test_checklists.py`, `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso. Última execução completa: 23/11/2026, depois da integração dos Checklists com os PRs #2 a #5, 374 testes verdes (QA em `sistema/docs/qa_integracao_checklists.md`).
 - Exige PostgreSQL local; o banco de teste precisa terminar em `_teste` e é recriado a cada execução. Variáveis `TEST_DB_PASS`, `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_NAME`.
 - Rodar: `python -m pytest -q` (cerca de 11 minutos com 4 núcleos).
 - **Regra permanente do projeto (03/11/2026):** todo código passa por dois revisores, um cego (sem contexto) e outro conferindo contra o código e os documentos aprovados. Os relatórios de QA cego de cada fatia estão em `sistema/docs/`.

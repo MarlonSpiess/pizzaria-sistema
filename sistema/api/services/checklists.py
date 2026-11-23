@@ -101,6 +101,20 @@ def listar_modelos(conn, loja_id: int) -> list[dict]:
         "FROM checklist_modelo m LEFT JOIN checklist_versao v ON v.modelo_id = m.id AND v.vigente WHERE m.loja_id = %s ORDER BY m.id", (loja_id,)).fetchall()
 
 
+def data_do_modelo(conn, loja_id: int, modelo_id: int, tipo: str, data: date) -> date:
+    """Fim do dia feito logo depois de fechar o caixa que passou da meia-noite: o dia ainda é o do caixa fechado,
+    enquanto não houver caixa do dia novo e o fim daquele dia não estiver concluído (revisão não cega, 23/11/2026)."""
+    if tipo != "fim_dia":
+        return data
+    c = conn.execute("SELECT data, situacao FROM caixa_dia WHERE loja_id = %s ORDER BY data DESC LIMIT 1", (loja_id,)).fetchone()
+    if not c or c["situacao"] != "fechado" or c["data"] != data - timedelta(days=1):
+        return data
+    feito = conn.execute(
+        "SELECT 1 FROM checklist_execucao e JOIN checklist_versao v ON v.id = e.versao_id "
+        "WHERE e.loja_id = %s AND v.modelo_id = %s AND e.data = %s AND e.situacao <> 'aberta'", (loja_id, modelo_id, c["data"])).fetchone()
+    return data if feito else c["data"]
+
+
 def _modelo_vigente(conn, loja_id: int, codigo: str) -> dict:
     r = conn.execute(
         "SELECT m.id AS modelo_id, m.codigo, m.nome, m.tipo, v.id AS versao_id, v.numero FROM checklist_modelo m "
@@ -206,7 +220,7 @@ def _linha_execucao(conn, loja_id: int, e: dict, perfil: str | None = None) -> d
 def hoje_do_perfil(conn, sessao, loja_id: int, data: date) -> dict:
     perfil = sessao["perfil"]
     modelos = conn.execute(
-        "SELECT m.codigo, m.nome, m.tipo, v.id AS versao_id, v.numero FROM checklist_modelo m JOIN checklist_versao v ON v.modelo_id = m.id AND v.vigente "
+        "SELECT m.id AS modelo_id, m.codigo, m.nome, m.tipo, v.id AS versao_id, v.numero FROM checklist_modelo m JOIN checklist_versao v ON v.modelo_id = m.id AND v.vigente "
         "WHERE m.loja_id = %s AND m.ativo ORDER BY m.id", (loja_id,)).fetchall()
     saida = []
     for m in modelos:
@@ -216,7 +230,8 @@ def hoje_do_perfil(conn, sessao, loja_id: int, data: date) -> dict:
         execs = conn.execute(
             "SELECT e.*, v.modelo_id, v.numero AS versao, mm.codigo AS modelo, mm.nome AS modelo_nome, mm.tipo FROM checklist_execucao e "
             "JOIN checklist_versao v ON v.id = e.versao_id JOIN checklist_modelo mm ON mm.id = v.modelo_id "
-            "WHERE e.loja_id = %s AND e.data = %s AND mm.codigo = %s ORDER BY e.id", (loja_id, data, m["codigo"])).fetchall()
+            "WHERE e.loja_id = %s AND e.data = %s AND mm.codigo = %s ORDER BY e.id",
+            (loja_id, data_do_modelo(conn, loja_id, m["modelo_id"], m["tipo"], data), m["codigo"])).fetchall()
         saida.append({"codigo": m["codigo"], "nome": m["nome"], "tipo": m["tipo"], "versao": m["numero"],
                       "execucoes": [_linha_execucao(conn, loja_id, e, perfil) for e in execs]})
     return {"data": data, "modelos": saida, "gerencia": perfil in GERENCIA}
@@ -224,9 +239,13 @@ def hoje_do_perfil(conn, sessao, loja_id: int, data: date) -> dict:
 
 def iniciar(conn, sessao, loja_id: int, codigo: str, turno: str | None, data: date) -> dict:
     """Uma execução por modelo, dia e turno (idempotente). Acompanhamento sem turno: devolve a rodada aberta ou abre a próxima."""
+    # trava o modelo ANTES de ler a versão vigente: dois tablets, ou uma versão publicada no mesmo instante,
+    # não criam duas execuções do mesmo modelo, dia e turno nem uma execução numa versão que deixou de valer
+    conn.execute("SELECT id FROM checklist_modelo WHERE loja_id = %s AND codigo = %s FOR UPDATE", (loja_id, codigo))
     m = _modelo_vigente(conn, loja_id, codigo)
-    # trava o modelo: dois tablets (ou uma nova versão publicada) não criam duas execuções do mesmo modelo, dia e turno
-    conn.execute("SELECT id FROM checklist_modelo WHERE id = %s FOR UPDATE", (m["modelo_id"],))
+    data = data_do_modelo(conn, loja_id, m["modelo_id"], m["tipo"], data)
+    if m["tipo"] != "acompanhamento":
+        turno = None  # início e fim do dia: um por dia operacional; turno livre criaria outro
     if not any(_pode_item(sessao["perfil"], i) for i in conn.execute("SELECT perfil_responsavel FROM checklist_item WHERE versao_id = %s", (m["versao_id"],)).fetchall()):
         raise HTTPException(status_code=403, detail="Este checklist não tem itens para a sua função.")
     existentes = conn.execute(

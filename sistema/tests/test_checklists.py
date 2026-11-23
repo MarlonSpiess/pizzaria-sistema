@@ -203,7 +203,7 @@ def test_acompanhamento_abre_rodadas(client, hs3, conn_teste):
 
 
 def test_nova_versao_preserva_execucao_antiga(client, hs3, conn_teste):
-    codigo, _ = _modelo(conn_teste, [_item(codigo="a", texto="Antigo")])
+    codigo, _ = _modelo(conn_teste, [_item(codigo="a", texto="Antigo")], tipo="acompanhamento")  # só o acompanhamento aceita turno
     e1 = _iniciar(client, hs3["gerente"], codigo)
     novo = [_item(codigo="a", texto="Novo texto"), _item(codigo="b", texto="Item novo")]
     corpo = {"itens": [{k: v for k, v in i.items()} for i in novo]}
@@ -405,6 +405,28 @@ def test_checklist_usa_a_data_do_caixa_aberto_depois_da_meia_noite(client, hs3, 
         assert conn_teste.execute("SELECT data FROM checklist_execucao WHERE id = %s", (eid,)).fetchone()[0] == ontem
     finally:
         _forcar_fechamento(ontem)
+        with psycopg.connect(dbname=conn_teste.info.dbname, autocommit=True, host=conn_teste.info.host, port=conn_teste.info.port,
+                             user=conn_teste.info.user, password=conn_teste.info.password) as c:
+            c.execute("SET session_replication_role = replica")
+            c.execute("DELETE FROM caixa_dia WHERE data = %s", (ontem,))
+
+
+def test_fim_do_dia_depois_de_fechar_o_caixa_da_madrugada_fica_no_dia_do_caixa(client, hs3, conn_teste):
+    """Revisão não cega (23/11/2026): o caixa de ontem fechou depois da meia-noite; o fim do dia feito em seguida é o de ontem."""
+    from tests.test_qa_cego_ub2 import _forcar_fechamento, _usuario_qualquer
+    ontem = hoje() - timedelta(days=1)
+    if conn_teste.execute("SELECT 1 FROM caixa_dia WHERE data >= %s", (ontem,)).fetchone():
+        pytest.skip("há caixa de ontem ou de hoje deixado por outro teste")
+    conn_teste.execute("INSERT INTO caixa_dia (loja_id, data, fundo_troco, aberto_por, aberto_em) VALUES (1, %s, 0, %s, now() - interval '1 day')",
+                       (ontem, _usuario_qualquer(conn_teste)))
+    try:
+        _forcar_fechamento(ontem)
+        codigo, _ = _modelo(conn_teste, [_item(codigo="f", texto="Fechar")], tipo="fim_dia")
+        eid = _iniciar(client, hs3["gerente"], codigo, turno="outro")  # turno livre é ignorado no fim do dia
+        linha = conn_teste.execute("SELECT data, turno FROM checklist_execucao WHERE id = %s", (eid,)).fetchone()
+        assert linha[0] == ontem and linha[1] == "dia"
+        assert _iniciar(client, hs3["gerente"], codigo) == eid  # não cria outro
+    finally:
         with psycopg.connect(dbname=conn_teste.info.dbname, autocommit=True, host=conn_teste.info.host, port=conn_teste.info.port,
                              user=conn_teste.info.user, password=conn_teste.info.password) as c:
             c.execute("SET session_replication_role = replica")

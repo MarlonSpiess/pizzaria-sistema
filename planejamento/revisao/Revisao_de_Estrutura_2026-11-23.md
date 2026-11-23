@@ -76,10 +76,11 @@ sistema/
 ## 5. Decisões para você, uma a uma (com recomendação)
 
 1. **Integrar o módulo de Checklists no repositório?** Recomendo sim, pelo PR de integração (já aberto para sua aprovação). O pacote de aprovação de 16/11 continua valendo para decidir o que fica ligado.
-2. **Quando copiar a main para o PC?** Recomendo num horário sem venda, depois do item 1, com backup antes; a cópia preserva `set_env.bat`, `venv/` e `backups/` e aplica só as migrações que faltarem no banco (a 024 e, se ainda não tiverem sido aplicadas, a 022 e a 023; o `--dry-run` mostra antes).
-3. **Trocar a senha do banco que apareceu no arquivo de exemplo?** Recomendo sim, no mesmo horário da cópia.
-4. **Limpar a pasta do projeto no Claude** (`sistema/`, `sistema_copia/`, as duas cópias de `03_Padroes_de_Layout` na raiz)? Recomendo sim.
-5. **Arrumações de média e baixa prioridade** (M1, M3, M5, M6, M7, B1, B4, B5)? Recomendo fazer num PR só de organização, sem mudar código de regra.
+2. **Os Checklists ficam ligados para todas as funções antes do piloto em papel?** O pacote de 16/11 recomendava construir só depois do piloto (M4-10), e hoje as abas aparecem para todos. Recomendo deixar ligado só para a gerência até você responder o pacote, e decidir se o subgerente pode liberar a loja sem o checklist de início.
+3. **Quando copiar a main para o PC?** Recomendo num horário sem venda, depois do item 1, com backup antes; a cópia preserva `set_env.bat`, `venv/` e `backups/` e aplica só as migrações que faltarem no banco (a 024 e, se ainda não tiverem sido aplicadas, a 022 e a 023; o `--dry-run` mostra antes).
+4. **Trocar a senha do banco que apareceu no arquivo de exemplo?** Recomendo sim, no mesmo horário da cópia.
+5. **Limpar a pasta do projeto no Claude** (`sistema/`, `sistema_copia/`, as duas cópias de `03_Padroes_de_Layout` na raiz)? Recomendo sim.
+6. **Arrumações de média e baixa prioridade** (M1, M3, M5, M6, M7, B1, B4, B5)? Recomendo fazer num PR só de organização, sem mudar código de regra.
 
 ## 6. Recomendação
 
