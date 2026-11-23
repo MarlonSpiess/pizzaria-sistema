@@ -93,3 +93,18 @@ def test_c1_venda_depois_da_meia_noite_fica_so_no_caixa_em_uso(client, cardapio,
         rel_ontem = svc.relatorio(c, 1, svc.faixa(c, 1, svc.caixa_do_dia(c, 1, ontem)), None, False)
     assert hoje_depois == hoje_antes, "a venda já contada no caixa de ontem entrou de novo no caixa de hoje"
     assert rel_ontem["recebido_por_forma"]["dinheiro"] == D("35.00")
+
+
+def test_c7_fluxo_do_gerente_soma_a_folha_nas_saidas_sem_linha_propria(client, conn_teste):
+    """Decisão de Marlon (23/11/2026): o gerente vê o fluxo verdadeiro, com a folha somada às outras saídas do dia,
+    sem descrição nem linha que a identifique."""
+    from api.database import hoje
+    venc = hoje() + timedelta(days=3)
+    conn_teste.execute("INSERT INTO titulo (loja_id, sentido, descricao, valor, vencimento, competencia, origem_tipo, origem_id, criado_em) "
+                       "VALUES (1, 'pagar', 'Folha QA', 4321.09, %s, %s, 'folha', 209902, now())", (venc, venc.replace(day=1)))
+    _, hg = entrar(client, "gerente")
+    fl = client.get("/api/contas/fluxo?dias=10", headers=hg)
+    assert fl.status_code == 200, fl.text
+    assert "folha" not in fl.text.lower()
+    dia = next(x for x in fl.json()["projecao"] if x["data"] == venc.isoformat())
+    assert D(dia["saidas"]) >= D("4321.09")  # o saldo projetado continua verdadeiro
