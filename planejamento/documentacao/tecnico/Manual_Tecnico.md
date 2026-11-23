@@ -103,7 +103,7 @@ Regras para escrever uma migração nova:
 
 `--dry-run` mostra o que seria aplicado sem alterar nada.
 
-### 3.2 Migrações existentes (até a 021)
+### 3.2 Migrações existentes (até a 024)
 
 | Nº | Arquivo | Fatia | Tabelas criadas ou alteradas |
 |---|---|---|---|
@@ -128,14 +128,17 @@ Regras para escrever uma migração nova:
 | 019 | `019_montagem_errada_avulsa.sql` | Produção | situação `avulsa` em pizza_producao (final); aviso_producao (sabor_errado, formato, sem_ingredientes; resolvido_em/por); pizza_avulsa_destino (vendida ou perda com motivo; só inserção) |
 | 020 | `020_venda_avulsa.sql` | Vendas | item_pedido.`avulsa_pizza_id` (índice único: uma venda por avulsa); pizza_avulsa_destino.`pedido_id` |
 | 021 | `021_avulsa_observacao.sql` | Produção | aviso_producao.`observacao` (observação de quem apontou o erro, vai junto na venda da avulsa) |
+| 022 | `022_checklists.sql` | Checklists | checklist_modelo, checklist_versao (uma vigente por modelo), checklist_item, checklist_execucao (uma por modelo, dia e turno), checklist_resposta (só inserção, com gatilho), checklist_pendencia |
+| 023 | `023_pedido_controle.sql` | Checklists | pedido_controle (só inserção): leitura_de_volta, conferencia_final e causa_atraso por pedido |
+| 024 | `024_pedido_volta_para_producao.sql` | Produção | Gatilho `pedido_so_situacao`: além de avançar um passo, aceita só o retorno de `acabado` para `em producao` (pizza perdida ou refeita em pedido acabado; decisão de Marlon de 23/11/2026). Não cria tabela. Escrita como 022 no PR #5 e renumerada para 024 porque a 022 e a 023 já estavam em uso na pasta da loja |
 
-São 103 tabelas. O sabor com venda fechada **não é guardado**: é calculado a partir dos ingredientes em falta e da ficha técnica mais recente (incluindo preparos, até 5 níveis), para nunca ficar fora de sincronia.
+São 110 tabelas (103 até a migração 021 e 7 das migrações 022 e 023; a 024 só troca um gatilho). O sabor com venda fechada **não é guardado**: é calculado a partir dos ingredientes em falta e da ficha técnica mais recente (incluindo preparos, até 5 níveis), para nunca ficar fora de sincronia.
 
 ### 3.3 Máquinas de estado principais
 
 | Entidade | Estados | Quem muda |
 |---|---|---|
-| Pedido (`pedido.situacao`) | recebido → em producao → acabado → despachado ou retirado; cancelado a partir de qualquer estado antes de despachado | Produção move até acabado (o acabamento marca o pedido acabado); o balcão marca despachado ou retirado; a gerência pode mover à mão |
+| Pedido (`pedido.situacao`) | recebido → em producao → acabado → despachado ou retirado; cancelado a partir de qualquer estado antes de despachado; acabado volta para em producao quando uma pizza dele é perdida ou refeita (migração 024) | Produção move até acabado (o acabamento marca o pedido acabado); o balcão marca despachado ou retirado e recusa entregar com pizza pendente; a gerência pode mover à mão |
 | Pizza ou calzone (`pizza_producao.situacao`) | na lista → em montagem → no forno → saiu do forno → acabada; perdida; cancelada; avulsa (montagem errada, final) | Pizzaiolo (montagem, montagem errada, sem ingredientes; retroceder só pela rota), acabamento (saiu do forno, acabada, refazer, montagem errada). A refação cria pizza nova ligada à original (`original_id`), na frente da fila; refazer pizza já perdida não duplica perda nem baixa; a perdida deixa de contar como pendente do pedido |
 | Caixa do dia (`caixa_dia.situacao`) | aberto → contado → fechado | Atendente abre, conta e fecha; diferença acima da tolerância exige aprovação de gerente, proprietário ou administrador que não fez a contagem (subgerente não) |
 | Ingrediente em falta (`ingrediente_em_falta`) | em falta (sem `reaberto_em`) → reaberto | Gerência (`vendas.gerir`), em Estoque > Alertas |
@@ -163,7 +166,7 @@ O app conecta com um papel sem privilégio de dono (`pizzaria_app`). `scripts/pa
 
 ### 4.2 Rotas por área
 
-São 250 rotas. A lista completa, com a permissão de cada uma, está no [Apêndice A](Apendice_A_Rotas_da_API.md). Resumo por área de uso:
+São 270 rotas. A lista completa, com a permissão de cada uma, está no [Apêndice A](Apendice_A_Rotas_da_API.md). Resumo por área de uso:
 
 | Área | Grupos de rotas |
 |---|---|
@@ -294,7 +297,7 @@ Usuários e perfis, parâmetros, cardápio e fichas técnicas (scripts `carregar
 | Aceitar sozinho | Flag por canal, desligada por padrão, só administrador e proprietário. Ligada, aceita sem a gerência quando: canal ativo, **loja aberta**, caixa **de hoje** aberto, todos os itens no mapa de produtos (produto ativo) e nenhum sabor com venda fechada. "Caixa de hoje" é o caixa com a data do dia: depois da meia-noite, com o caixa da véspera ainda aberto, nada é aceito sozinho | [Estrutura]: a regra está escrita e testada, mas ainda não é chamada. Não há rota que crie o pedido a partir da entrada do canal nem botão Aceitar (depende do formato do pedido da API). A flag é ligada em Canais ou em Parâmetros (cartão "Aceite automático de pedidos dos canais", `PATCH /canais/{id}/aceitar-sozinho`, `canais.configurar`) |
 | Avisos de status | Fila com tentativas e reenvio sem duplicar. Retirada: "pronto" quando o pedido fica acabado, "finalizado" quando o cliente retira. Entrega: "pronto" quando o entregador sai | [Estrutura] |
 | Finalizar entrega | O **acerto do entregador** no caixa enfileira "finalizado" dos pedidos de canal que ele levou (e "pronto", se faltou). "Finalizado" espera o "pronto" ser enviado (ou esgotar as 20 tentativas). Entre tentativas, a espera cresce até 300 segundos. Pedido de canal só é despachado com o entregador atribuído (decisão de Marlon, 04/11/2026) | [Construído] a fila; [Estrutura] o envio |
-| Fechar vendas por ingrediente | A gerência marca um ingrediente em falta (ex.: ovo), hoje pelo botão em Estoque > Alertas; o sistema mostra os sabores que o usam e os marca como fechados. **O fechamento vale para o balcão e para o canal:** `POST /pedidos` responde 409 com o sabor e o ingrediente; `POST /pedidos/calcular` não recusa, devolve `aviso_venda_fechada` para a tela deixar remover o item; `GET /produtos` traz `venda_fechada` e `motivo_fechada` (a tela desabilita o sabor). O cartão "Vendas fechadas agora" (em Estoque > Alertas, lê `GET /vendas-fechadas`) tem o botão Reabrir. O varredor compara o mapa com o que deveria estar pausado no canal e corrige a diferença (pausar ou reabrir), com erro registrado por produto. Reabrir faz o inverso. Pedido com sabor fechado não é aceito sozinho | [Construído] o fechamento; [Pendente] a chamada de pausar da API |
+| Fechar vendas por ingrediente | A gerência marca um ingrediente em falta (ex.: ovo), hoje pelo botão em Estoque > Alertas; o sistema mostra os sabores que o usam e os marca como fechados. **O fechamento vale para o balcão e para o canal:** `POST /pedidos` responde 409 com o sabor e o ingrediente; `POST /pedidos/calcular` não recusa, devolve `aviso_venda_fechada` para a tela deixar remover o item; `GET /produtos` traz `venda_fechada` e `motivo_fechada` (a tela desabilita o sabor). O cartão "Vendas fechadas agora" (em Estoque > Alertas, lê `GET /vendas-fechadas`) tem o botão Reabrir. O varredor compara o mapa com o que deveria estar pausado no canal e corrige a diferença (pausar ou reabrir), com erro registrado por produto. Reabrir faz o inverso. Ingrediente da ficha **base** em falta fecha toda pizza daquele tamanho; ingrediente de **borda ou adicional** fecha só aquela borda ou adicional naquele tamanho (decisão de Marlon de 23/11/2026). Pedido com sabor, base ou borda fechada não é aceito sozinho | [Construído] o fechamento; [Pendente] a chamada de pausar da API |
 | Alerta de estoque | Ingrediente **negativo**, **zerado**, **para repor** (ponto de pedido) ou **abaixo do mínimo** (estoque mínimo do cadastro), nesta ordem de gravidade, para tratativa física ou ajuste. Vale para qualquer item com estoque mínimo. Todas as faixas têm o botão "Fechar vendas dos sabores"; no zerado e no negativo, mostra também quantos sabores usam o item. No BI, zerado ou negativo é alerta de gravidade alta | [Construído] |
 | Estoque negativo | Permitido: a baixa automática pela ficha técnica e a saída manual de perda e de consumo interno não são barradas por falta de saldo. A **transferência** entre locais continua bloqueada sem saldo | [Construído] |
 | Cancelamento | Existe no Anota Ai; o sistema ainda não avisa | [Pendente] |
@@ -317,6 +320,7 @@ Ficam em Administrativo > Parâmetros, com histórico. Só administrador e propr
 | Estoque e compras | dias de alerta de validade (7), perda padrão das fichas (10%), valor de compra que exige aprovação |
 | Contas, imobilizado e RH | valor de título que exige aprovação, valor mínimo de bem, valor de ordem de serviço que exige aprovação, encargos estimados, limite de hora extra |
 | BI | meta de CMV (vazio = sem meta), alertas ligados (CMV, estoque, caixa, atraso, manutenção) |
+| Checklists | recusar ligar a loja aberta sem o checklist de início concluído (padrão nao: só avisa), temperatura máxima da câmara fria e do freezer em °C (vazio = sem limite; confirmar com a vigilância local) |
 
 ### 7.4 Backup (a cópia diária fora da máquina foi adiada por Marlon)
 
@@ -336,11 +340,27 @@ Ficam em Administrativo > Parâmetros, com histórico. Só administrador e propr
 
 ---
 
+### 7.6 Checklists (início, acompanhamento e fim do dia)
+
+Proposta de 16/11/2026 (melhoria M4), implementada e **ainda sem aprovação do Marlon nem piloto em papel**; ver `planejamento/melhoria_continua/`. Rotas em `/api/checklists` (Apêndice A) e permissões `checklist.executar`, `checklist.ver`, `checklist.resolver` e `checklist.gerir` (Apêndice B).
+
+- **Modelos e versões.** Três modelos padrão (início, acompanhamento e fim do dia) saem de `api/services/checklists_padrao.py` e são instalados por Admin > Checklists > Modelos (administrador ou proprietário). Um modelo em uso não se edita: publica-se nova versão (`POST /api/checklists/modelos/{codigo}/versoes`); execuções antigas seguem na versão que usaram. Não há tela de edição de itens nesta versão.
+- **Execução.** Uma por modelo, dia e turno; dois toques simultâneos devolvem a mesma execução. Escritas travam a linha da execução. Uma função só inicia checklist que tenha item para ela. O progresso mostrado à função conta só os itens dela. O acompanhamento abre rodadas ("rodada 1", "rodada 2"). Cada função vê e responde só os itens dela; a gerência vê todos e é quem conclui (`checklist.resolver`).
+- **Respostas só de inserção.** Corrigir é gravar outra resposta; a mais recente vale e a anterior fica registrada. "Não conforme" exige ação corretiva e cria pendência. Sair de "não conforme" exige dizer o que foi feito (a ação corretiva vira o texto de resolução da pendência anterior, que sempre fecha). "Não se aplica" exige motivo. Depois de concluída, a execução só aceita correção da gerência (`checklist.resolver`), sempre com motivo, e a situação acompanha as pendências abertas.
+- **Itens numéricos.** Os limites de temperatura vêm dos parâmetros `checklist_temp_refrigerado_max` e `checklist_temp_congelado_max`, vazios até o Marlon definir. Sem limite, o valor só é registrado. Fora do limite, a resposta vira não conforme e pede ação corretiva.
+- **Itens automáticos.** Leituras que o sistema já faz (caixa de hoje aberto, loja aberta, backup nas últimas 24 horas). Aparecem só como leitura e são gravadas no momento em que a gerência conclui.
+- **Itens periódicos.** O modelo aceita recorrência (diário, semanal, mensal, semestral); o item só aparece quando vence. Os modelos padrão usam "todo turno" porque as frequências ainda não foram definidas.
+- **Loja aberta.** Ao ligar a flag sem o checklist de início concluído, o sistema avisa. Com `checklist_bloqueia_loja_aberta = sim`, recusa (erro 409), e a gerência libera informando o motivo, que fica na auditoria. Sem modelo de início instalado, não cobra nada.
+- **Pedido.** `POST /api/checklists/pedidos/{id}/controles` grava leitura de volta (atendente), conferência final (acabamento) e causa do atraso (gerência). A tela de pedido de balcão tem a caixa "Li o pedido de volta ao cliente".
+- **BI.** `GET /api/bi/producao` ganhou `tempos_entrega`: minutos do pedido até atribuir o entregador (`entrega.atribuido_em`) e do pedido até a saída (`pedido.entrega_real`, gravada quando o pedido vira "despachado ou retirado"). **O tempo na rua não é medido:** o sistema não registra a chegada ao cliente. Para o número de saída ser fiel, o entregador deve ser atribuído na hora em que sai.
+- **Não implementado:** conferência de bebida no despacho (melhoria M3, depende do novo layout da Produção), entrega sugerida no resumo do pedido (o cálculo só existe depois de criado o pedido), pauta automática da revisão semanal e tela de edição de modelos.
+- **Testes.** `tests/test_checklists.py`.
+
 ## 8. Testes e qualidade
 
-- Suíte pytest em `sistema/tests/` (20 arquivos de teste, incluindo `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso). O resultado da última execução completa fica registrado no PR #2.
+- Suíte pytest em `sistema/tests/` (com banco) e `sistema/tests_unidade/` (sem banco, segundos), incluindo `test_checklists.py`, `test_vendas_fechadas.py`, `test_acesso_rigido.py` com a matriz de rota por perfil e `test_varredor.py` com adaptador falso. Última execução completa: 23/11/2026, depois da integração dos Checklists com os PRs #2 a #5, 374 testes verdes (QA em `sistema/docs/qa_integracao_checklists.md`).
 - Exige PostgreSQL local; o banco de teste precisa terminar em `_teste` e é recriado a cada execução. Variáveis `TEST_DB_PASS`, `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_NAME`.
-- Rodar: `python -m pytest -q` (cerca de 5 minutos).
+- Rodar: `python -m pytest -q` (cerca de 11 minutos com 4 núcleos).
 - **Regra permanente do projeto (03/11/2026):** todo código passa por dois revisores, um cego (sem contexto) e outro conferindo contra o código e os documentos aprovados. Os relatórios de QA cego de cada fatia estão em `sistema/docs/`.
 
 ---

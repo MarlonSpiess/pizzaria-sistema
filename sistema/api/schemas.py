@@ -2,7 +2,7 @@
 import re
 from datetime import date
 import unicodedata
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
@@ -1982,3 +1982,160 @@ class FolhaLancarIn(Base):
         if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", v):
             raise ValueError("Competência no formato AAAA-MM.")
         return v
+
+
+# ---------------------------------------------------------------- Checklists (melhoria M4)
+PERFIL_CHECKLIST = Literal["administrador", "proprietario", "gerente", "subgerente", "atendente", "massa", "pizzaiolo", "acabamento"]
+
+
+class LojaAbertaIn(Base):
+    ativo: bool
+    liberar_motivo: Optional[str] = None  # usado só quando o checklist de início bloqueia a abertura
+
+    @field_validator("liberar_motivo")
+    @classmethod
+    def _lm(cls, v):
+        return _texto_opcional(200)(v.strip() if v else v)
+
+
+class ExecucaoIn(Base):
+    modelo: str
+    turno: Optional[str] = None
+
+    @field_validator("modelo")
+    @classmethod
+    def _m(cls, v):
+        if not re.fullmatch(r"[a-z0-9_]{1,40}", v):
+            raise ValueError("Código de modelo inválido.")
+        return v
+
+    @field_validator("turno")
+    @classmethod
+    def _t(cls, v):
+        if v is not None and not (1 <= len(v) <= 30):
+            raise ValueError("Turno de 1 a 30 caracteres.")
+        return v
+
+
+class RespostaChecklistIn(Base):
+    resultado: Optional[Literal["conforme", "nao_conforme", "nao_se_aplica"]] = None  # itens numéricos dispensam: o limite decide
+    valor_numerico: Optional[str] = None
+    valor_texto: Optional[str] = None  # motivo do "não se aplica"
+    acao_corretiva: Optional[str] = None
+
+    @field_validator("valor_numerico")
+    @classmethod
+    def _vn(cls, v):
+        if v is not None and not re.fullmatch(r"-?[0-9]{1,4}([.,][0-9]{1,2})?", v.strip()):
+            raise ValueError("Número inválido (use até 2 casas decimais).")
+        return v.strip() if v else v
+
+    @field_validator("valor_texto", "acao_corretiva")
+    @classmethod
+    def _tx(cls, v):
+        return _texto_opcional(300)(v.strip() if v else v)
+
+
+class ResolverPendenciaIn(Base):
+    resolucao: str
+
+    @field_validator("resolucao")
+    @classmethod
+    def _r(cls, v):
+        v = v.strip()
+        if not (3 <= len(v) <= 300):
+            raise ValueError("Descreva a resolução (3 a 300 caracteres).")
+        return v
+
+
+class ItemChecklistIn(Base):
+    setor: str
+    codigo: str
+    texto: str
+    criterio: Optional[str] = None
+    perfil_responsavel: Optional[PERFIL_CHECKLIST] = None
+    tipo_resposta: Literal["marcar", "numero", "automatico"] = "marcar"
+    fonte_auto: Optional[Literal["caixa_aberto", "loja_aberta", "backup_do_dia"]] = None
+    unidade: Optional[str] = None
+    limite_min: Optional[str] = None
+    limite_max: Optional[str] = None
+    limite_min_param: Optional[str] = None
+    limite_max_param: Optional[str] = None
+    obrigatorio: bool = True
+    recorrencia: Literal["todo_turno", "diario", "semanal", "mensal", "semestral"] = "todo_turno"
+    origem: Optional[str] = None
+
+    @field_validator("setor", "codigo", "texto")
+    @classmethod
+    def _obrig(cls, v):
+        v = v.strip()
+        if not (1 <= len(v) <= 200):
+            raise ValueError("Texto de 1 a 200 caracteres.")
+        return v
+
+    @field_validator("codigo")
+    @classmethod
+    def _cod(cls, v):
+        if not re.fullmatch(r"[A-Za-z0-9._-]{1,20}", v):
+            raise ValueError("Código do item: até 20 letras, números, ponto, hífen ou sublinhado.")
+        return v
+
+    @field_validator("unidade")
+    @classmethod
+    def _un(cls, v):
+        return _texto_opcional(20)(v.strip() if v else v)
+
+    @field_validator("origem")
+    @classmethod
+    def _or(cls, v):
+        return _texto_opcional(80)(v.strip() if v else v)
+
+    @field_validator("limite_min_param", "limite_max_param")
+    @classmethod
+    def _pm(cls, v):
+        if v is not None and not re.fullmatch(r"[a-z0-9_]{1,60}", v):
+            raise ValueError("Chave de parâmetro inválida.")
+        return v
+
+    @model_validator(mode="after")
+    def _coerencia(self):
+        tem_limite = any(x not in (None, "") for x in (self.limite_min, self.limite_max, self.limite_min_param, self.limite_max_param))
+        if tem_limite and self.tipo_resposta != "numero":
+            raise ValueError(f"Item {self.codigo}: limite só vale para itens numéricos.")
+        if self.tipo_resposta == "automatico" and not self.fonte_auto:
+            raise ValueError(f"Item {self.codigo}: item automático precisa de fonte.")
+        return self
+
+    @field_validator("criterio")
+    @classmethod
+    def _cr(cls, v):
+        return _texto_opcional(500)(v.strip() if v else v)
+
+    @field_validator("limite_min", "limite_max")
+    @classmethod
+    def _lim(cls, v):
+        if v is not None and not re.fullmatch(r"-?[0-9]{1,4}([.,][0-9]{1,2})?", v.strip()):
+            raise ValueError("Limite inválido.")
+        return v.strip() if v else v
+
+
+class NovaVersaoChecklistIn(Base):
+    itens: list[ItemChecklistIn]
+
+    @field_validator("itens")
+    @classmethod
+    def _i(cls, v):
+        if not (1 <= len(v) <= 200):
+            raise ValueError("Informe de 1 a 200 itens.")
+        return v
+
+
+class ControlePedidoIn(Base):
+    ponto: Literal["leitura_de_volta", "conferencia_final", "causa_atraso"]
+    ok: bool = True
+    texto: Optional[str] = None
+
+    @field_validator("texto")
+    @classmethod
+    def _tx(cls, v):
+        return _texto_opcional(300)(v.strip() if v else v)

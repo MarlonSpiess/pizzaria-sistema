@@ -20,7 +20,7 @@ As telas Forno e Acabamento se atualizam sozinhas a cada 8 segundos. Toque em **
 2. Toque em **Acabada e etiqueta**. A etiqueta aparece na tela com o nome do cliente, o número do pedido, os sabores e o tamanho.
 3. Toque em **Imprimir** e cole a etiqueta na caixa. Toque em **Fechar** para tirar a etiqueta da tela.
 
-Se a pizza saiu errada, escolha o motivo em **Refazer** e confirme. A pizza atual vira perda e uma pizza igual entra **na frente** da fila de montagem. A refação só é possível enquanto o pedido está em produção; depois disso, a recepção faz um pedido novo.
+Se a pizza saiu errada, escolha o motivo em **Refazer** e confirme. A pizza atual vira perda e uma pizza igual entra **na frente** da fila de montagem. A refação vale até o pedido sair da loja. Se o pedido já estava **acabado**, ele volta para **em produção** até a pizza nova ficar pronta, e o balcão não consegue despachar enquanto houver pizza pendente. Depois de despachado ou retirado, a recepção faz um pedido novo.
 
 **Pizzas avulsas (montagem errada):** a pizza errada aparece neste cartão, com sabores, adicionais e observações (sem valores). Quem vende é a recepção, pelo Novo pedido (você não lança a venda). Se não houver venda, toque em **Descartar (motivo)**: ela entra nas perdas e o estoque baixa como perda (a ficha inteira se a pizza já foi ao forno; só a montagem, se não foi).
 

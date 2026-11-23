@@ -43,7 +43,14 @@ Hoje a integração **não está conectada**: falta o token e a documentação d
 - Folha gerencial e salários (RH > Folha gerencial): prévia, resumo e lançamento em Contas.
 - Diferença de caixa acima da tolerância: administrador, proprietário ou gerente, sempre quem não fez a contagem (não é exclusivo de vocês; o subgerente não aprova).
 
-## 5. Sistema
+## 5. Checklists (modelos e limites)
+
+- Em **Administrativo > Checklists > Modelos**, toque em **Instalar modelos padrão** para criar os três checklists (início, acompanhamento e fim do dia). Pode repetir sem efeito.
+- Em **Parâmetros**, defina a temperatura máxima da câmara fria e do freezer (em °C, por exemplo -18 para o freezer, depois de confirmar com a vigilância local). Enquanto estiverem vazias, a temperatura só é registrada.
+- O parâmetro **recusar ligar a loja aberta sem o checklist de início** vem em "nao" (só avisa). Use "sim" só depois de a equipe se acostumar com o checklist.
+- Editar os itens de um modelo é feito pela API nesta versão (publicando uma nova versão). Peça ao desenvolvedor.
+
+## 6. Sistema
 
 - **Backup:** botão "Fazer backup agora" no Painel e comando `python scripts\backup.py` no PC da loja (na pasta `sistema`, com o ambiente `venv` ativo e o `set_env.bat` carregado). A rotina diária fora da máquina está adiada; até lá, faça ao fechar o dia e copie para um pen drive.
 - **Auditoria:** consulte quem fez cada ação. Com a instalação feita pelo roteiro (app usando o papel `pizzaria_app` e `papel_app.sql` aplicado), o sistema não consegue apagar nem alterar a auditoria; só o dono do banco, fora do sistema, teria esse acesso.

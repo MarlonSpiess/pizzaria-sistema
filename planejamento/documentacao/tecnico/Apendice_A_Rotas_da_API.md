@@ -2,7 +2,7 @@
 
 Gerado automaticamente a partir de `sistema/api/routers/` por `planejamento/documentacao/fonte/gerar_apendice_rotas.py`. Não edite à mão: rode o script de novo quando o código mudar.
 
-Total: 257 rotas.
+Total: 270 rotas.
 
 A permissão é conferida no servidor em cada chamada (`requer` exige a permissão; `requer_alguma` aceita qualquer uma das listadas). Quais perfis têm cada permissão está na seção 5 do Manual Técnico. Além da permissão, várias rotas aplicam regras de negócio (por exemplo, caixa aberto, limite de desconto, aprovação por outra pessoa) que devolvem 400, 403 ou 409.
 
@@ -93,6 +93,24 @@ A permissão é conferida no servidor em cada chamada (`requer` exige a permiss�
 | POST | `/api/adicionais` | `cardapio.editar` |
 | PATCH | `/api/adicionais/{aid}` | `cardapio.editar` |
 | POST | `/api/precos/pizza` | `cardapio.ver` |
+
+## checklists (`checklists.py`)
+
+| Método | Rota | Permissão |
+|---|---|---|
+| GET | `/api/checklists/hoje` | `checklist.executar` |
+| POST | `/api/checklists/execucoes` | `checklist.executar` |
+| GET | `/api/checklists/execucoes/{exec_id}` | `checklist.executar` |
+| PUT | `/api/checklists/execucoes/{exec_id}/itens/{item_id}` | `checklist.executar` |
+| POST | `/api/checklists/execucoes/{exec_id}/concluir` | `checklist.resolver` |
+| GET | `/api/checklists/pendencias` | `checklist.ver` |
+| POST | `/api/checklists/pendencias/{pid}/resolver` | `checklist.resolver` |
+| GET | `/api/checklists/aderencia` | `checklist.ver` |
+| GET | `/api/checklists/modelos` | `checklist.gerir` |
+| POST | `/api/checklists/modelos/padrao` | `checklist.gerir` |
+| POST | `/api/checklists/modelos/{codigo}/versoes` | `checklist.gerir` |
+| POST | `/api/checklists/pedidos/{pedido_id}/controles` | `vendas.criar` ou `entregas.despachar` ou `vendas.gerir` |
+| GET | `/api/checklists/pedidos/{pedido_id}/controles` | `vendas.ver` ou `entregas.despachar` |
 
 ## Compras (`compras.py`)
 

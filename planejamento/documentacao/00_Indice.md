@@ -1,10 +1,10 @@
 # Documentação do Sistema Integrado da Pizzaria
 
-Versão 2.0, 04/11/2026. Fiel ao código do PR #2 (commit `a55b10d`). Comece por aqui.
+Versão 2.1, 23/11/2026. Fiel ao código da branch main depois dos PRs #2 a #5 e da integração do trabalho local de 16/11 (Checklists). Comece por aqui.
 
 ## Para quem instala e mantém
 
-- [Manual Técnico](tecnico/Manual_Tecnico.md): arquitetura, banco e migrações (até a 021), API, segurança, instalação, operação, integração Anota Ai, testes e pendências.
+- [Manual Técnico](tecnico/Manual_Tecnico.md): arquitetura, banco e migrações (até a 024), API, segurança, instalação, operação, integração Anota Ai, testes e pendências.
 - [Apêndice A: rotas da API e permissão](tecnico/Apendice_A_Rotas_da_API.md) e [Apêndice B: permissões por perfil](tecnico/Apendice_B_Permissoes_por_Perfil.md), gerados do código.
 - [Roteiro de instalação na loja](../instalacao/Roteiro_de_Instalacao_Loja.md).
 
@@ -32,6 +32,14 @@ Versão 2.0, 04/11/2026. Fiel ao código do PR #2 (commit `a55b10d`). Comece por
 - [Plano Macro v2.0](../00_Plano_Macro.md): a seção 0 mostra o estado atual (9 módulos viraram 3 áreas).
 - [Módulos 01 a 09](../modulos/): cada um abre com a situação em 04/11/2026.
 - [Estrutura de menus](../menus/01_Estrutura_de_Menus.md), [Plano de aplicações e servidores](../arquitetura/Plano_Aplicacoes_e_Servidores.md), [Fatos do manual do Anota Ai](../arquitetura/Anota_Ai_Fatos_do_Manual.md).
+
+## Melhoria contínua (proposta, aguarda aprovação do Marlon)
+
+- [Práticas e melhorias](../melhoria_continua/00_Praticas_e_Melhorias.md): boas práticas de atendimento, produção, acabamento e entrega, melhorias propostas para o sistema (M1 a M8), fases e valores a definir.
+- [Checklists](../melhoria_continua/01_Checklists.md): início, acompanhamento e fim do dia (visão total) e início, acompanhamento e fim do pedido (visão de produção). Versão para imprimir: `Checklists_da_Pizzaria.docx`, na mesma pasta.
+- [Detalhamento M4: módulo de Checklists](../melhoria_continua/02_Modulo_Checklists_M4.md): dados, regras, permissões, API, telas, fatias e decisões do Marlon.
+- [Pacote de aprovação](../melhoria_continua/pacote_aprovacao/00_Resumo_e_Decisoes.md): resumo e formulário de decisões para o Marlon, com os documentos de apoio em Word.
+- Listas de referência em Word, em `../melhoria_continua/referencia/`.
 
 ## Como manter esta documentação atualizada
 

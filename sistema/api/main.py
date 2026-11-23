@@ -15,7 +15,7 @@ from api.config import DOCS_ENABLED
 from api.database import pool
 from psycopg_pool import PoolTimeout
 from api.services import varredor
-from api.routers import auditoria, auth, cardapio, parametros, pessoas, receitas, sistema, usuarios, vendas, producao, caixa, estoque, compras, contas, custos, imobilizado, rh, bi, canais, vendas_fechadas
+from api.routers import auditoria, auth, cardapio, parametros, pessoas, receitas, sistema, usuarios, vendas, producao, caixa, estoque, compras, contas, custos, imobilizado, rh, bi, canais, vendas_fechadas, checklists
 
 log = logging.getLogger("pizzaria")
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
@@ -138,7 +138,7 @@ def health():
         return JSONResponse(status_code=503, content={"status": "db_indisponivel"})
 
 
-for r in (auth.router, usuarios.router, parametros.router, auditoria.router, sistema.router, cardapio.router, pessoas.router, receitas.router, vendas.router, producao.router, caixa.router, estoque.router, compras.router, contas.router, custos.router, imobilizado.router, rh.router, bi.router, canais.router, vendas_fechadas.router):
+for r in (auth.router, usuarios.router, parametros.router, auditoria.router, sistema.router, cardapio.router, pessoas.router, receitas.router, vendas.router, producao.router, caixa.router, estoque.router, compras.router, contas.router, custos.router, imobilizado.router, rh.router, bi.router, canais.router, vendas_fechadas.router, checklists.router):
     app.include_router(r, prefix="/api")
 
 

@@ -25,6 +25,10 @@ As pizzas entram sozinhas na fila da produção. Bebidas e acompanhamentos não 
 
 Se a loja estiver configurada para vender só com caixa aberto, abra o caixa antes do primeiro pedido.
 
+### Ler o pedido de volta ao cliente
+
+No cartão **3. Resumo** aparecem o nome, o telefone e (na entrega) o endereço do cliente. Antes de confirmar, leia em voz alta os itens, os adicionais e as observações e marque **Li o pedido de volta ao cliente**. O sistema grava essa marca junto do pedido. Se não conseguir gravar, avisa na tela: o pedido foi criado do mesmo jeito.
+
 ## 2. Acompanhar os pedidos (Vendas > Pedidos > Pedidos do dia)
 
 - **Ver como:** quadro (uma coluna por situação) ou lista.
@@ -36,7 +40,7 @@ Se a loja estiver configurada para vender só com caixa aberto, abra o caixa ant
 |---|---|
 | **Avançar para despachado ou retirado** | O cliente retirou no balcão, ou o entregador saiu com o pedido. Só depois de o acabamento marcar o pedido acabado. Entrega do Anota Ai exige o entregador atribuído antes |
 | **Urgente** ou **Tirar urgência** | Só enquanto o pedido está "recebido" (antes de a produção começar) |
-| **Cancelar** | Motivo obrigatório. Como todo pedido está pago, um gerente confirma com login e senha. O valor fica registrado como estorno no caixa do dia, por forma de pagamento; a devolução ao cliente (dinheiro, Pix ou estorno na maquininha) é feita fora do sistema |
+| **Cancelar** | Motivo obrigatório. Como todo pedido está pago, um gerente confirma com login e senha. O valor fica registrado como estorno no caixa do dia, por forma de pagamento; a devolução ao cliente (dinheiro, Pix ou estorno na maquininha) é feita fora do sistema. Bebidas e acompanhamentos já baixados voltam ao estoque; pizza já feita vira perda |
 | **Ver** | Detalhes do pedido, pagamentos e histórico |
 
 ## 3. Entregas
@@ -53,6 +57,10 @@ Em **Clientes** você busca, cadastra e corrige nome, telefone e endereço. Cada
 
 **Sabor com venda fechada:** quando a gerência fecha um sabor por falta de ingrediente, ele aparece na lista como **VENDA FECHADA (falta ...)** e não pode ser escolhido. Se o pedido já tiver esse sabor, o resumo mostra o aviso em vermelho e o sistema não grava o pedido até você tocar em **Remover** no item. Ofereça outro sabor ao cliente. Quando a integração for conectada, os pedidos do Anota Ai entrarão sozinhos e seguirão o mesmo caminho; a fila de entrada do canal é da gerência (Vendas > Canais).
 
-## 6. Cupom fiscal
+## 6. Checklists
+
+A aba **Checklists** (na área Vendas) traz os itens do balcão, do caixa e dos canais. Veja o passo a passo em "Comum a todos".
+
+## 7. Cupom fiscal
 
 O cupom fiscal é emitido em outro software. Depois, informe o número do CF no sistema em **Caixa e entregas > Caixa do dia > Pedidos sem número de CF**.
